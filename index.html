@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סידור עבודה</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;direction:rtl;background:#f4f6fa;color:#1a1a2e;min-height:100vh}
+.topbar{background:#1F4E79;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.15);position:relative}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-sub{font-size:11px;opacity:0.75;margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.mode-btns{display:flex;gap:6px}
+.mode-btn{padding:5px 14px;font-size:12px;border:1.5px solid rgba(255,255,255,0.4);border-radius:20px;cursor:pointer;background:transparent;color:#fff;font-family:inherit;transition:all 0.2s}
+.mode-btn.active{background:#fff;color:#1F4E79;font-weight:600;border-color:#fff}
+.user-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;font-size:12px}
+.user-pill img{width:22px;height:22px;border-radius:50%}
+.sign-btn{padding:5px 14px;font-size:12px;border:1.5px solid rgba(255,255,255,0.6);border-radius:20px;cursor:pointer;background:rgba(255,255,255,0.1);color:#fff;font-family:inherit}
+.sign-btn:hover{background:rgba(255,255,255,0.2)}
+.month-nav{display:flex;align-items:center;gap:10px;padding:10px 20px;background:#fff;border-bottom:1px solid #e5e9f0}
+.month-nav button{border:1px solid #d0d7e8;background:#fff;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:14px;color:#1F4E79}
+.month-nav button:hover{background:#f0f4fa}
+.month-label{font-size:15px;font-weight:600;color:#1a1a2e;flex:1;text-align:center}
+.legend{display:flex;gap:10px;padding:8px 20px;flex-wrap:wrap;border-bottom:1px solid #e5e9f0;background:#fff;align-items:center}
+.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#555}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+.view-tag{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f0fb;color:#1F4E79;margin-right:auto}
+.sync-tag{padding:3px 10px;border-radius:10px;font-size:11px;background:#e6f4ea;color:#1e5c2e;margin-right:4px}
+.schedule-wrap{overflow-x:auto;background:#fff;margin:14px;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+table.sched{border-collapse:collapse;width:100%;font-size:12px}
+table.sched th{background:#f0f4fa;padding:6px 3px;text-align:center;border:1px solid #e0e6f0;font-weight:600;color:#555;min-width:38px;white-space:nowrap;position:sticky;top:0;z-index:10}
+table.sched th.emp-col{min-width:110px;text-align:right;padding-right:10px;position:sticky;right:0;z-index:20;background:#e8eef8}
+table.sched th.role-col{min-width:72px;position:sticky;right:110px;z-index:20;background:#e8eef8}
+table.sched td{padding:2px;text-align:center;border:1px solid #eaeff8;height:30px}
+table.sched td.emp-col{text-align:right;padding-right:10px;font-weight:600;font-size:12px;position:sticky;right:0;background:#fff;z-index:5;white-space:nowrap}
+table.sched td.role-badge{position:sticky;right:110px;z-index:5;background:#fff;padding:2px 5px}
+table.sched tr.role-header td{font-weight:700;font-size:12px;color:#fff;padding:5px 10px;text-align:right}
+table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#f5f8ff}
+.cell-inner{width:100%;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:pointer;transition:opacity 0.15s}
+.cell-inner:hover{opacity:0.75}
+.cell-empty-btn{color:#bbc;font-size:18px;background:transparent;width:100%;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sh-a{background:#fff6cc;color:#7a5c00}
+.sh-b{background:#e6f4ea;color:#1e5c2e}
+.sh-c{background:#fce8dc;color:#7a2e00}
+.sh-off{background:#f0e8fc;color:#5c2e8a}
+.sh-mil{background:#daeaf8;color:#1a4a70}
+.sh-sab{background:#fce4ec;color:#880e4f}
+.sh-sick{background:#ffe0b2;color:#bf360c}
+.sh-hv{background:#e8eaf6;color:#283593}
+.sh-low{background:#e0f2f1;color:#004d40}
+.sh-flight{background:#e1f5fe;color:#01579b}
+.sh-report{background:#f3e5f5;color:#4a148c}
+.sh-d{background:#fff9c4;color:#6d4c00}
+.sh-e{background:#dcedc8;color:#1b5e20}
+.sh-f{background:#ffe0b2;color:#6d1f00}
+.sh-motz{background:#e8eaf6;color:#1a237e}
+.sh-audit{background:#fce4ec;color:#6a1b4d}
+.note-bar{display:flex;gap:8px;align-items:center;padding:8px 20px;background:#fffbea;border-bottom:1px solid #f0e8b0;flex-wrap:wrap;font-size:13px;color:#7a5c00}
+.note-bar select,.note-bar input{padding:5px 10px;font-size:12px;border:1px solid #d0c080;border-radius:8px;background:#fff;color:#333;font-family:inherit}
+.note-bar input{flex:1;min-width:180px}
+.note-bar button{padding:5px 14px;font-size:12px;border:1px solid #c0a020;border-radius:8px;cursor:pointer;background:#fff8dc;color:#7a5c00;font-family:inherit}
+.summary-section{margin:0 14px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden}
+.summary-section h2{font-size:14px;font-weight:600;padding:12px 16px;border-bottom:1px solid #e5e9f0;color:#1F4E79}
+.sum-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px 16px}
+.sum-card{background:#f4f6fa;border-radius:10px;padding:12px;text-align:center}
+.sum-card .val{font-size:26px;font-weight:700;color:#1F4E79}
+.sum-card .lbl{font-size:11px;color:#888;margin-top:2px}
+.emp-sum-table{width:100%;border-collapse:collapse;font-size:12px;margin:0 0 16px}
+.emp-sum-table th{background:#f0f4fa;padding:7px 8px;text-align:center;border:1px solid #e0e6f0;font-weight:600;color:#555;font-size:11px}
+.emp-sum-table th:first-child{text-align:right}
+.emp-sum-table td{padding:6px 8px;border:1px solid #eaeff8;text-align:center;vertical-align:middle}
+.emp-sum-table td:first-child{text-align:right;font-weight:600}
+.emp-sum-table tr:nth-child(even){background:#f9fafd}
+.week-bar-wrap{display:flex;align-items:center;gap:4px}
+.week-bar{height:12px;border-radius:3px;min-width:4px}
+.role-pill{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;color:#fff}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:998}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:14px;padding:20px;z-index:999;min-width:260px;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.popup h3{font-size:15px;font-weight:700;margin-bottom:14px;color:#1a1a2e}
+.popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.shift-opt{padding:10px;border:1.5px solid #e0e6f0;border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all 0.15s}
+.shift-opt:hover{border-color:#1F4E79}
+.shift-opt.selected{border-color:#1F4E79;border-width:2px;box-shadow:0 0 0 3px rgba(31,78,121,0.1)}
+.popup-actions{display:flex;gap:8px;justify-content:flex-end}
+.popup-actions button{padding:7px 18px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;background:#fff;color:#333;font-family:inherit;font-weight:500}
+.btn-save{background:#1F4E79 !important;color:#fff !important;border-color:#1F4E79 !important}
+.setup-box{max-width:520px;margin:40px auto;background:#fff;border-radius:14px;padding:28px;box-shadow:0 2px 16px rgba(0,0,0,0.1)}
+.setup-box h2{font-size:18px;font-weight:700;margin-bottom:8px;color:#1F4E79}
+.setup-box p{font-size:13px;color:#555;margin-bottom:18px;line-height:1.6}
+.setup-box input{width:100%;padding:9px 12px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;margin-bottom:10px;font-family:inherit}
+.setup-box button{width:100%;padding:10px;font-size:14px;font-weight:600;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit}
+.setup-box button:hover{background:#163d60}
+.setup-step{display:flex;gap:10px;margin-bottom:12px;font-size:12px;color:#444;align-items:flex-start;line-height:1.5}
+.step-num{min-width:22px;height:22px;border-radius:50%;background:#1F4E79;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1F4E79;color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s}
+.toast.show{opacity:1}
+.day-note-mark{font-size:9px;color:#7a5c00}
+@media(max-width:600px){
+  .topbar{padding:10px 12px}
+  .schedule-wrap,.summary-section{margin:8px}
+}
+
+.emp-mgr{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center}
+.emp-mgr-box{background:#fff;border-radius:14px;padding:20px;width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.emp-mgr-box h2{font-size:16px;font-weight:700;margin-bottom:14px;color:#1F4E79}
+.emp-mgr-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 36px;gap:6px;margin-bottom:6px;align-items:center}
+.emp-mgr-row input,.emp-mgr-row select{padding:6px 8px;font-size:12px;border:1px solid #d0d7e8;border-radius:7px;font-family:inherit}
+.emp-mgr-del{background:#fff0f0;border:1px solid #ffb0b0;border-radius:7px;cursor:pointer;font-size:14px;color:#c00;padding:4px}
+.emp-mgr-add{padding:7px 14px;font-size:12px;background:#e8f4ea;color:#1e5c2e;border:1px solid #b0d8b8;border-radius:8px;cursor:pointer;font-family:inherit;margin-left:6px}
+.emp-mgr-save{padding:7px 18px;font-size:13px;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600}
+.emp-mgr-cancel{padding:7px 14px;font-size:13px;background:#fff;color:#333;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit}
+.emp-mgr-roles{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.role-hdr{font-size:12px;font-weight:700;color:#fff;padding:3px 10px;border-radius:10px;margin:8px 0 4px}
+
+.req-btn{position:fixed;bottom:24px;left:24px;z-index:500;background:#1F4E79;color:#fff;border:none;border-radius:50px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.req-btn:hover{background:#163d60}
+.bell-btn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;font-size:12px;border:1.5px solid rgba(255,255,255,0.4);border-radius:20px;cursor:pointer;background:transparent;color:#fff;font-family:inherit}
+.bell-badge{position:absolute;top:-6px;right:-6px;background:#e53935;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.req-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+.req-box{background:#fff;border-radius:14px;padding:24px;width:500px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.req-box h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#1F4E79}
+.req-form label{font-size:12px;color:#555;display:block;margin-bottom:3px;margin-top:10px}
+.req-form select,.req-form input,.req-form textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit}
+.req-form textarea{resize:vertical;min-height:70px}
+.req-card{border:1px solid #e5e9f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafbff}
+.req-card .req-meta{font-size:11px;color:#888;margin-bottom:4px}
+.req-card .req-name{font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px}
+.req-card .req-type{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;background:#e8f0fb;color:#1F4E79;margin-bottom:6px}
+.req-card .req-note{font-size:12px;color:#555;margin-top:4px}
+.status-pending{color:#f57c00;font-weight:600;font-size:11px}
+.status-approved{color:#2e7d32;font-weight:600;font-size:11px}
+.status-rejected{color:#c62828;font-weight:600;font-size:11px}
+.req-actions{display:flex;gap:6px;margin-top:10px}
+.btn-approve{padding:5px 14px;font-size:12px;background:#e8f4ea;color:#2e7d32;border:1px solid #b0d8b8;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-reject{padding:5px 14px;font-size:12px;background:#fff0f0;color:#c62828;border:1px solid #ffb0b0;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600}
+.admin-note-inp{width:100%;padding:5px 8px;font-size:11px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;margin-top:4px}
+.emp-req-card{border:1px solid #e5e9f0;border-radius:10px;padding:12px;margin-bottom:8px}
+.notif-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1F4E79;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.2);animation:slideDown 0.3s ease}
+@keyframes slideDown{from{top:50px;opacity:0}to{top:70px;opacity:1}}
+
+.team-msg-banner{background:#1F4E79;color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px}
+.team-msg-banner button{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+.msg-editor{display:flex;gap:8px;padding:8px 16px;background:#e8f0fb;border-bottom:1px solid #d0d7e8;align-items:center}
+.msg-editor input{flex:1;padding:7px 10px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit}
+.msg-editor button{padding:7px 14px;font-size:12px;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600}
+.msg-editor .clear-btn{background:#fff0f0;color:#c00;border:1px solid #ffb0b0}
+.personal-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+.personal-box{background:#fff;border-radius:14px;padding:24px;width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.personal-box h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#1F4E79}
+.my-shift-card{border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.copy-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+.copy-box{background:#fff;border-radius:14px;padding:24px;width:400px;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.copy-box h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#1F4E79}
+</style>
+</head>
+<body>
+<div id="app"><div style="text-align:center;padding:60px;color:#888">טוען...</div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getDatabase,ref,set,onValue,get}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const EMPLOYEES=[
+  {role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},
+  {role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},
+  {role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},
+  {role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},
+  {role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},
+  {role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},
+  {role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},
+  {role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}
+];
+const ROLE_COLORS={"מסווג":"#1F4E79","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
+const SHIFTS=[
+  {key:"A",label:"08-17",cls:"sh-a"},
+  {key:"B",label:"07-16",cls:"sh-b"},
+  {key:"C",label:"06-15",cls:"sh-c"},
+  {key:"D",label:"08-16",cls:"sh-d"},
+  {key:"E",label:"07-15",cls:"sh-e"},
+  {key:"F",label:"06-14",cls:"sh-f"},
+  {key:"SAB",label:"סבב",cls:"sh-sab"},
+  {key:"MOTZ",label:"מוצש",cls:"sh-motz"},
+  {key:"AUDIT",label:"ביקורת",cls:"sh-audit"},
+  {key:"OFF",label:"חופש",cls:"sh-off"},
+  {key:"MIL",label:"מיל'",cls:"sh-mil"},
+  {key:"SICK",label:"מחלה",cls:"sh-sick"},
+  {key:"HV",label:"HV",cls:"sh-hv"},
+  {key:"LOW",label:"LOW",cls:"sh-low"},
+  {key:"FLIGHT",label:"פותח טיסות",cls:"sh-flight"},
+  {key:"REPORT",label:"דוחות",cls:"sh-report"},
+  {key:"",label:"ריק",cls:""}
+];
+const MONTHS=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+const DAY_NAMES=["א","ב","ג","ד","ה","ו","ש"];
+const DAY_NAMES_FULL=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+
+const ADMIN_PASSWORD='DHL123';
+let firebaseConfig=null;
+let app,auth,db;
+let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
+let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
+let state={mode:"view",year:2026,month:4,schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false};
+
+function loadConfig(){
+  try{const c=localStorage.getItem("seder_fb_config");if(c){firebaseConfig=JSON.parse(c);return true;}}catch(e){}
+  return false;
+}
+function saveConfig(cfg){localStorage.setItem("seder_fb_config",JSON.stringify(cfg));localStorage.setItem("seder_admin_uid","pending");}
+
+function initFirebase(cfg){
+  try{
+    app=initializeApp(cfg);
+    auth=getAuth(app);
+    db=getDatabase(app);
+    state.configured=true;
+    onAuthStateChanged(auth,user=>{
+      state.user=user;
+      if(user){
+        // Save admin UID to Firebase on first login
+        get(ref(db,"adminUid")).then(snap=>{
+          if(!snap.val()){
+            set(ref(db,"adminUid"),user.uid);
+            state.adminUid=user.uid;
+          } else {
+            state.adminUid=snap.val();
+          }
+          state.mode=user.uid===state.adminUid?"admin":"view";
+          if(state.mode==="admin"&&state.adminUid==="password-admin") state.mode="admin";
+          render();
+        });
+      } else {
+        state.mode="view";
+      }
+      listenToData();
+      render();
+    });
+  }catch(e){alert("שגיאה בהתחברות ל-Firebase. בדוק את ההגדרות.");state.configured=false;render();}
+}
+
+function buildDefaultSchedule(){
+  const n=daysInMonth(state.year,state.month);
+  const sched={};
+  for(let d=1;d<=n;d++){
+    const wd=ilWD(state.year,state.month,d);
+    if(wd>=0&&wd<=4){employees.forEach(emp=>{sched[emp.name+"|"+d]="A";});}
+  }
+  return sched;
+}
+function listenToData(){
+  if(!db)return;
+  // Load employees list
+  onValue(ref(db,'employees'),(snap)=>{
+    const data=snap.val();
+    if(data&&Array.isArray(data)&&data.length>0){employees=data;}
+    else{employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));}
+  });
+  listenToRequests();
+  onValue(ref(db,'teamMessage'),(snap)=>{
+    state.teamMsg=snap.val()||'';
+    render();
+  });
+  const key=`seder_${state.year}_${state.month}`;
+  onValue(ref(db,key),(snap)=>{
+    const data=snap.val()||{};
+    if(!data.schedule||Object.keys(data.schedule).length===0){
+      state.schedule=buildDefaultSchedule();
+    } else {
+      state.schedule=data.schedule;
+    }
+    state.notes=data.notes||{};
+    state.cellNotes=data.cellNotes||{};
+    render();
+  });
+}
+
+function saveToCloud(){
+  if(!db)return;
+  const key=`seder_${state.year}_${state.month}`;
+  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{}});
+}
+function saveEmployeesToCloud(){
+  if(!db)return;
+  set(ref(db,'employees'),employees);
+  showToast("✓ רשימת עובדים נשמרה");
+}
+
+function ilWD(y,m,d){return new Date(y,m,d).getDay();}
+function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
+function getDays(){const n=daysInMonth(state.year,state.month);return Array.from({length:n},(_,i)=>({d:i+1,wd:ilWD(state.year,state.month,i+1)}));}
+function getShift(emp,d){return state.schedule[emp+"|"+d]||"";}
+function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
+function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+function render(){
+  document.getElementById("app").innerHTML=buildApp();
+}
+
+function buildSetup(){
+  return `<div class="setup-box">
+    <h2>⚙️ הגדרת Firebase</h2>
+    <p>כדי לשמור את הסידור בענן ולשתף עם הצוות בזמן אמת, צריך לחבר Firebase חינמי. פעם אחת בלבד!</p>
+    <div class="setup-step"><div class="step-num">1</div><div>היכנס ל־<strong>console.firebase.google.com</strong> עם חשבון Google שלך</div></div>
+    <div class="setup-step"><div class="step-num">2</div><div>לחץ "Add project" → תן שם → המשך עד סוף</div></div>
+    <div class="setup-step"><div class="step-num">3</div><div>בתפריט צד: <strong>Build → Realtime Database → Create database</strong> → בחר "Start in test mode"</div></div>
+    <div class="setup-step"><div class="step-num">4</div><div>לחץ על גלגל השיניים ← "Project settings" ← גלול למטה ← לחץ "<b>&lt;/&gt;</b>" (Web app) ← הרשם ← העתק את ה-firebaseConfig</div></div>
+    <div class="setup-step"><div class="step-num">5</div><div>הדבק את ה-Config כאן:</div></div>
+    <textarea id="cfg-input" rows="8" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:10px" placeholder='{ "apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }'></textarea>
+    <button onclick="applyConfig()">✓ חבר ושמור</button>
+    <p style="margin-top:10px;font-size:11px;color:#888;text-align:center">ההגדרות נשמרות רק בדפדפן שלך</p>
+  </div>`;
+}
+
+function buildApp(){
+  const isAdmin=state.mode==="admin";
+  const days=getDays();
+  return `
+<div class="topbar">
+  <div>
+    <div class="topbar-title">📋 סידור עבודה</div>
+    <div class="topbar-sub">${MONTHS[state.month]} ${state.year}</div>
+  </div>
+  <div class="topbar-right">
+    ${state.mode!=="admin"?`<button class="sign-btn" onclick="openPersonalView()" style="background:rgba(255,255,255,0.15);margin-left:6px">👤 המשמרות שלי</button>`:""}
+    ${state.mode!=="admin"?`<button class="sign-btn" onclick="openEmpRequests()" style="background:rgba(255,255,255,0.15);margin-left:6px">📋 בקשות ואילוצים</button>`:""}
+    ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
+    ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
+    ${state.user?`
+      <div class="user-pill">
+        ${state.user.photoURL?`<img src="${state.user.photoURL}">`:""}
+        <span>${state.user.displayName||"מנהל"}</span>
+      </div>
+      <button class="sign-btn" onclick="doSignOut()">יציאה</button>
+    `:`
+      <button class="sign-btn" onclick="doSignIn()">🔐 Google</button>
+      <button class="sign-btn" onclick="togglePwdForm()" style="background:rgba(255,255,255,0.15)">🔑 סיסמה</button>
+    `}
+    ${state.showPwdForm&&!state.user?`<div style="position:absolute;top:52px;left:10px;background:#fff;border-radius:10px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:300;display:flex;gap:6px;min-width:240px">
+      <input id="admin-pwd-inp" type="password" placeholder="הכנס סיסמת מנהל..." onkeydown="if(event.key==='Enter')doPasswordLogin()" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;direction:rtl">
+      <button onclick="doPasswordLogin()" style="padding:7px 12px;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">כנס</button>
+    </div>`:""}
+  </div>
+</div>
+${!isAdmin?`<div style="background:#1F4E79;padding:8px 16px;text-align:center">
+  <button onclick="openEmpRequests()" style="background:#fff;color:#1F4E79;border:none;border-radius:20px;padding:8px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+    📋 הגש בקשה / אילוץ
+  </button>
+</div>`:""}
+<div class="month-nav">
+  <button onclick="changeMonth(-1)">&#8592;</button>
+  <div class="month-label">${MONTHS[state.month]} ${state.year}</div>
+  <button onclick="changeMonth(1)">&#8594;</button>
+</div>
+<div class="legend">
+  ${SHIFTS.filter(s=>s.key).map(s=>`<div class="leg"><div class="leg-dot ${s.cls}"></div>${s.label}</div>`).join("")}
+  <div class="leg"><div class="leg-dot" style="background:#e8f0fb;border-radius:2px"></div>שישי</div>
+  <div class="leg"><div class="leg-dot" style="background:#fde8e8;border-radius:2px"></div>שבת</div>
+  <span class="sync-tag">🔄 מסונכרן בזמן אמת</span>
+  ${!isAdmin?'<span class="view-tag">👁 תצוגה בלבד</span>':""}
+</div>
+${isAdmin?buildNoteBar(days):""}
+<div class="schedule-wrap">${buildTable(days,isAdmin)}</div>
+${buildSummary(days,isAdmin)}
+${state.popup?buildPopup():""}
+${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
+${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+`;}
+
+function buildNoteBar(days){
+  const note=state.notes[state.year+"-"+state.month+"-"+state.noteDay]||"";
+  return `<div class="note-bar">
+    📝 <span>הערה ליום:</span>
+    <select onchange="selectNoteDay(this.value)">
+      ${days.map(({d,wd})=>`<option value="${d}" ${d==state.noteDay?"selected":""}>${DAY_NAMES_FULL[wd]} ${d}</option>`).join("")}
+    </select>
+    <input type="text" id="note-inp" placeholder="חג, אירוע מיוחד, סגור..." value="${note}" oninput="liveNote(this.value)">
+    <button onclick="saveNote()">💾 שמור</button>
+    <button onclick="fillDefault()" style="background:#e8f0fb;color:#1F4E79;border-color:#b0c8e8;margin-right:8px">⚡ מלא ברירת מחדל</button>
+    <button onclick="openCopyMonth()" style="background:#e8f4ea;color:#1e5c2e;border-color:#b0d8b8;margin-right:8px">📋 העתק לחודש הבא</button>
+  </div>`;}
+
+function getWeekIndex(d){
+  // Returns 0-based week index for a given day number
+  const firstWD=ilWD(state.year,state.month,0);
+  // day d (1-based), find which week it falls in
+  const dayIdx=d-1;
+  const adjustedIdx=dayIdx+firstWD;
+  return Math.floor(adjustedIdx/7);
+}
+
+const WEEK_BG=[
+  "rgba(31,78,121,0.06)",
+  "rgba(55,86,35,0.06)",
+  "rgba(131,60,0,0.06)",
+  "rgba(112,48,160,0.06)",
+  "rgba(192,0,0,0.06)",
+  "rgba(20,100,100,0.06)",
+];
+
+function buildTable(days,isAdmin){
+  const roles=[...new Set(employees.map(e=>e.role))];
+  let h=`<table class="sched"><thead><tr>
+    <th class="emp-col">שם</th><th class="role-col">תפקיד</th>
+    ${days.map(({d,wd})=>{
+      const isFri=wd===5,isSat=wd===6;
+      const bg=isSat?"background:#fde8e8":isFri?"background:#e8f0fb":"";
+      const fc=isSat?"color:#a00":isFri?"color:#1a4a8a":"";
+      const note=state.notes[state.year+"-"+state.month+"-"+d];
+      const wkBg=WEEK_BG[getWeekIndex(d)%WEEK_BG.length];
+      const wkStyle=(!isFri&&!isSat)?`background:${wkBg}`:"";
+      const finalBg=isSat?"background:#fde8e8":isFri?"background:#e8f0fb":wkStyle;
+      return `<th style="${finalBg};${fc}">${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${note?`<br><span style="font-size:9px;background:#fff3cd;color:#7a5c00;padding:1px 4px;border-radius:3px;display:inline-block;max-width:36px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${note}">${note}</span>`:""}`;
+    }).join("")}
+    <th>סה"כ</th>
+  </tr></thead><tbody>`;
+  roles.forEach(role=>{
+    const rc=ROLE_COLORS[role]||"#333";
+    h+=`<tr class="role-header"><td colspan="${days.length+3}" style="background:${rc}">${role}</td></tr>`;
+    employees.filter(e=>e.role===role).forEach((emp,ei)=>{
+      const bg=ei%2===0?"background:#f9fafd":"";
+      let tot=0;
+      const cells=days.map(({d,wd})=>{
+        const isFri=wd===5,isSat=wd===6;
+        const k=getShift(emp.name,d);
+        const si=shiftInfo(k);
+        if(["A","B","C","D","E","F","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(si.key)) tot++;
+        const wkColor=WEEK_BG[getWeekIndex(d)%WEEK_BG.length];
+        const bgCell=isSat?"background:#fde8e8":isFri?"background:#e8f0fb":`background:${wkColor}`;
+        if(k){
+          const cn=getCellNote(emp.name,d);
+          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}">${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
+        }
+        const cnEmpty=getCellNote(emp.name,d);
+        if(cnEmpty){
+          return `<td style="${bgCell}"><div class="cell-inner" style="background:#f5f5f5;color:#555;flex-direction:column;height:auto;min-height:26px;padding:2px" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\'")}',${d})"`:""}>
+            <span style="font-size:8px;color:#aaa">ריק</span>
+            <span style="font-size:8px;color:#555;max-width:34px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${cnEmpty}">${cnEmpty}</span>
+          </div></td>`;
+        }
+        return `<td style="${bgCell}">${isAdmin?`<div class="cell-empty-btn" onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})">+</div>`:'<div style="color:#dde;text-align:center;font-size:12px">—</div>'}</td>`;
+      }).join("");
+      h+=`<tr style="${bg}"><td class="emp-col">${emp.name}</td><td class="role-badge"><span class="role-pill" style="background:${rc}">${role}</span></td>${cells}<td style="font-weight:700;color:#1F4E79;font-size:12px">${tot}</td></tr>`;
+    });
+  });
+  return h+`</tbody></table>`;}
+
+function buildSummary(days,isAdmin){
+  const weeks=[];let cur=[];
+  days.forEach(({d,wd})=>{if(wd===0&&cur.length){weeks.push(cur);cur=[];}cur.push({d,wd});});
+  if(cur.length)weeks.push(cur);
+  const tS=employees.reduce((a,e)=>a+days.filter(({d})=>["A","B","C","D","E","F","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(getShift(e.name,d))).length,0);
+  const tO=employees.reduce((a,e)=>a+days.filter(({d})=>getShift(e.name,d)==="OFF").length,0);
+  const tM=employees.reduce((a,e)=>a+days.filter(({d})=>getShift(e.name,d)==="MIL").length,0);
+  return `<div class="summary-section">
+    <h2>סיכום חודשי</h2>
+    <div class="sum-cards">
+      <div class="sum-card" style="grid-column:span 2;text-align:right;background:var(--color-background-primary);border:0.5px solid #d0d7e8">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">📢 הודעה לצוות</div>
+        ${isAdmin?`
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="inline-msg-inp" value="${state.teamMsg||''}" placeholder="כתוב הודעה לכל הצוות..." 
+              style="flex:1;padding:6px 10px;font-size:12px;border:0.5px solid #d0d7e8;border-radius:8px;font-family:inherit"
+              oninput="state.teamMsg=this.value">
+            <button onclick="window.saveTeamMsg()" style="padding:6px 12px;background:#1F4E79;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">שמור</button>
+            ${state.teamMsg?`<button onclick="window.clearTeamMsg()" style="padding:6px 10px;background:#fff0f0;color:#c00;border:0.5px solid #ffb0b0;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit">נקה</button>`:''}
+          </div>
+        `:`
+          <div style="font-size:13px;font-weight:500;color:#1F4E79;min-height:28px">${state.teamMsg||'<span style="color:#bbb;font-style:italic;font-weight:400">אין הודעות כרגע</span>'}</div>
+        `}
+      </div>
+      <div class="sum-card"><div class="val">${tO}</div><div class="lbl">ימי חופש</div></div>
+      <div class="sum-card"><div class="val">${tM}</div><div class="lbl">מילואים</div></div>
+    </div>
+    <div style="padding:0 16px 16px">
+    <table class="emp-sum-table">
+      <thead><tr><th>עובד</th><th>תפקיד</th>${weeks.map((_,i)=>`<th>שבוע ${i+1}</th>`).join("")}<th>סה"כ</th><th>חופש</th></tr></thead>
+      <tbody>${(isAdmin?employees:employees.filter(e=>e.name===state.personalEmp)).map(emp=>{
+        const rc=ROLE_COLORS[emp.role]||"#333";
+        const wc=weeks.map(w=>w.filter(({d})=>["A","B","C","D","E","F","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(getShift(emp.name,d))).length);
+        const tot=wc.reduce((a,b)=>a+b,0);
+        const off=days.filter(({d})=>getShift(emp.name,d)==="OFF").length;
+        const mx=Math.max(...wc,1);
+        const hasOverwork=wc.some(v=>v>5);
+        return `<tr style="${hasOverwork?'background:#fff5f5':''}">
+          <td style="${hasOverwork?'color:#c62828;font-weight:700':''}">${emp.name}${hasOverwork?` <span style="font-size:10px;background:#ffebee;color:#c62828;padding:1px 5px;border-radius:8px;margin-right:4px">⚠️ מעל 5 ימים</span>`:''}</td>
+          <td><span class="role-pill" style="background:${rc}">${emp.role}</span></td>
+          ${wc.map(v=>`<td style="${v>5?'background:#ffebee;color:#c62828;font-weight:700':''}"><div class="week-bar-wrap"><div class="week-bar" style="background:${v>5?'#c62828':rc};opacity:0.6;width:${Math.round(v/mx*40)}px"></div><span>${v}</span></div></td>`).join("")}
+          <td style="font-weight:700;color:#1F4E79">${tot}</td>
+          <td style="color:#5c2e8a">${off}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table></div>
+  </div>`;}
+
+function getCellNote(emp,d){return state.cellNotes&&state.cellNotes[emp+"|"+d]||"";}
+function setCellNote(emp,d,v){if(!state.cellNotes)state.cellNotes={};state.cellNotes[emp+"|"+d]=v;}
+
+function buildPopup(){
+  const{emp,d,sel,noteVal}=state.popup;
+  const days=getDays();
+  const{wd}=days.find(x=>x.d===d)||{wd:0};
+  const cur=sel!==undefined?sel:getShift(emp,d);
+  const note=noteVal!==undefined?noteVal:getCellNote(emp,d);
+  return `<div class="popup">
+    <h3>✏️ ${emp} — ${DAY_NAMES_FULL[wd]} ${d}</h3>
+    <div class="popup-grid">
+      ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
+    </div>
+    <div style="margin:10px 0 4px;font-size:12px;color:#555">📝 הערה לעובד על יום זה:</div>
+    <input type="text" id="cell-note-inp" value="${note}" placeholder="למשל: להגיע מוקדם, החלפה עם..." style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;margin-bottom:12px" oninput="window._liveNoteCell(this.value)">
+    <div class="popup-actions">
+      <button onclick="closePopup()">ביטול</button>
+      <button class="btn-save" onclick="window._confirmShift()">✓ שמור</button>
+    </div>
+  </div>`;}
+
+
+window.openEmpMgr=function(){state.showEmpMgr=true;render();};
+window.closeEmpMgr=function(){state.showEmpMgr=false;render();};
+window.delEmp=function(i){employees.splice(i,1);render();};
+window.addEmp=function(){
+  const n=document.getElementById('new-emp-name').value.trim();
+  const r=document.getElementById('new-emp-role').value.trim();
+  const p=document.getElementById('new-emp-phone').value.trim();
+  const id=document.getElementById('new-emp-id').value.trim();
+  if(!n||!r){alert('הכנס שם ותפקיד');return;}
+  employees.push({name:n,role:r,phone:p,empId:id});
+  document.getElementById('new-emp-name').value='';
+  document.getElementById('new-emp-phone').value='';
+  document.getElementById('new-emp-id').value='';
+  render();
+};
+window.saveEmps=function(){
+  employees.forEach((_,i)=>{
+    const ni=document.getElementById('emp-name-'+i);
+    const ri=document.getElementById('emp-role-'+i);
+    const pi=document.getElementById('emp-phone-'+i);
+    const ii=document.getElementById('emp-id-'+i);
+    if(ni)employees[i].name=ni.value.trim();
+    if(ri)employees[i].role=ri.value.trim();
+    if(pi)employees[i].phone=pi.value.trim();
+    if(ii)employees[i].empId=ii.value.trim();
+  });
+  saveEmployeesToCloud();
+  state.showEmpMgr=false;
+  render();
+};
+
+function buildEmpMgr(){
+  const roles=[...new Set(employees.map(e=>e.role))];
+  const ROLE_COLORS_LOCAL={"מסווג":"#1F4E79","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
+  return `<div class="emp-mgr" onclick="if(event.target===this)closeEmpMgr()">
+    <div class="emp-mgr-box">
+      <h2>👥 ניהול עובדים</h2>
+      <div style="margin-bottom:8px;font-size:12px;color:#888">ערוך שמות ותפקידים, הוסף או הסר עובדים</div>
+      ${employees.map((emp,i)=>{
+        const rc=ROLE_COLORS_LOCAL[emp.role]||"#888";
+        return `<div class="emp-mgr-row">
+          <input id="emp-name-${i}" value="${emp.name}" placeholder="שם">
+          <input id="emp-role-${i}" value="${emp.role}" placeholder="תפקיד">
+          <input id="emp-phone-${i}" value="${emp.phone||''}" placeholder="טלפון (05x...)">
+          <input id="emp-id-${i}" value="${emp.empId||''}" placeholder="ת&quot;ז מלאה" maxlength="9" style="text-align:center">
+          <button class="emp-mgr-del" onclick="delEmp(${i})">✕</button>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#333">➕ הוסף עובד חדש</div>
+        <div class="emp-mgr-row">
+          <input id="new-emp-name" placeholder="שם העובד">
+          <input id="new-emp-role" placeholder="תפקיד (למשל: מסווג)">
+          <input id="new-emp-phone" placeholder="טלפון (05x...)">
+          <input id="new-emp-id" placeholder="ת&quot;ז מלאה" maxlength="9" style="text-align:center">
+          <button class="emp-mgr-add" onclick="addEmp()" style="grid-column:span 1">+</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="emp-mgr-cancel" onclick="closeEmpMgr()">ביטול</button>
+        <button class="emp-mgr-save" onclick="saveEmps()">💾 שמור שינויים</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.fillDefault=function(){
+  if(!confirm("זה ימחק את הסידור הנוכחי ויחליף הכל ב-08-17 מראשון עד חמישי. להמשיך?")) return;
+  state.schedule=buildDefaultSchedule();
+  saveToCloud();
+  showToast("✓ סידור ברירת מחדל נטען ונשמר!");
+  render();
+};
+
+
+
+// ===== TEAM MESSAGE =====
+window.saveTeamMsg=function(){
+  const v=document.getElementById('team-msg-inp').value.trim();
+  state.teamMsg=v;
+  if(db) set(ref(db,'teamMessage'),v);
+  showToast('✓ הודעה נשמרה לכל הצוות');
+  render();
+};
+window.clearTeamMsg=function(){
+  state.teamMsg='';
+  if(db) set(ref(db,'teamMessage'),'');
+  render();
+};
+window.dismissMsg=function(){
+  document.querySelector('.team-msg-banner') && document.querySelector('.team-msg-banner').remove();
+};
+
+function buildTeamMsgBanner(){
+  if(!state.teamMsg) return '';
+  return `<div class="team-msg-banner">
+    📢 ${state.teamMsg}
+    <button onclick="dismissMsg()">✕</button>
+  </div>`;
+}
+
+function buildMsgEditor(){
+  if(state.mode!=='admin') return '';
+  return `<div class="msg-editor">
+    📢 <input id="team-msg-inp" placeholder="כתוב הודעה לכל הצוות..." value="${state.teamMsg||''}">
+    <button onclick="saveTeamMsg()">שלח</button>
+    ${state.teamMsg?`<button class="clear-btn" onclick="clearTeamMsg()">נקה</button>`:''}
+  </div>`;
+}
+
+// ===== PERSONAL VIEW =====
+window.openPersonalView=function(){
+  state.showPersonal=true;
+  state.personalEmp='';
+  render();
+};
+window.selectPersonalEmp=function(name){
+  state.personalEmp=name;
+  render();
+};
+window.closePersonal=function(){
+  state.showPersonal=false;
+  state.personalEmp='';
+  render();
+};
+
+function buildPersonalModal(){
+  if(!state.showPersonal) return '';
+  if(!state.personalEmp){
+    return `<div class="personal-modal" onclick="if(event.target===this)closePersonal()">
+      <div class="personal-box">
+        <h2>👤 תצוגה אישית</h2>
+        <p style="font-size:13px;color:#555;margin-bottom:14px">בחר את שמך לראות את המשמרות שלך:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+          ${employees.map(emp=>`<button onclick="selectPersonalEmpWithId('${emp.name.replace(/'/g,"\'")}','${emp.role}')"
+            style="padding:10px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;background:#fafbff;text-align:right">
+            <span style="font-weight:600">${emp.name}</span><br>
+            <span style="font-size:11px;color:#888">${emp.role}</span>
+          </button>`).join('')}
+        </div>
+        <button onclick="closePersonal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">סגור</button>
+      </div>
+    </div>`;
+  }
+  const days=getDays();
+  const myShifts=days.filter(({d,wd})=>wd!==6&&getShift(state.personalEmp,d));
+  const MONTHS_HE=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  return `<div class="personal-modal" onclick="if(event.target===this)closePersonal()">
+    <div class="personal-box">
+      <h2>👤 ${state.personalEmp} — ${MONTHS_HE[state.month]} ${state.year}</h2>
+      <div style="font-size:12px;color:#888;margin-bottom:14px">${myShifts.length} ימי עבודה החודש</div>
+      ${myShifts.map(({d,wd})=>{
+        const k=getShift(state.personalEmp,d);
+        const si=shiftInfo(k);
+        const cn=getCellNote(state.personalEmp,d);
+        return `<div class="my-shift-card ${si.cls}" style="border:1px solid rgba(0,0,0,0.08)">
+          <div>
+            <div style="font-weight:600;font-size:13px">${DAY_NAMES_FULL[wd]} ${d}</div>
+            ${cn?`<div style="font-size:11px;opacity:0.8;margin-top:2px">📝 ${cn}</div>`:''}
+          </div>
+          <div style="font-weight:700;font-size:14px">${si.label}</div>
+        </div>`;
+      }).join('')}
+      ${myShifts.length===0?`<div style="text-align:center;color:#888;padding:20px">אין משמרות מוגדרות עדיין</div>`:''}
+      <button onclick="closePersonal()" style="width:100%;margin-top:14px;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">סגור</button>
+    </div>
+  </div>`;
+}
+
+// ===== COPY MONTH =====
+window.openCopyMonth=function(){
+  state.showCopy=true;
+  render();
+};
+window.closeCopy=function(){
+  state.showCopy=false;
+  render();
+};
+window.executeCopy=function(){
+  const toMonth=parseInt(document.getElementById('copy-to-month').value);
+  const toYear=parseInt(document.getElementById('copy-to-year').value);
+  if(isNaN(toMonth)||isNaN(toYear)){alert('בחר חודש ושנה');return;}
+  if(toMonth===state.month&&toYear===state.year){alert('לא ניתן להעתיק לאותו חודש');return;}
+  if(!confirm(`להעתיק את הסידור ל-${MONTHS[toMonth]} ${toYear}? פעולה זו תדרוס סידור קיים!`)) return;
+  const newKey=`seder_${toYear}_${toMonth}`;
+  const newSched={};
+  // Copy schedule adjusting day numbers that exist in target month
+  const targetDays=new Date(toYear,toMonth+1,0).getDate();
+  Object.entries(state.schedule).forEach(([k,v])=>{
+    const [emp,d]=k.split('|');
+    if(parseInt(d)<=targetDays) newSched[k]=v;
+  });
+  set(ref(db,newKey),{schedule:newSched,notes:{},cellNotes:{}});
+  showToast(`✓ הסידור הועתק ל-${MONTHS[toMonth]} ${toYear}!`);
+  state.showCopy=false;
+  render();
+};
+
+function buildCopyModal(){
+  if(!state.showCopy) return '';
+  const MONTHS_LIST=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const nextM=(state.month+1)%12;
+  const nextY=state.month===11?state.year+1:state.year;
+  return `<div class="copy-modal" onclick="if(event.target===this)closeCopy()">
+    <div class="copy-box">
+      <h2>📋 העתק סידור לחודש הבא</h2>
+      <p style="font-size:13px;color:#555;margin-bottom:16px">בחר לאיזה חודש להעתיק את הסידור הנוכחי:</p>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <select id="copy-to-month" style="flex:1;padding:8px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;font-size:13px">
+          ${MONTHS_LIST.map((m,i)=>`<option value="${i}" ${i===nextM?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select id="copy-to-year" style="padding:8px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;font-size:13px">
+          ${[2025,2026,2027,2028].map(y=>`<option value="${y}" ${y===nextY?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <p style="font-size:11px;color:#e53935;margin-bottom:14px">⚠️ פעולה זו תדרוס סידור קיים בחודש היעד</p>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeCopy()" style="flex:1;padding:9px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">ביטול</button>
+        <button onclick="executeCopy()" style="flex:2;padding:9px;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">📋 העתק</button>
+      </div>
+    </div>
+  </div>`;
+}
+// ===== END NEW FEATURES =====
+
+// ===== REQUEST SYSTEM =====
+let reqState={show:false, mode:'', selectedEmp:'', adminView:false};
+
+function getPendingCount(){
+  if(!window._allRequests) return 0;
+  return window._allRequests.filter(r=>r.status==='pending').length;
+}
+
+function listenToRequests(){
+  if(!db) return;
+  onValue(ref(db,'requests'),(snap)=>{
+    const data=snap.val()||{};
+    window._allRequests=Object.entries(data).map(([id,v])=>({id,...v}));
+    // Check for new responses for current employee
+    if(!state.user && reqState.viewEmp){
+      const myResponded=window._allRequests.filter(r=>
+        r.empName===reqState.viewEmp && r.status!=='pending' && !r.seen
+      );
+      if(myResponded.length>0){
+        showNotifBanner(`יש לך ${myResponded.length} תשובה חדשה לבקשה שלך!`);
+      }
+    }
+    render();
+  });
+}
+
+function showNotifBanner(msg){
+  const b=document.createElement('div');
+  b.className='notif-banner';
+  b.textContent=msg;
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),4000);
+}
+
+function buildRequestBtn(isAdmin){
+  return '';  // moved to topbar
+}
+
+function buildBellBtn(){
+  const count=getPendingCount();
+  return `<button class="bell-btn" onclick="openAdminRequests()" title="בקשות ממתינות">
+    🔔 בקשות ${count>0?`<span class="bell-badge">${count}</span>`:''}
+  </button>`;
+}
+
+function buildEmpSelectModal(){
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>📋 בקשות ואילוצים</h2>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">בחר את שמך והכנס ת"ז מלאה:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        ${employees.map(emp=>`<button onclick="selectEmpForReqWithId('${emp.name.replace(/'/g,"\'")}','${emp.role}')"
+          style="padding:10px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;background:#fafbff;text-align:right">
+          <span style="font-weight:600">${emp.name}</span><br>
+          <span style="font-size:11px;color:#888">${emp.role}</span>
+        </button>`).join('')}
+      </div>
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">סגור</button>
+    </div>
+  </div>`;
+}
+
+function buildEmpRequestsModal(empName, empRole){
+  const myReqs=(window._allRequests||[]).filter(r=>r.empName===empName);
+  const REQ_TYPES=['חופש','יציאה מוקדמת','איחור','שינוי משמרת','בקשת סבב','אחר'];
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>📋 ${empName} — בקשות ואילוצים</h2>
+      <div style="background:#f0f4fa;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#1F4E79">הגש בקשה חדשה</div>
+        <div class="req-form">
+          <label>סוג בקשה</label>
+          <select id="req-type">${REQ_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+          <label>תאריך</label>
+          <input type="date" id="req-date">
+          <label>פירוט / הסבר</label>
+          <textarea id="req-desc" placeholder="תאר את הבקשה..."></textarea>
+        </div>
+        <button onclick="submitRequest('${empName.replace(/'/g,"\'")}','${empRole}')"
+          style="width:100%;margin-top:10px;padding:9px;background:#1F4E79;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">
+          📤 שלח בקשה
+        </button>
+      </div>
+      ${myReqs.length>0?`
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#333">הבקשות שלי</div>
+        ${myReqs.sort((a,b)=>b.ts-a.ts).map(r=>`
+          <div class="emp-req-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="req-type">${r.type}</span>
+              <span class="status-${r.status}">${r.status==='pending'?'⏳ ממתין':r.status==='approved'?'✅ אושר':'❌ נדחה'}</span>
+            </div>
+            <div style="font-size:12px;color:#555">${r.date||''} ${r.desc?'— '+r.desc:''}</div>
+            ${r.adminNote?`<div style="font-size:12px;margin-top:4px;padding:4px 8px;background:#f0f4fa;border-radius:6px;color:#333">💬 תגובת מנהל: ${r.adminNote}</div>`:''}
+          </div>
+        `).join('')}
+      `:''}
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;margin-top:8px">סגור</button>
+    </div>
+  </div>`;
+}
+
+function buildAdminRequestsModal(){
+  const allReqs=(window._allRequests||[]).sort((a,b)=>b.ts-a.ts);
+  const pending=allReqs.filter(r=>r.status==='pending');
+  const handled=allReqs.filter(r=>r.status!=='pending');
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>🔔 ניהול בקשות (${pending.length} ממתינות)</h2>
+      ${pending.length===0?`<div style="text-align:center;color:#888;padding:20px">אין בקשות ממתינות ✓</div>`:''}
+      ${pending.map(r=>`
+        <div class="req-card">
+          <div class="req-meta">${new Date(r.ts).toLocaleDateString('he-IL')} ${r.date?'| תאריך בקשה: '+r.date:''}</div>
+          <div class="req-name">${r.empName} <span style="font-size:11px;color:#888">(${r.role||''})</span></div>
+          <div><span class="req-type">${r.type}</span></div>
+          ${r.desc?`<div class="req-note">${r.desc}</div>`:''}
+          <input class="admin-note-inp" id="note-${r.id}" placeholder="הוסף הערה (אופציונלי)...">
+          <div class="req-actions">
+            <button class="btn-approve" onclick="handleRequest('${r.id}','approved')">✅ אשר</button>
+            <button class="btn-reject" onclick="handleRequest('${r.id}','rejected')">❌ דחה</button>
+          </div>
+        </div>
+      `).join('')}
+      ${handled.length>0?`
+        <div style="font-size:12px;font-weight:600;color:#888;margin:12px 0 8px;border-top:1px solid #eee;padding-top:12px">טופלו בעבר</div>
+        ${handled.slice(0,5).map(r=>`
+          <div class="req-card" style="opacity:0.7">
+            <div class="req-meta">${new Date(r.ts).toLocaleDateString('he-IL')}</div>
+            <div class="req-name">${r.empName} — <span class="req-type">${r.type}</span>
+              <span class="status-${r.status}" style="margin-right:8px">${r.status==='approved'?'✅ אושר':'❌ נדחה'}</span>
+            </div>
+            ${r.adminNote?`<div style="font-size:11px;color:#555">💬 ${r.adminNote}</div>`:''}
+          </div>
+        `).join('')}
+      `:''}
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;margin-top:8px">סגור</button>
+    </div>
+  </div>`;
+}
+
+window.openEmpRequests=function(){reqState={...reqState,show:true,mode:'emp-select'};render();};
+window.selectEmpForReq=function(name,role){reqState={...reqState,mode:'emp-form',viewEmp:name,viewRole:role};render();};
+window.selectEmpForReqWithId=function(name,role){
+  const emp=employees.find(e=>e.name===name);
+  if(!emp||!emp.empId){
+    // No ID set — allow entry
+    reqState={...reqState,mode:'emp-form',viewEmp:name,viewRole:role};render();return;
+  }
+  const input=prompt(`שלום ${name} 👋\nהכנס ת"ז המלאה שלך (9 ספרות):`);
+  if(input===null) return;
+  if(input.trim()===emp.empId){
+    reqState={...reqState,mode:'emp-form',viewEmp:name,viewRole:role};render();
+  } else {
+    alert('❌ הספרות שגויות. נסה שוב.');
+  }
+};
+window.selectPersonalEmpWithId=function(name){
+  const emp=employees.find(e=>e.name===name);
+  if(!emp||!emp.empId){
+    state.personalEmp=name;render();return;
+  }
+  const input=prompt(`שלום ${name} 👋\nהכנס ת"ז המלאה שלך (9 ספרות):`);
+  if(input===null) return;
+  if(input.trim()===emp.empId){
+    state.personalEmp=name;render();
+  } else {
+    alert('❌ הספרות שגויות. נסה שוב.');
+  }
+};
+window.openAdminRequests=function(){reqState={...reqState,show:true,mode:'admin'};render();};
+window.closeReqModal=function(){reqState={...reqState,show:false,mode:''};render();};
+
+window.submitRequest=function(empName,role){
+  const type=document.getElementById('req-type').value;
+  const date=document.getElementById('req-date').value;
+  const desc=document.getElementById('req-desc').value;
+  if(!date){alert('בחר תאריך');return;}
+  const id='req_'+Date.now();
+  set(ref(db,'requests/'+id),{empName,role,type,date,desc,status:'pending',ts:Date.now(),seen:false});
+  showToast('✓ הבקשה נשלחה למנהל!');
+  closeReqModal();
+};
+
+window.handleRequest=function(id,status){
+  const noteEl=document.getElementById('note-'+id);
+  const adminNote=noteEl?noteEl.value:'';
+  set(ref(db,'requests/'+id+'/status'),status);
+  set(ref(db,'requests/'+id+'/adminNote'),adminNote);
+  set(ref(db,'requests/'+id+'/seen'),false);
+  showToast(status==='approved'?'✅ הבקשה אושרה':'❌ הבקשה נדחתה');
+  // WhatsApp notification
+  const req=(window._allRequests||[]).find(r=>r.id===id);
+  if(req){
+    const phone=getEmpPhone(req.empName);
+    if(phone){
+      if(confirm(`לשלוח הודעת WhatsApp ל${req.empName} על ${status==='approved'?'אישור':'דחיית'} הבקשה?`)){
+        window.sendRequestWhatsApp(req.empName,phone,status,req.type,req.date);
+      }
+    }
+  }
+  render();
+};
+
+function buildReqOverlay(){
+  if(!reqState.show) return '';
+  if(reqState.mode==='emp-select') return buildEmpSelectModal();
+  if(reqState.mode==='emp-form') return buildEmpRequestsModal(reqState.viewEmp,reqState.viewRole);
+  if(reqState.mode==='admin') return buildAdminRequestsModal();
+  return '';
+}
+// ===== END REQUEST SYSTEM =====
+
+// ===== WHATSAPP NOTIFICATIONS =====
+function getEmpPhone(empName){
+  const emp=employees.find(e=>e.name===empName);
+  return emp&&emp.phone?emp.phone.replace(/\D/g,''):'';
+}
+function sendWhatsApp(phone,msg){
+  if(!phone){showToast('⚠️ אין מספר טלפון לעובד זה');return;}
+  // Convert Israeli number to international format
+  let intl=phone;
+  if(intl.startsWith('0'))intl='972'+intl.slice(1);
+  const url='https://wa.me/'+intl+'?text='+encodeURIComponent(msg);
+  window.open(url,'_blank');
+}
+window.sendShiftWhatsApp=function(empName,d,shiftLabel){
+  const phone=getEmpPhone(empName);
+  const MONTHS_HE=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const msg=`היי ${empName} 👋\nהמשמרת שלך בתאריך ${d} ${MONTHS_HE[state.month]} ${state.year} עודכנה ל: ${shiftLabel}.\nבברכה, הנהלה 📋`;
+  sendWhatsApp(phone,msg);
+};
+window.sendRequestWhatsApp=function(empName,phone,status,reqType,reqDate){
+  const msg=status==='approved'
+    ?`היי ${empName} 👋\nבקשתך "${reqType}"${reqDate?' לתאריך '+reqDate:''} ✅ אושרה!\nבברכה, הנהלה 📋`
+    :`היי ${empName} 👋\nבקשתך "${reqType}"${reqDate?' לתאריך '+reqDate:''} ❌ נדחתה.\nלפרטים נוספים פנה למנהל.\nבברכה, הנהלה 📋`;
+  sendWhatsApp(phone,msg);
+};
+// ===== END WHATSAPP =====
+
+window.applyConfig=function(){
+  try{
+    const raw=document.getElementById("cfg-input").value.trim();
+    const cfg=JSON.parse(raw);
+    if(!cfg.apiKey||!cfg.databaseURL) throw new Error("חסרים שדות");
+    saveConfig(cfg);
+    firebaseConfig=cfg;
+    initFirebase(cfg);
+  }catch(e){alert("הקובץ לא תקין. ודא שהדבקת את כל ה-config כולל databaseURL");}
+};
+window.doSignIn=async function(){
+  try{const p=new GoogleAuthProvider();await signInWithPopup(auth,p);}catch(e){alert("שגיאה בהתחברות: "+e.message);}
+};
+window.doPasswordLogin=function(){
+  const pwd=document.getElementById('admin-pwd-inp');
+  if(!pwd) return;
+  if(pwd.value===ADMIN_PASSWORD){
+    state.mode='admin';
+    state.adminUid='password-admin';
+    showToast('✓ נכנסת כמנהל');
+    render();
+  } else {
+    alert('סיסמה שגויה');
+  }
+};
+window.togglePwdForm=function(){
+  state.showPwdForm=!state.showPwdForm;
+  render();
+};
+window.doSignOut=async function(){
+  if(state.adminUid==='password-admin'){
+    state.mode='view';state.adminUid=null;state.user=null;
+    render();return;
+  }
+  await signOut(auth);
+};
+window.switchMode=function(m){state.mode=m;render();};
+window.changeMonth=function(d){
+  state.month+=d;
+  if(state.month<0){state.month=11;state.year--;}
+  if(state.month>11){state.month=0;state.year++;}
+  listenToData();
+};
+window.openPopup=function(emp,d){state.popup={emp,d,sel:getShift(emp,d),noteVal:getCellNote(emp,d)};render();};
+window.closePopup=function(){state.popup=null;render();};
+window._pickShift=function(k){if(state.popup){state.popup.sel=k;render();}};
+window._liveNoteCell=function(v){if(state.popup){state.popup.noteVal=v;}};
+window._confirmShift=function(){
+  if(state.popup){
+    const empName=state.popup.emp;
+    const d=state.popup.d;
+    const sel=state.popup.sel;
+    setShift(empName,d,sel);
+    const noteV=document.getElementById("cell-note-inp")?document.getElementById("cell-note-inp").value:state.popup.noteVal||"";
+    setCellNote(empName,d,noteV);
+    saveToCloud();showToast("✓ נשמר בענן");
+    state.popup=null;render();
+    // WhatsApp notification
+    const phone=getEmpPhone(empName);
+    if(phone&&sel){
+      const si=shiftInfo(sel);
+      if(confirm(`לשלוח הודעת WhatsApp ל${empName} על שינוי המשמרת?`)){
+        window.sendShiftWhatsApp(empName,d,si.label);
+      }
+    }
+  }
+};
+window.selectNoteDay=function(v){state.noteDay=parseInt(v);render();};
+window.liveNote=function(v){state.notes[state.year+"-"+state.month+"-"+state.noteDay]=v;};
+window.saveNote=function(){
+  liveNote(document.getElementById("note-inp").value);
+  saveToCloud();showToast("✓ הערה נשמרה");render();
+};
+
+// Config מובנה — הצוות לא צריך להגדיר כלום
+const BUILTIN_CONFIG={
+  apiKey:"AIzaSyBhWIKfKGvJU_fOcD2Yhw-v2KfNWMnXnHo",
+  authDomain:"seder-avoda.firebaseapp.com",
+  databaseURL:"https://seder-avoda-default-rtdb.firebaseio.com",
+  projectId:"seder-avoda",
+  storageBucket:"seder-avoda.firebasestorage.app",
+  messagingSenderId:"283925271099",
+  appId:"1:283925271099:web:942c2024ff9dfe2723021e"
+};
+firebaseConfig=BUILTIN_CONFIG;
+initFirebase(BUILTIN_CONFIG);
+</script>
+</body>
+</html>
