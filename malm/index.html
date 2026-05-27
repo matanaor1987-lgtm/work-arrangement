@@ -1,45 +1,29 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>דוח משימות מלמ פוקוס</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
-
 .header{background:#FECC02;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #D40511}
-
 .logo{font-size:20px;font-weight:700;color:#D40511;letter-spacing:1px}
-
 .subtitle{font-size:13px;color:#333;flex:1}
 .btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial}
-
 .btn-add{background:#D40511;color:#fff}
 .btn-add:hover{background:#b0040e}
-
 .btn-save{background:#2e7d32;color:#fff}
-
 .btn-cancel{background:#757575;color:#fff}
-
 .tabs{display:flex;background:#fff;border-bottom:2px solid #FECC02;padding:0 20px}
-
 .tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
 .tab:hover{color:#1a1a2e;background:#fffbf0}
-
 .tab.active{color:#D40511;border-bottom-color:#D40511}
-
 .pane{display:none;padding:14px 20px}
 .pane.active{display:block}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-
 .stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:80px}
 .stat .n{font-size:20px;font-weight:700}
-
 .stat .l{font-size:11px;color:#777}
 .n-open{color:#D40511}.n-done{color:#2e7d32}.n-frozen{color:#e65100}.n-cancel{color:#999}.n-wait{color:#3949ab}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -48,238 +32,118 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl
 .count{font-size:12px;color:#888;margin-bottom:8px}
 .tbl-wrap{overflow-x:auto;background:#fff;border-radius:8px;border:1px solid #e8e8e8}
 table{width:100%;border-collapse:collapse}
-
 th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap;font-weight:600}
 td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:12px}
-
 tr:hover td{background:#fffbf0}
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
 .s-פתוח{background:#fde8e8;color:#c62828}
 .s-בבדיקה{background:#e3f2fd;color:#1565c0}
 .s-מוקפא{background:#fff3e0;color:#e65100}
-
 .s-הושהה{background:#f3e5f5;color:#6a1b9a}
-
 .s-בוצע{background:#e8f5e9;color:#2e7d32}
 .s-טופל{background:#e8f5e9;color:#1b5e20}
 .s-בוטל{background:#f5f5f5;color:#9e9e9e}
 .s-ממתין-לבדיקה{background:#e8eaf6;color:#3949ab}
 .muted{color:#ccc}
-
 .nores{text-align:center;padding:30px;color:#aaa}
 .act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
 .act-btn:hover{background:#f0f0f0}
-
 .saving{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
-
 .modal-bg.open{display:flex}
-
 .modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto}
 .modal h3{font-size:15px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #FECC02;padding-bottom:8px}
 .form-row{margin-bottom:11px}
 .form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
-
 .form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
 .form-row textarea{height:75px;resize:vertical}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
-
 .dtag{font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:2px}
 .loading{text-align:center;padding:40px;color:#999;font-size:14px}
 
 
-
-
-
 /* Chat tooltip */
-
 .chat-preview{position:relative;cursor:pointer;font-size:11px;line-height:1.6}
-
 .chat-last{color:#555}
-
 .chat-last span.ml{color:#1565c0;font-weight:600}
 .chat-last span.dh{color:#e65100;font-weight:600}
 .chat-tooltip{display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:14px;width:320px;max-height:360px;overflow-y:auto;font-size:12px}
-
 .tt-msg{padding:6px 10px;border-radius:8px;margin-bottom:6px;line-height:1.5}
 .tt-msg.malm{background:#e3f2fd;text-align:right}
 .tt-msg.dhl{background:#fff3e0;text-align:left}
 .tt-sender{font-size:10px;font-weight:700;margin-bottom:2px}
-
 .tt-sender.malm{color:#1565c0}
-
 .tt-sender.dhl{color:#e65100}
 .tt-time{font-size:9px;color:#999;margin-top:2px}
 .tt-divider{font-size:10px;color:#aaa;text-align:center;margin:8px 0;border-top:1px solid #f0f0f0;padding-top:6px}
-
 .no-chat{color:#ccc;font-size:11px}
-
 
 /* File upload */
 .drop-zone{border:2px dashed #ddd;border-radius:8px;padding:10px 14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;transition:all .2s;margin-bottom:8px}
-
 .drop-zone.drag-over{border-color:#D40511;background:#fff5f5;color:#D40511}
 .drop-zone:hover{border-color:#bbb;color:#888}
-
 .attachments{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .att-item{display:flex;align-items:center;gap:6px;background:#f0f7ff;border:1px solid #b3d4f5;border-radius:6px;padding:4px 10px;font-size:11px}
-
 .att-item a{color:#1565c0;text-decoration:none;font-weight:600}
 .att-item a:hover{text-decoration:underline}
-
 .att-size{color:#999;font-size:10px}
-
 .uploading{color:#e65100;font-size:11px;padding:4px 0}
-
 /* Chat */
-
 .chat-section{margin-top:20px;border-top:2px solid #FECC02;padding-top:16px}
-
 .chat-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #e0e0e0}
 .chat-tab{padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;color:#666;border-bottom:2px solid transparent}
-
 .chat-tab.active{color:#D40511;border-bottom-color:#D40511}
 .chat-messages{height:200px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
 .msg{max-width:75%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
-
 .msg-malm{background:#e3f2fd;color:#1a1a2e;align-self:flex-end;border-bottom-left-radius:2px}
 .msg-dhl{background:#fff3e0;color:#1a1a2e;align-self:flex-start;border-bottom-right-radius:2px}
 .msg-time{font-size:10px;color:#999;margin-top:3px}
 .msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
 .msg-malm .msg-sender{color:#1565c0}
-
 .msg-dhl .msg-sender{color:#e65100}
 .chat-input-row{display:flex;gap:8px;align-items:flex-end}
-
 .chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:60px}
-
 .chat-send-col{display:flex;flex-direction:column;gap:6px}
-
 .chat-sender-sel{padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial}
-
 .btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap}
-
 .btn-send:hover{background:#b0040e}
 .no-msgs{color:#bbb;font-size:12px;text-align:center;padding:20px}
-
-
-
-/* Password */
-
-.pwd-screen{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
-
-.pwd-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
-.pwd-box .dhl-logo{font-size:22px;font-weight:700;color:#D40511;margin-bottom:4px}
-
-.pwd-box h3{font-size:16px;color:#1a1a2e;margin-bottom:20px}
-
-.pwd-box input{width:100%;padding:10px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;text-align:center;direction:ltr;margin-bottom:10px}
-.pwd-box input:focus{border-color:#D40511;outline:none}
-.pwd-box button{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
-
-.pwd-error{color:#D40511;font-size:12px;margin-top:8px;display:none}
-
-/* Requests tab */
-
-.req-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-
-.req-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
-
-.req-card-title{font-size:14px;font-weight:700;color:#1a1a2e}
-.req-card-meta{font-size:11px;color:#888;margin-top:2px}
-
-.req-card-desc{font-size:12px;color:#555;line-height:1.6;margin-bottom:12px}
-
-.req-actions{display:flex;gap:8px}
-
-.btn-approve{background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-
-.btn-reject{background:#D40511;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.btn-chat-mgr{background:#1565c0;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.req-status{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
-
-.rs-wait{background:#fff3e0;color:#e65100}
-
-.rs-approved{background:#e8f5e9;color:#2e7d32}
-
-.rs-rejected{background:#fde8e8;color:#c62828}
-
-.rs-inprogress{background:#e3f2fd;color:#1565c0}
-
-/* Req chat */
-
-.req-chat{margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px;display:none}
-.req-chat.open{display:block}
-.req-chat-msgs{max-height:200px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:8px;background:#f9f9f9;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
-.req-chat-input{display:flex;gap:6px}
-.req-chat-input textarea{flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:52px}
-
-.btn-send-req{background:#1565c0;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
 </style>
-
 </head>
 <body>
 
-
-
 <div class="header">
-
   <div class="logo">DHL Express</div>
   <div class="subtitle">דוח משימות מלמ פוקוס</div>
-
   <button class="btn btn-add" id="btnAdd" onclick="openAdd()">+ משימה חדשה</button>
 </div>
 
-
-
 <div class="tabs">
-
   <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
-
   <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
-
-  <div class="tab" onclick="switchTab(2)" id="tab2">📥 בקשות ממתינות <span id="reqBadge" style="background:#D40511;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:4px"></span></div>
-
 </div>
 
-
-
 <div class="pane active" id="pane0">
-
   <div class="stats" id="s1"></div>
   <div class="filters">
     <input type="text" id="q1" placeholder="חיפוש חופשי..." oninput="r1()">
     <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option></select>
     <select id="dm1" onchange="r1()"><option value="">כל התחומים</option></select>
-
     <select id="pr1" onchange="r1()">
       <option value="">כל העדיפויות</option>
-
       <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-
       <option value="4">4</option><option value="5">5</option>
-
     </select>
   </div>
-
   <div class="count" id="c1"></div>
   <div class="tbl-wrap">
-
     <table><thead><tr>
-
       <th style="width:30px"></th><th style="width:88px">תאריך</th><th>תחום / משימה</th>
-
       <th style="width:36px">עד'</th><th style="width:90px">סטטוס</th>
-
       <th style="width:70px">DHL</th><th style="width:70px">אחראי</th><th>💬 הערות</th>
-
     </tr></thead><tbody id="b1"><tr><td colspan="8" class="loading">טוען נתונים...</td></tr></tbody></table>
-
   </div>
-
 </div>
-
-
 
 <div class="pane" id="pane1">
   <div class="stats" id="s2"></div>
@@ -288,165 +152,90 @@ tr:hover td{background:#fffbf0}
     <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option></select>
     <select id="pr2" onchange="r2()">
       <option value="">כל העדיפויות</option>
-
       <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-
       <option value="4">4</option><option value="5">5</option>
-
     </select>
   </div>
-
   <div class="count" id="c2"></div>
   <div class="tbl-wrap">
-
     <table><thead><tr>
-
       <th style="width:30px"></th><th>נושא</th><th style="width:80px">מבקש</th>
       <th style="width:88px">תאריך</th><th>בקשה / כותרת</th>
-
       <th style="width:70px">מטפל</th><th style="width:36px">עד'</th>
       <th style="width:90px">סטטוס</th><th>💬 הערות</th>
     </tr></thead><tbody id="b2"><tr><td colspan="9" class="loading">טוען נתונים...</td></tr></tbody></table>
-
   </div>
-
 </div>
 
-
-
 <!-- Modal -->
-
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3 id="modalTitle">משימה חדשה</h3>
     <div id="modalFields"></div>
-
     <div class="form-actions">
-
       <button class="btn btn-cancel" onclick="closeModal()">ביטול</button>
-
       <button class="btn btn-save" onclick="saveModal()">💾 שמור</button>
-
     </div>
-
     <!-- Chat -->
     <div class="chat-section" id="chatSection" style="display:none">
-
       <div class="chat-tabs">
         <div class="chat-tab active" onclick="switchChatTab('malm')">💬 הערות מלמ</div>
-
         <div class="chat-tab" onclick="switchChatTab('dhl')">💬 הערות DHL</div>
-
       </div>
-
       <div class="chat-messages" id="chatMessages"></div>
       <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
-
         📎 גרור קובץ לכאן או לחץ לבחירה (.msg, .pdf, .docx, .xlsx, תמונות)
       </div>
-
       <input type="file" id="fileInput" style="display:none" multiple onchange="handleFiles(this.files)">
       <div id="uploadStatus"></div>
       <div id="attachments" class="attachments"></div>
-
       <div class="chat-input-row">
-
         <textarea id="chatInput" placeholder="כתוב הערה..."></textarea>
         <div class="chat-send-col">
           <select class="chat-sender-sel" id="chatSender">
-
             <option value="מלמ">מלמ</option>
-
             <option value="DHL">DHL</option>
-
           </select>
           <button class="btn-send" onclick="sendMsg()">שלח ↵</button>
         </div>
-
       </div>
-
     </div>
-
   </div>
-
 </div>
-
-
 
 <div class="saving" id="savingMsg">⏳ שומר ב-GitHub...</div>
 
-
 <script src="config.js"></script>
 <script>
-
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-
 let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
-
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בוצע'];
 
-
-function initAuth(){
-
-  if(sessionStorage.getItem('auth')==='1'){
-    const s=document.getElementById('pwdScreen');
-    if(s)s.style.display='none';
-
-  }}
-
 async function loadDB(){
-
-  initAuth();
   try{
-
     const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
     const raw=await fetch(rawUrl);
-
     if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
-
     DB=await raw.json();
-
-    if(!DB.requests)DB.requests=[];
-    const pending=(DB.requests||[]).filter(r=>r.status==='ממתין לאישור').length;
-
-    const badge=document.getElementById('reqBadge');
-
-    if(badge)badge.textContent=pending||'';
     const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
-
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-
     const jj=await meta.json();
     dbSha=jj.sha;
     initFilters();r1();r2();
-
-    // Update requests badge
-
-    const pending2=(DB.requests||[]).filter(r=>r.status==='ממתין לאישור').length;
-
-    const badge=document.getElementById('reqBadge');
-
-    if(badge)badge.textContent=pending||'';
   }catch(e){
-
     document.getElementById('b1').innerHTML='<tr><td colspan="8" style="color:red;padding:20px">שגיאה בטעינה: '+e.message+'</td></tr>';
-  }}
+  }
+}
 
 async function saveDB(){
-
   const el=document.getElementById('savingMsg');
-
   el.style.display='block';
   el.style.background='#1a1a2e';
-
   el.textContent='⏳ שומר...';
   try{
-
     const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB,null,2))));
-
     const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
-
       method:'PUT',
       headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
       body:JSON.stringify({message:'Update tasks',content,sha:dbSha})
@@ -454,640 +243,323 @@ async function saveDB(){
     if(!r.ok){const err=await r.json();throw new Error(err.message||r.status);}
     const j=await r.json();
     dbSha=j.content.sha;
-
     el.textContent='✓ נשמר!';
     setTimeout(()=>{el.style.display='none';},1500);
-
   }catch(e){
-
     el.textContent='❌ שגיאה: '+e.message;
     el.style.background='#c62828';
-
     setTimeout(()=>{el.style.display='none';el.style.background='#1a1a2e';},3000);
-
-  }}
+  }
+}
 
 function switchTab(i){
-
   currentTab=i;
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.pane').forEach((p,j)=>p.classList.toggle('active',i===j));
-
-  document.getElementById('btnAdd').style.display=i===2?'none':'block';
-  if(i===0)document.getElementById('btnAdd').textContent='+ משימה חדשה (מלמ)';
-
-  else if(i===1)document.getElementById('btnAdd').textContent='+ משימה חדשה (רבקה)';
-
-  if(i===2){
-
-    if(DB.requests&&DB.requests.length){renderRequests();}
-
-    else{loadDB().then(()=>renderRequests());}
-
-  }}
+  document.getElementById('btnAdd').textContent=i===0?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)';
+}
 
 function sc(s){const k=(s||'פתוח').replace(/ /g,'-');return`<span class="badge s-${k}">${s||'פתוח'}</span>`}
-
 function pc(p){if(!p)return'<span class="muted">—</span>';let n=Number(p);let bg=n<=1?'#fde8e8':n<=3?'#fff3e0':n<=5?'#fff9c4':'#e8f5e9';let co=n<=1?'#c62828':n<=3?'#e65100':n<=5?'#f57f17':'#2e7d32';return`<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;background:${bg};color:${co}">${p}</span>`}
 function m(v){return v||'<span class="muted">—</span>'}
-
 
 function buildStats(data,el){
   const cnt={};data.forEach(r=>{cnt[r.ס]=(cnt[r.ס]||0)+1});
   el.innerHTML=`
-
     <div class="stat"><div class="n">${data.length}</div><div class="l">סה"כ</div></div>
-
     <div class="stat"><div class="n n-open">${(cnt['פתוח']||0)+(cnt['בבדיקה']||0)}</div><div class="l">פתוחות</div></div>
     <div class="stat"><div class="n n-done">${(cnt['בוצע']||0)+(cnt['טופל']||0)}</div><div class="l">הושלמו</div></div>
     <div class="stat"><div class="n n-frozen">${(cnt['מוקפא']||0)+(cnt['הושהה']||0)}</div><div class="l">מוקפא</div></div>
-
     <div class="stat"><div class="n n-wait">${cnt['ממתין לבדיקה']||0}</div><div class="l">ממתין לבדיקה</div></div>
+    <div class="stat"><div class="n n-cancel">${cnt['בוטל']||0}</div><div class="l">בוטל</div></div>`;
+}
 
-    <div class="stat"><div class="n n-cancel">${cnt['בוטל']||0}</div><div class="l">בוטל</div></div>`;}
 function populateSel(id,vals){
-
   const s=document.getElementById(id);const f=s.options[0];s.innerHTML='';s.appendChild(f);
-  [...new Set(vals)].filter(Boolean).sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});}
+  [...new Set(vals)].filter(Boolean).sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});
+}
+
 function initFilters(){
   populateSel('st1',DB.malm.map(r=>r.ס));
   populateSel('dm1',DB.malm.map(r=>r.ד));
-  populateSel('st2',DB.rivka.map(r=>r.ס));}
+  populateSel('st2',DB.rivka.map(r=>r.ס));
+}
+
 function r1(){
-
   const q=document.getElementById('q1').value.toLowerCase();
-
   const st=document.getElementById('st1').value;
-
   const dm=document.getElementById('dm1').value;
-
   const pr=document.getElementById('pr1').value;
-
   buildStats(DB.malm,document.getElementById('s1'));
-
   let f=DB.malm.filter(r=>{
     if(st&&r.ס!==st)return false;
     if(dm&&r.ד!==dm)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.מ+r.ד+r.א+(r.dhl||'')+r.ה).toLowerCase().includes(q))return false;
-
     return true;
-
   });
   document.getElementById('c1').textContent=`מציג ${f.length} מתוך ${DB.malm.length}`;
-
   document.getElementById('b1').innerHTML=f.length
-
     ?f.map(r=>{const idx=DB.malm.indexOf(r);return`<tr>
       <td><button class="act-btn" onclick="openEdit('malm',${idx})" title="עריכה">✏️</button></td>
-
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.ד?`<div class="dtag">${r.ד}</div><br>`:''} ${r.מ||''}</td>
-
       <td>${pc(r.ע)}</td><td>${sc(r.ס)}</td><td>${m(r.dhl)}</td><td>${m(r.א)}</td>
-
       <td>${chatPreviewHtml(r)}</td></tr>`}).join('')
-    :'<tr><td colspan="8" class="nores">לא נמצאו תוצאות</td></tr>';}
+    :'<tr><td colspan="8" class="nores">לא נמצאו תוצאות</td></tr>';
+}
 
 function r2(){
-
   const q=document.getElementById('q2').value.toLowerCase();
-
   const st=document.getElementById('st2').value;
-
   const pr=document.getElementById('pr2').value;
-
   buildStats(DB.rivka,document.getElementById('s2'));
   let f=DB.rivka.filter(r=>{
-
     if(st&&r.ס!==st)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
-
     return true;
-
   });
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
-
     ?f.map(r=>{const idx=DB.rivka.indexOf(r);return`<tr>
-
       <td><button class="act-btn" onclick="openEdit('rivka',${idx})" title="עריכה">✏️</button></td>
       <td>${m(r.נ)}</td><td>${m(r.מב)}</td>
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.כ?`<strong>${r.כ}</strong><br>`:''} ${r.ב||''}</td>
       <td>${m(r.מט)}</td><td>${pc(r.ע)}</td><td>${sc(r.ס)}</td>
       <td>${chatPreviewHtml(r)}</td></tr>`}).join('')
-    :'<tr><td colspan="9" class="nores">לא נמצאו תוצאות</td></tr>';}
+    :'<tr><td colspan="9" class="nores">לא נמצאו תוצאות</td></tr>';
+}
 
 function malmFields(r={}){
-
   return`
     <div class="form-row"><label>תאריך</label><input id="f_ת" type="date" value="${r.ת||new Date().toISOString().slice(0,10)}"></div>
     <div class="form-row"><label>תחום</label><input id="f_ד" value="${(r.ד||'').replace(/"/g,'&quot;')}" placeholder="תחום..."></div>
     <div class="form-row"><label>משימה</label><textarea id="f_מ">${r.מ||''}</textarea></div>
-
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="form-row"><label>סטטוס</label><select id="f_ס">${SM.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="form-row"><label>DHL</label><input id="f_dhl" value="${(r.dhl||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>
+    <div class="form-row"><label>אחראי מלמ</label><input id="f_א" value="${(r.א||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>`;
+}
 
-    <div class="form-row"><label>אחראי מלמ</label><input id="f_א" value="${(r.א||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>`;}
 function rivkaFields(r={}){
   return`
     <div class="form-row"><label>נושא</label><input id="f_נ" value="${(r.נ||'').replace(/"/g,'&quot;')}" placeholder="נושא..."></div>
     <div class="form-row"><label>מבקש</label><input id="f_מב" value="${(r.מב||'').replace(/"/g,'&quot;')}" placeholder="שם מבקש..."></div>
-
     <div class="form-row"><label>תאריך</label><input id="f_ת" type="date" value="${r.ת||new Date().toISOString().slice(0,10)}"></div>
     <div class="form-row"><label>כותרת</label><input id="f_כ" value="${(r.כ||'').replace(/"/g,'&quot;')}" placeholder="כותרת..."></div>
     <div class="form-row"><label>בקשה</label><textarea id="f_ב">${r.ב||''}</textarea></div>
     <div class="form-row"><label>מטפל</label><input id="f_מט" value="${(r.מט||'').replace(/"/g,'&quot;')}" placeholder="שם מטפל..."></div>
-
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>`;}
+    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+}
 
 function openAdd(){
   editIdx=-1;editSheet=currentTab===0?'malm':'rivka';
   document.getElementById('modalTitle').textContent=currentTab===0?'✏️ משימה חדשה — מלמ כולל':'✏️ משימה חדשה — רבקה';
   document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields();
   document.getElementById('chatSection').style.display='none';
-
-  document.getElementById('modalBg').classList.add('open');}
+  document.getElementById('modalBg').classList.add('open');
+}
 
 function openEdit(sheet,idx){
   editIdx=idx;editSheet=sheet;
-
   const r=DB[sheet][idx];
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r);
   document.getElementById('chatSection').style.display='block';
   chatTab='malm';
   pendingFiles=[];
-
   document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
-
   renderChat();
   renderAttachments();
-
   setTimeout(initDropZone,100);
-  document.getElementById('modalBg').classList.add('open');}
+  document.getElementById('modalBg').classList.add('open');
+}
 
 function closeModal(){document.getElementById('modalBg').classList.remove('open')}
 
-
-
 function g(id){const el=document.getElementById(id);return el?el.value.trim():''}
-
 
 function saveModal(){
   let rec;
-
   if(editSheet==='malm'){
     rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
-
   }else{
-
     rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:r&&r.ה||''};
   }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
   closeModal();
   initFilters();
-
   if(editSheet==='malm')r1();else r2();
-  saveDB();}
-
+  saveDB();
+}
 
 
 // Smart tooltip positioning - always stay in viewport
-
 document.addEventListener('mouseover',function(e){
-
   const preview=e.target.closest('.chat-preview');
-
   if(!preview)return;
   const tt=preview.querySelector('.chat-tooltip');
-
   if(!tt)return;
-
   tt.style.display='block';
   const rect=preview.getBoundingClientRect();
   const ttW=320, ttH=Math.min(tt.scrollHeight,360);
   const vw=window.innerWidth, vh=window.innerHeight;
-
   // Horizontal: prefer right-aligned, flip if needed
   let left=rect.right-ttW;
-
   if(left<8)left=8;
   if(left+ttW>vw-8)left=vw-ttW-8;
   // Vertical: prefer below, flip above if not enough room
-
   let top=rect.bottom+5;
-
   if(top+ttH>vh-8)top=rect.top-ttH-5;
   if(top<8)top=8;
   tt.style.left=left+'px';
-
   tt.style.top=top+'px';
-
   tt.style.right='auto';
-
 });
 document.addEventListener('mouseout',function(e){
   const preview=e.target.closest('.chat-preview');
-
   if(!preview)return;
   const to=e.relatedTarget;
   if(to&&preview.contains(to))return;
   const tt=preview.querySelector('.chat-tooltip');
-
   if(tt)tt.style.display='none';
-
 });
-
-
-// Password
-function checkPwd(){
-
-  const v=document.getElementById('pwdInput').value;
-
-  if(v==='DHL123'){
-    document.getElementById('pwdScreen').style.display='none';
-
-    sessionStorage.setItem('auth','1');
-  }else{
-
-    document.getElementById('pwdError').style.display='block';
-
-    document.getElementById('pwdInput').value='';
-  }}// Attach events after DOM ready
-
-window.addEventListener('DOMContentLoaded',function(){
-
-  const btn=document.getElementById('pwdBtn');
-
-  const inp=document.getElementById('pwdInput');
-
-  if(btn)btn.addEventListener('click',checkPwd);
-
-  if(inp)inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPwd();});
-});
-// Auth check runs after DOM - handled in initAuth()
-
-document.addEventListener('keydown',function(e){
-
-  if(e.key==='Enter'&&document.activeElement.id==='pwdInput')checkPwd();
-
-});
-
-
-// Requests
-function rsClass(s){
-
-  const m={'ממתין לאישור':'wait','אושר':'approved','נדחה':'rejected','בביצוע':'inprogress'};
-
-  return 'rs-'+(m[s]||'wait');}
-function renderRequests(){
-
-  if(!DB.requests||!DB.requests.length){
-
-    document.getElementById('reqList').innerHTML='<div style="text-align:center;padding:40px;color:#aaa">אין בקשות עדיין</div>';
-
-    document.getElementById('reqCount').textContent='0 בקשות';
-
-    document.getElementById('reqBadge').textContent='';
-    return;
-  }
-  const filter=document.getElementById('reqFilter').value;
-
-  const pending=DB.requests.filter(r=>r.status==='ממתין לאישור').length;
-
-  document.getElementById('reqBadge').textContent=pending||'';
-
-  let reqs=filter?DB.requests.filter(r=>r.status===filter):[...DB.requests].reverse();
-
-  document.getElementById('reqCount').textContent=reqs.length+' בקשות';
-  document.getElementById('reqList').innerHTML=reqs.map((r,i)=>{
-
-    const msgs=(r.chat&&r.chat.manager)||[];
-
-    const lastMsg=msgs.length?msgs[msgs.length-1]:null;
-    return`<div class="req-card" id="rc-${r.id}">
-      <div class="req-card-header">
-        <div>
-          <div class="req-card-title">${r.title}</div>
-
-          <div class="req-card-meta">${r.name} · ${r.dept} · ${r.date} · עדיפות ${r.pri}</div>
-
-        </div>
-
-        <span class="req-status ${rsClass(r.status)}">${r.status}</span>
-
-      </div>
-
-      <div class="req-card-desc">${r.desc}</div>
-
-      <div class="req-actions">
-        ${r.status==='ממתין לאישור'?`
-          <button class="btn-approve" onclick="approveReq('${r.id}')">✅ אשר</button>
-
-          <button class="btn-reject" onclick="rejectReq('${r.id}')">❌ דחה</button>`:''}
-        <button class="btn-chat-mgr" onclick="toggleReqChat('${r.id}')">💬 ${lastMsg?'המשך שיחה ('+msgs.length+')':'שלח הודעה'}</button>
-        <a href="track.html?id=${r.id}" target="_blank" style="font-size:11px;color:#888;text-decoration:none;padding:7px 4px">🔗 קישור למנהל</a>
-
-      </div>
-
-      <div class="req-chat" id="chat-${r.id}">
-
-        <div class="req-chat-msgs" id="chatmsgs-${r.id}"></div>
-        <div class="req-chat-input">
-
-          <textarea id="chatinput-${r.id}" placeholder="כתוב הודעה למנהל..."></textarea>
-
-          <button class="btn-send-req" onclick="sendReqMsg('${r.id}')">שלח</button>
-        </div>
-
-      </div>
-
-    </div>`;
-
-  }).join('');
-
-  // Render chat msgs for open chats
-
-  reqs.forEach(r=>{
-    const msgs=(r.chat&&r.chat.manager)||[];
-
-    const el=document.getElementById('chatmsgs-'+r.id);
-    if(!el)return;
-
-    if(!msgs.length){el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px">אין הודעות</div>';return;}
-
-    el.innerHTML=msgs.map(m=>`
-
-      <div class="msg msg-${m.side==='manager'?'malm':'manager'}" style="max-width:80%;padding:6px 10px;border-radius:8px;font-size:11px;background:${m.side==='manager'?'#fff3e0':'#e3f2fd'};align-self:${m.side==='manager'?'flex-start':'flex-end'}">
-
-        <div style="font-size:10px;font-weight:700;color:${m.side==='manager'?'#e65100':'#1565c0'};margin-bottom:2px">${m.sender}</div>
-        <div>${m.text}</div>
-
-        <div style="font-size:9px;color:#999;margin-top:2px">${m.time}</div>
-
-      </div>`).join('');
-
-    el.scrollTop=el.scrollHeight;
-  });}
-
-function toggleReqChat(id){
-  const el=document.getElementById('chat-'+id);
-  el.classList.toggle('open');}
-async function approveReq(id){
-
-  if(!confirm('לאשר את הבקשה ולהעביר לרבקה?'))return;
-  const req=DB.requests.find(r=>r.id===id);
-  if(!req)return;
-  req.status='אושר';
-
-  // Add to rivka tab
-  if(!DB.rivka)DB.rivka=[];
-  const now=new Date();
-  const date=now.toLocaleDateString('he-IL');
-  DB.rivka.unshift({
-
-    נ:req.dept, מב:req.name, ת:date, כ:req.title,
-    ב:req.desc, מט:'', ע:req.pri, ס:'פתוח', ה:'',
-    chat:{malm:[],dhl:[],manager:req.chat&&req.chat.manager||[]},
-    reqId:id
-
-  });
-  // Notify manager via chat
-
-  if(!req.chat)req.chat={malm:[],dhl:[],manager:[]};
-
-  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  req.chat.manager.push({sender:'צוות DHL',side:'malm',text:'✅ הבקשה שלך אושרה והועברה לצוות הפיתוח. נעדכן אותך בהתקדמות.',time});
-
-  await saveDB();
-  initFilters();r1();r2();renderRequests();}
-
-async function rejectReq(id){
-  const reason=prompt('סיבת הדחייה (תועבר למנהל):');
-
-  if(reason===null)return;
-
-  const req=DB.requests.find(r=>r.id===id);
-  if(!req)return;
-  req.status='נדחה';
-
-  if(!req.chat)req.chat={malm:[],dhl:[],manager:[]};
-
-  const now=new Date();
-  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  req.chat.manager.push({sender:'צוות DHL',side:'malm',text:'❌ הבקשה נדחתה. '+(reason||''),time});
-
-  await saveDB();
-  renderRequests();}
-
-async function sendReqMsg(id){
-
-  const input=document.getElementById('chatinput-'+id);
-  const text=input.value.trim();
-
-  if(!text)return;
-
-  const req=DB.requests.find(r=>r.id===id);
-  if(!req)return;
-  if(!req.chat)req.chat={malm:[],dhl:[],manager:[]};
-
-  const now=new Date();
-  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  req.chat.manager.push({sender:'צוות DHL',side:'malm',text,time});
-  input.value='';
-  await saveDB();
-  renderRequests();
-  document.getElementById('chat-'+id).classList.add('open');}
 loadDB();
 
 
-
-
 function chatPreviewHtml(r){
-
   const chat=r.chat||{};
-
   const malm=chat.malm||[];
   const dhl=chat.dhl||[];
   if(!malm.length&&!dhl.length) return '<span class="no-chat">—</span>';
-
   
-
   // Last message from each
   const lastM=malm[malm.length-1];
-
   const lastD=dhl[dhl.length-1];
-
   
-
   // Full thread for tooltip
-
   const all=[
     ...malm.map(m=>({...m,side:'malm'})),
     ...dhl.map(m=>({...m,side:'dhl'}))
-
   ].sort((a,b)=>a.time.localeCompare(b.time));
-
   
-
   const tooltip=all.map(m=>`
-
     <div class="tt-msg ${m.side}">
-
       <div class="tt-sender ${m.side}">${m.sender}</div>
-
       <div>${m.text}</div>
-
       <div class="tt-time">${m.time}</div>
-
     </div>`).join('');
-
   
-
   const preview=[
     lastM?`<div><span class="ml">מלמ</span> <span style="color:#888">${lastM.time.split(' ')[0]}</span>: ${lastM.text.slice(0,40)}${lastM.text.length>40?'...':''}</div>`:'',
     lastD?`<div><span class="dh">DHL</span> <span style="color:#888">${lastD.time.split(' ')[0]}</span>: ${lastD.text.slice(0,40)}${lastD.text.length>40?'...':''}</div>`:''
-
   ].filter(Boolean).join('');
   
-
   return `<div class="chat-preview">
-
     <div class="chat-last">${preview}</div>
     <div class="chat-tooltip">${tooltip||'<span class="no-chat">אין הערות</span>'}</div>
-
-  </div>`;}
+  </div>`;
+}
 
 
 // File upload
-
 let pendingFiles=[];
 
-
-
 function initDropZone(){
-
   const dz=document.getElementById('dropZone');
   if(!dz)return;
-
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
-
   dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-
   dz.addEventListener('drop',e=>{
     e.preventDefault();
     dz.classList.remove('drag-over');
     handleFiles(e.dataTransfer.files);
-
-  });}
+  });
+}
 
 async function handleFiles(files){
-
   const status=document.getElementById('uploadStatus');
   for(const file of files){
     status.innerHTML=`<div class="uploading">⏳ מעלה: ${file.name}...</div>`;
-
     try{
-
       const url=await uploadFile(file);
       pendingFiles.push({name:file.name,url,size:formatSize(file.size)});
       renderAttachments();
-
       status.innerHTML='';
-
     }catch(e){
-
       status.innerHTML=`<div class="uploading" style="color:#c62828">❌ שגיאה: ${e.message}</div>`;
-
       setTimeout(()=>status.innerHTML='',3000);
     }
-  }}
+  }
+}
 
 function formatSize(bytes){
   if(bytes<1024)return bytes+'B';
   if(bytes<1024*1024)return Math.round(bytes/1024)+'KB';
-
-  return (bytes/1024/1024).toFixed(1)+'MB';}
+  return (bytes/1024/1024).toFixed(1)+'MB';
+}
 
 async function uploadFile(file){
-
   const path='attachments/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._\-\u0590-\u05ff]/g,'_');
   const content=await new Promise((res,rej)=>{
-
     const r=new FileReader();
     r.onload=()=>res(r.result.split(',')[1]);
     r.onerror=rej;
-
     r.readAsDataURL(file);
-
   });
   const resp=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
     method:'PUT',
     headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
     body:JSON.stringify({message:'Upload attachment: '+file.name,content})
-
   });
   if(!resp.ok){const e=await resp.json();throw new Error(e.message||resp.status);}
+  return `https://github.com/${OWNER}/${REPO}/raw/main/${path}`;
+}
 
-  return `https://github.com/${OWNER}/${REPO}/raw/main/${path}`;}
 function renderAttachments(){
   const el=document.getElementById('attachments');
-
   if(!pendingFiles.length){el.innerHTML='';return;}
   el.innerHTML=pendingFiles.map((f,i)=>`
-
     <div class="att-item">
-
       📎 <a href="${f.url}" target="_blank">${f.name}</a>
-
       <span class="att-size">${f.size}</span>
       <span style="cursor:pointer;color:#999" onclick="pendingFiles.splice(${i},1);renderAttachments()">✕</span>
+    </div>`).join('');
+}
 
-    </div>`).join('');}
 // Chat
 let chatTab='malm';
 
-
 function switchChatTab(tab){
-
   chatTab=tab;
-
   document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='malm'&&i===0)||(tab==='dhl'&&i===1)));
-
-  renderChat();}
+  renderChat();
+}
 
 function renderChat(){
-
   if(editIdx===-1)return;
   const rec=DB[editSheet][editIdx];
   const msgs=(rec.chat||{})[chatTab]||[];
   const el=document.getElementById('chatMessages');
   if(!msgs.length){el.innerHTML='<div class="no-msgs">אין הערות עדיין</div>';return}
-
   el.innerHTML=msgs.map(m=>`
-
     <div class="msg msg-${m.side==='מלמ'?'malm':'dhl'}">
-
       <div class="msg-sender">${m.sender}</div>
       <div>${m.text}</div>
-
       ${(m.files||[]).map(f=>`<div style="margin-top:4px"><a href="${f.url}" target="_blank" style="font-size:11px;color:#1565c0">📎 ${f.name} <span style="color:#999">${f.size}</span></a></div>`).join('')}
       <div class="msg-time">${m.time}</div>
     </div>`).join('');
-
-  el.scrollTop=el.scrollHeight;}
+  el.scrollTop=el.scrollHeight;
+}
 
 function sendMsg(){
   const text=document.getElementById('chatInput').value.trim();
   const sender=document.getElementById('chatSender').value;
   if(!text&&!pendingFiles.length)return;
-
   if(editIdx===-1)return;
   const rec=DB[editSheet][editIdx];
   if(!rec.chat)rec.chat={malm:[],dhl:[]};
@@ -1095,61 +567,21 @@ function sendMsg(){
   const now=new Date();
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   const files=[...pendingFiles];
-
   rec.chat[chatTab].push({sender,side:sender,text:text||'📎 צרף קבצים',time,files});
   document.getElementById('chatInput').value='';
-
   pendingFiles=[];
-
   renderAttachments();
-
   renderChat();
   if(editSheet==='malm')r1();else r2();
-  saveDB();}
+  saveDB();
+}
 
 // Allow Enter to send (Shift+Enter for newline)
-
 document.addEventListener('keydown',e=>{
-
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement.id==='chatInput'){
-
     e.preventDefault();sendMsg();
   }
 });
 </script>
-
-
-
-
-<!-- Requests Pane -->
-
-<div class="pane" id="pane2" style="padding:14px 20px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-
-    <div style="font-size:13px;color:#888" id="reqCount"></div>
-    <select id="reqFilter" onchange="renderRequests()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial">
-      <option value="">כל הסטטוסים</option>
-      <option value="ממתין לאישור">ממתין לאישור</option>
-
-      <option value="אושר">אושר</option>
-
-      <option value="נדחה">נדחה</option>
-
-      <option value="בביצוע">בביצוע</option>
-
-    </select>
-  </div>
-
-  <div id="reqList"></div>
-
-</div>
-
 </body>
 </html>
-    <h3>כניסה למערכת ניהול</h3>
-    <input type="password" id="pwdField" placeholder="••••••" maxlength="20">
-    <button class="btn" id="pwdEnter" onclick="tryLogin()">כניסה</button>
-    <div class="err" id="pwdErr"></div>
-  </div>
-</div>
-
