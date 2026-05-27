@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הגשת בקשה — DHL Express</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;direction:rtl}
+body{background:#f4f6f9;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#FECC02;border-bottom:3px solid #D40511;padding:14px 24px;display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:700;color:#D40511}
+.subtitle{font-size:13px;color:#333}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:30px 16px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.1);padding:32px;width:100%;max-width:540px}
+.card h2{font-size:18px;color:#1a1a2e;margin-bottom:6px}
+.card p{font-size:13px;color:#666;margin-bottom:24px;line-height:1.6}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:5px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;transition:border .15s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:#D40511;outline:none}
+.form-row textarea{height:100px;resize:vertical}
+.btn-submit{width:100%;background:#D40511;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:Arial}
+.btn-submit:hover{background:#b0040e}
+.btn-submit:disabled{background:#ccc;cursor:not-allowed}
+.success{display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:20px;text-align:center;margin-top:16px}
+.success h3{color:#2e7d32;font-size:16px;margin-bottom:8px}
+.success p{color:#555;font-size:13px;line-height:1.6}
+.success .track-link{display:inline-block;margin-top:12px;background:#2e7d32;color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700}
+.saving{font-size:12px;color:#e65100;margin-top:8px;text-align:center}
+.pri-row{display:flex;gap:8px}
+.pri-row input{min-width:0}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">DHL Express</div>
+  <div class="subtitle">פורטל הגשת בקשות — מנהלי מחלקות</div>
+</div>
+<div class="main">
+  <div class="card" id="formCard">
+    <h2>הגשת בקשה לצוות הפיתוח</h2>
+    <p>מלא את הפרטים הבאים. הבקשה תועבר לבדיקה ואישור ע"י אחראי משימות DHL.</p>
+    <div class="form-row">
+      <label>שם מלא *</label>
+      <input id="f_name" type="text" placeholder="שם פרטי ושם משפחה..." required>
+    </div>
+    <div class="form-row">
+      <label>מחלקה *</label>
+      <input id="f_dept" type="text" placeholder="שם המחלקה...">
+    </div>
+    <div class="form-row">
+      <label>כתובת מייל (לקבלת עדכונים) *</label>
+      <input id="f_email" type="email" placeholder="name@dhl.com...">
+    </div>
+    <div class="form-row">
+      <label>כותרת הבקשה *</label>
+      <input id="f_title" type="text" placeholder="תיאור קצר של הבקשה...">
+    </div>
+    <div class="form-row">
+      <label>תיאור מפורט *</label>
+      <textarea id="f_desc" placeholder="פרט את הבקשה, מה נדרש, למה זה חשוב..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>עדיפות</label>
+      <select id="f_pri">
+        <option value="3">3 — רגיל</option>
+        <option value="1">1 — דחוף מאוד</option>
+        <option value="2">2 — גבוה</option>
+        <option value="4">4 — נמוך</option>
+        <option value="5">5 — בקרוב</option>
+      </select>
+    </div>
+    <button class="btn-submit" id="btnSubmit" onclick="submitRequest()">📨 שלח בקשה</button>
+    <div class="saving" id="savingMsg"></div>
+    <div class="success" id="successBox">
+      <h3>✅ הבקשה נשלחה בהצלחה!</h3>
+      <p>הבקשה שלך נקלטה ותיבדק ע"י אחראי משימות DHL.<br>תקבל עדכון על הסטטוס בקישור הבא:</p>
+      <a class="track-link" id="trackLink" target="_blank">🔗 מעקב אחר הבקשה</a>
+    </div>
+  </div>
+</div>
+<script>
+const OWNER='matanaor1987-lgtm',REPO='malm-focus-tasks';
+const t1='ghp_cNLn2SH8JN',t2='vv5KYfDzBUlO7j5XeIIq27FcAR';
+const TOKEN=t1+t2;
+let dbSha='';
+
+async function getDB(){
+  const r=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/db.json?t=${Date.now()}`);
+  const db=await r.json();
+  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  const mj=await meta.json();
+  dbSha=mj.sha;
+  return db;
+}
+
+async function saveDB(db){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(db,null,2))));
+  const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:'New request submitted',content,sha:dbSha})
+  });
+  if(!r.ok)throw new Error('Save failed');
+  const j=await r.json();
+  dbSha=j.content.sha;
+}
+
+async function submitRequest(){
+  const name=document.getElementById('f_name').value.trim();
+  const dept=document.getElementById('f_dept').value.trim();
+  const email=document.getElementById('f_email').value.trim();
+  const title=document.getElementById('f_title').value.trim();
+  const desc=document.getElementById('f_desc').value.trim();
+  const pri=document.getElementById('f_pri').value;
+  if(!name||!title||!desc){alert('נא למלא את כל השדות החובה');return;}
+  const btn=document.getElementById('btnSubmit');
+  btn.disabled=true;
+  document.getElementById('savingMsg').textContent='⏳ שולח בקשה...';
+  try{
+    const db=await getDB();
+    if(!db.requests)db.requests=[];
+    const id='REQ-'+Date.now();
+    const now=new Date();
+    const date=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    const req={
+      id,name,dept,email,title,desc,pri,date,
+      status:'ממתין לאישור',
+      chat:{malm:[],dhl:[],manager:[]}
+    };
+    db.requests.push(req);
+    await saveDB(db);
+    document.getElementById('savingMsg').textContent='';
+    document.getElementById('successBox').style.display='block';
+    const trackUrl=`${location.origin}/track.html?id=${id}`;
+    document.getElementById('trackLink').href=trackUrl;
+    document.getElementById('trackLink').textContent='🔗 לחץ כאן למעקב — '+id;
+    btn.style.display='none';
+  }catch(e){
+    document.getElementById('savingMsg').textContent='❌ שגיאה: '+e.message;
+    btn.disabled=false;
+  }
+}
+</script>
+</body>
+</html>
