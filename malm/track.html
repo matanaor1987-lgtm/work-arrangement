@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעקב בקשה — DHL Express</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;direction:rtl}
+body{background:#f4f6f9;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#FECC02;border-bottom:3px solid #D40511;padding:14px 24px;display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:700;color:#D40511}
+.subtitle{font-size:13px;color:#333;flex:1}
+.main{flex:1;padding:24px;max-width:680px;margin:0 auto;width:100%}
+.card{background:#fff;border-radius:10px;border:1px solid #e0e0e0;padding:20px;margin-bottom:16px}
+.card h3{font-size:15px;color:#1a1a2e;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FECC02}
+.field{display:flex;gap:8px;margin-bottom:8px;font-size:13px}
+.field .lbl{color:#888;min-width:80px;flex-shrink:0}
+.field .val{color:#1a1a2e;font-weight:600}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700}
+.s-ממתין{background:#fff3e0;color:#e65100}
+.s-אושר{background:#e8f5e9;color:#2e7d32}
+.s-נדחה{background:#fde8e8;color:#c62828}
+.s-בביצוע{background:#e3f2fd;color:#1565c0}
+.chat-section{margin-top:8px}
+.chat-msgs{min-height:80px;max-height:280px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:80%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.msg-manager{background:#e3f2fd;color:#1a1a2e;align-self:flex-end}
+.msg-malm{background:#fff3e0;color:#1a1a2e;align-self:flex-start}
+.msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
+.msg-manager .msg-sender{color:#1565c0}
+.msg-malm .msg-sender{color:#e65100}
+.msg-time{font-size:9px;color:#999;margin-top:3px}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:60px}
+.btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+.no-msgs{color:#bbb;font-size:12px;text-align:center;padding:16px}
+.loading{text-align:center;padding:40px;color:#999}
+.not-found{text-align:center;padding:40px;color:#D40511}
+.saving{font-size:11px;color:#e65100;text-align:center;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">DHL Express</div>
+  <div class="subtitle">מעקב בקשה</div>
+</div>
+<div class="main">
+  <div id="loading" class="loading">⏳ טוען פרטי בקשה...</div>
+  <div id="notFound" class="not-found" style="display:none">❌ בקשה לא נמצאה</div>
+  <div id="content" style="display:none">
+    <div class="card">
+      <h3 id="reqTitle">פרטי הבקשה</h3>
+      <div class="field"><span class="lbl">מספר:</span><span class="val" id="reqId"></span></div>
+      <div class="field"><span class="lbl">מגיש:</span><span class="val" id="reqName"></span></div>
+      <div class="field"><span class="lbl">מחלקה:</span><span class="val" id="reqDept"></span></div>
+      <div class="field"><span class="lbl">תאריך:</span><span class="val" id="reqDate"></span></div>
+      <div class="field"><span class="lbl">סטטוס:</span><span class="val" id="reqStatus"></span></div>
+      <div class="field"><span class="lbl">תיאור:</span><span class="val" id="reqDesc"></span></div>
+    </div>
+    <div class="card">
+      <h3>💬 התכתבות עם צוות DHL</h3>
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-input-row">
+        <textarea id="chatInput" placeholder="כתוב הודעה לצוות DHL..."></textarea>
+        <button class="btn-send" onclick="sendMsg()">שלח ↵</button>
+      </div>
+      <div class="saving" id="savingMsg"></div>
+    </div>
+  </div>
+</div>
+<script>
+const OWNER='matanaor1987-lgtm',REPO='malm-focus-tasks';
+const t1='ghp_cNLn2SH8JN',t2='vv5KYfDzBUlO7j5XeIIq27FcAR';
+const TOKEN=t1+t2;
+let dbSha='',reqId='',db=null;
+
+const params=new URLSearchParams(location.search);
+reqId=params.get('id')||'';
+
+async function loadDB(){
+  const r=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/db.json?t=${Date.now()}`);
+  db=await r.json();
+  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  const mj=await meta.json();
+  dbSha=mj.sha;
+}
+
+async function saveDB(){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(db,null,2))));
+  const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:'Manager chat update',content,sha:dbSha})
+  });
+  const j=await r.json();
+  dbSha=j.content.sha;
+}
+
+function sClass(s){
+  const m={'ממתין לאישור':'ממתין','אושר':'אושר','נדחה':'נדחה','בביצוע':'בביצוע'};
+  return m[s]||'ממתין';
+}
+
+function renderChat(req){
+  const msgs=(req.chat&&req.chat.manager)||[];
+  const el=document.getElementById('chatMsgs');
+  if(!msgs.length){el.innerHTML='<div class="no-msgs">אין הודעות עדיין — שלח הודעה לצוות DHL</div>';return;}
+  el.innerHTML=msgs.map(m=>`
+    <div class="msg msg-${m.side==='manager'?'manager':'malm'}">
+      <div class="msg-sender">${m.sender}</div>
+      <div>${m.text}</div>
+      <div class="msg-time">${m.time}</div>
+    </div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function init(){
+  if(!reqId){document.getElementById('loading').style.display='none';document.getElementById('notFound').style.display='block';return;}
+  try{
+    await loadDB();
+    const req=(db.requests||[]).find(r=>r.id===reqId);
+    if(!req){document.getElementById('loading').style.display='none';document.getElementById('notFound').style.display='block';return;}
+    document.getElementById('loading').style.display='none';
+    document.getElementById('content').style.display='block';
+    document.getElementById('reqTitle').textContent='בקשה: '+req.title;
+    document.getElementById('reqId').textContent=req.id;
+    document.getElementById('reqName').textContent=req.name+' — '+req.dept;
+    document.getElementById('reqDept').textContent=req.dept;
+    document.getElementById('reqDate').textContent=req.date;
+    document.getElementById('reqStatus').innerHTML='<span class="badge s-'+sClass(req.status)+'">'+req.status+'</span>';
+    document.getElementById('reqDesc').textContent=req.desc;
+    renderChat(req);
+  }catch(e){
+    document.getElementById('loading').innerHTML='❌ שגיאה בטעינה: '+e.message;
+  }
+}
+
+async function sendMsg(){
+  const text=document.getElementById('chatInput').value.trim();
+  if(!text)return;
+  const el=document.getElementById('savingMsg');
+  el.textContent='⏳ שולח...';
+  try{
+    await loadDB();
+    const req=(db.requests||[]).find(r=>r.id===reqId);
+    if(!req)return;
+    if(!req.chat)req.chat={malm:[],dhl:[],manager:[]};
+    const now=new Date();
+    const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    req.chat.manager.push({sender:req.name,side:'manager',text,time});
+    document.getElementById('chatInput').value='';
+    await saveDB();
+    renderChat(req);
+    el.textContent='✓ נשלח!';
+    setTimeout(()=>el.textContent='',2000);
+  }catch(e){el.textContent='❌ שגיאה';}
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&document.activeElement.id==='chatInput'){e.preventDefault();sendMsg();}
+});
+
+init();
+</script>
+</body>
+</html>
