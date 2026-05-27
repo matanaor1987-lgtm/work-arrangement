@@ -423,7 +423,7 @@ async function loadDB(){
 
     // Update requests badge
 
-    const pending=(DB.requests||[]).filter(r=>r.status==='ממתין לאישור').length;
+    const pending2=(DB.requests||[]).filter(r=>r.status==='ממתין לאישור').length;
 
     const badge=document.getElementById('reqBadge');
 
