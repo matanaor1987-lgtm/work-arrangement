@@ -305,8 +305,10 @@ tr:hover td{background:#fffbf0}
 </div>
 
 <script src="config.js"></script>
-<script>const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
+<script>let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
+var CU = null;
+
+const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בוצע'];
 
@@ -318,7 +320,6 @@ const SR=['פתוח','בוצע'];
 // ═══════════════════════════════════════
 // AUTH SYSTEM
 // ═══════════════════════════════════════
-var CU = null; // current user
 
 function lgLogin() {
   var u = document.getElementById('lgUser').value.trim();
