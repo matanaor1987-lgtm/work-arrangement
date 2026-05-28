@@ -321,7 +321,7 @@ const SR=['פתוח','בוצע'];
 // AUTH SYSTEM
 // ═══════════════════════════════════════
 
-function lgLogin() {
+async function lgLogin() {
   var u = document.getElementById('lgUser').value.trim();
   var p = document.getElementById('lgPass').value.trim();
   var found = null;
@@ -329,7 +329,7 @@ function lgLogin() {
   if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
   CU = found;
   try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
-  showForUser();
+  await showForUser();
 }
 
 function lgLogout() {
@@ -692,7 +692,7 @@ async function loadDB(){
     if(!DB.users)DB.users=[];
     if(!DB.tickets)DB.tickets=[];
     // Check saved session
-    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;showForUser();return;}}}catch(e){}
+    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;await showForUser();return;}}}catch(e){}
     document.getElementById('loginOverlay').style.display='flex';
     return;
     const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json';
