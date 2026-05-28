@@ -909,6 +909,61 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();sendMsg();
   }
 });
+
+function renderUsers() {
+  var users = (DB.users||[]).filter(function(u){ return u.role!=='admin'; });
+  var el = document.getElementById('usersList');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!users.length) {
+    var p = document.createElement('p');
+    p.style.cssText = 'color:#aaa;padding:10px;font-size:13px';
+    p.textContent = 'אין משתמשים עדיין';
+    el.appendChild(p);
+    return;
+  }
+  users.forEach(function(u) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px';
+    var name = document.createElement('b'); name.style.flex='1'; name.textContent=u.name;
+    var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent=u.username;
+    var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent=u.password;
+    var btn = document.createElement('button');
+    btn.textContent = 'מחק';
+    btn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
+    btn.addEventListener('click', (function(uname){ return function(){ delUser(uname); }; })(u.username));
+    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(btn);
+    el.appendChild(row);
+  });
+}
+async function addUser() {
+  var n=document.getElementById('nu_name').value.trim();
+  var u=document.getElementById('nu_user').value.trim();
+  var p=document.getElementById('nu_pass').value.trim();
+  if(!n||!u||!p){alert('נא למלא הכל');return;}
+  if((DB.users||[]).find(function(x){return x.username===u;})){alert('שם משתמש קיים');return;}
+  var msg=document.getElementById('addUserMsg');
+  msg.textContent='שומר...';
+  try{
+    await freshDB();
+    if(!DB.users)DB.users=[];
+    DB.users.push({name:n,username:u,password:p,role:'manager'});
+    await saveDB('Add user');
+    document.getElementById('nu_name').value='';
+    document.getElementById('nu_user').value='';
+    document.getElementById('nu_pass').value='';
+    msg.textContent='נוסף!';
+    setTimeout(function(){msg.textContent='';},2000);
+    renderUsers();
+  }catch(e){msg.textContent='שגיאה: '+e.message;}
+}
+async function delUser(username) {
+  if(!confirm('למחוק?'))return;
+  await freshDB();
+  DB.users=DB.users.filter(function(u){return u.username!==username;});
+  await saveDB('Delete user');
+  renderUsers();
+}
 </script>
 
 <div class="pane" id="pane4" style="padding:14px 20px">
