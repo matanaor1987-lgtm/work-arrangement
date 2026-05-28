@@ -595,7 +595,7 @@ function renderMyReqs() {
       +'<div class="tkt-desc">'+t.desc+'</div>'
       +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'manager')+'</div>'
       +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה..."></textarea>'
-      +'<button class="btn-send" onclick="sendTktMsg(this.dataset.id,'manager')" data-id="'+t.id+'">שלח</button></div></div></div>';
+      +'<button class="btn-send" class="btn-send-tkt" data-id='" data-side="manager" onclick="sendTktMsg(this.dataset.id,this.dataset.side)">שלח</button></div></div></div>';
   }).join('');
 }
 
@@ -622,7 +622,7 @@ function renderAdminReqs() {
       +'<div class="admin-req-actions">'+approveBtn+'</div>'
       +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'admin')+'</div>'
       +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה למנהל..."></textarea>'
-      +'<button class="btn-send" onclick="sendTktMsg(this.dataset.id,'admin')" data-id="'+t.id+'">שלח</button></div></div></div>';
+      +'<button class="btn-send" data-id="'+t.id+'" data-side="admin" onclick="sendTktMsg(this.getAttribute('data-id'),this.getAttribute('data-side'))">שלח</button></div></div></div>';
   }).join('');
 }
 
