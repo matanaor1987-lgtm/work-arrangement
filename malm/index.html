@@ -395,10 +395,13 @@ async function freshDB() {
 }
 
 async function reloadDB() {
-  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
+  // Use GitHub API raw - no cache, no base64, proper Hebrew
+  var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
   DB = await r.json();
   if(!DB.users)DB.users=[];
   if(!DB.tickets)DB.tickets=[];
+  // Get SHA for saving
   var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
   var mj = await m.json(); dbSha = mj.sha;
@@ -642,10 +645,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadDB(){
   try{
-    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now();
-    const raw=await fetch(rawUrl);
-    if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
-    DB=await raw.json();
+    const rawR=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
+    if(!rawR.ok)throw new Error('api fetch failed: '+rawR.status);
+    DB=await rawR.json();
     if(!DB.users)DB.users=[];
     if(!DB.tickets)DB.tickets=[];
     // Check saved session
