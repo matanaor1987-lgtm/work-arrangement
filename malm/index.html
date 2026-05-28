@@ -743,16 +743,7 @@ function saveModal(){
   if(editSheet==='malm'){
     rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
   }else{
-    const oldRec=editIdx>=0?DB.rivka[editIdx]:null;
-    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:oldRec&&oldRec.ה||'',chat:oldRec&&oldRec.chat||{malm:[],dhl:[]},reqId:oldRec&&oldRec.reqId||null};
-    // Sync status back to linked ticket
-    if(rec.reqId){
-      const linkedTicket=(DB.tickets||[]).find(t=>t.id===rec.reqId);
-      if(linkedTicket){
-        const statusMap={'פתוח':'בטיפול','בוצע':'הושלם','בוטל':'נדחה','מוקפא':'בטיפול'};
-        linkedTicket.status=statusMap[rec.ס]||'בטיפול';
-      }
-    }
+    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:r&&r.ה||''};
   }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
