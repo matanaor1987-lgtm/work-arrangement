@@ -990,7 +990,7 @@ async function addUser() {
 }
 async function delUser(username) {
   if(!confirm('למחוק?'))return;
-  await freshDB();
+  await reloadDB();
   DB.users=DB.users.filter(function(u){return u.username!==username;});
   await saveDB('Delete user');
   renderUsers();
