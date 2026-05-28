@@ -395,14 +395,18 @@ async function freshDB() {
 }
 
 async function reloadDB() {
-  // Full reload from server (use only on login/tab switch)
-  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
-  DB = await r.json();
-  if(!DB.users)DB.users=[];
-  if(!DB.tickets)DB.tickets=[];
+  // Use API for fresh data without cache, decode UTF-8 properly
   var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await m.json(); dbSha = mj.sha;
+  var mj = await m.json();
+  dbSha = mj.sha;
+  var b64 = mj.content.replace(/\n/g,'');
+  var bin = atob(b64);
+  var bytes = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  DB = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  if(!DB.users)DB.users=[];
+  if(!DB.tickets)DB.tickets=[];
 }
 
 // ── Manager view ──────────────────────
