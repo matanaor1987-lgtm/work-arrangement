@@ -474,12 +474,22 @@ async function tSend(btn) {
   var inp = document.getElementById('ti-'+id);
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
-  await freshDB();
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  inp.value='';
+  // Load fresh DB from server (no cache) to avoid overwriting other tickets
+  var fr = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
+  var freshData = await fr.json();
+  // Get SHA for saving
+  var fm = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  var fmj = await fm.json(); dbSha = fmj.sha;
+  // Update only the specific ticket
+  var t = (freshData.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
-  inp.value='';
+  // Update DB with fresh data + our change
+  DB.tickets = freshData.tickets;
   await saveDB('Chat');
   if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
 }
