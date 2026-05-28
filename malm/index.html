@@ -546,7 +546,7 @@ function switchTab(i) {
   // Button
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
-  if(i===3) renderAdminTkts(true);
+  if(i===3) renderAdminTkts(false);
   if(i===4) renderUsers();
 }
 
