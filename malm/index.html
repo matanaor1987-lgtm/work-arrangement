@@ -402,14 +402,21 @@ async function loadTickets() {
   DB.users = data.users||[];
 }
 
-async function saveTickets() {
+async function saveTickets(retries) {
+  retries = retries||0;
   var content=btoa(unescape(encodeURIComponent(JSON.stringify({tickets:DB.tickets,users:DB.users},null,2))));
   var r=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',{
     method:'PUT',
     headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
     body:JSON.stringify({message:'Update tickets',content:content,sha:ticketsSha})
   });
-  if(!r.ok)throw new Error('Save tickets failed: '+(await r.text()));
+  if(r.status===422 && retries<3){
+    // SHA conflict - reload and retry
+    await new Promise(function(res){setTimeout(res,500);});
+    await loadTickets();
+    return await saveTickets(retries+1);
+  }
+  if(!r.ok)throw new Error('Save failed: '+r.status);
   var rj=await r.json(); ticketsSha=rj.content.sha;
 }
 
