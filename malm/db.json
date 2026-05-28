@@ -13274,7 +13274,14 @@
       "desc": "ASDASDASD",
       "date": "28.5.2026 19:51",
       "status": "חדש",
-      "chat": []
+      "chat": [
+        {
+          "sender": "TETS",
+          "side": "manager",
+          "text": "DFGDFGHFDGJH",
+          "time": "28.5.2026 19:57"
+        }
+      ]
     }
   ]
 }
