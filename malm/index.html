@@ -418,8 +418,8 @@ function renderMyTkts() {
 }
 
 // ── Admin view ──────────────────────
-async function renderAdminTkts() {
-  await freshDB();
+async function renderAdminTkts(reload) {
+  if (reload) await freshDB();
   var sf = document.getElementById('adminTFilter').value;
   var all = (DB.tickets||[]).slice().reverse();
   if (sf) all = all.filter(function(t){ return t.status===sf; });
@@ -468,7 +468,7 @@ async function tSend(btn) {
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
   inp.value='';
   await saveDB('Chat');
-  if (side==='manager') renderMyTkts(); else renderAdminTkts();
+  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
 }
 
 async function tApprove(btn) {
@@ -482,7 +482,7 @@ async function tApprove(btn) {
   if(!DB.rivka)DB.rivka=[];
   DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
   await saveDB('Approve: '+t.title);
-  renderAdminTkts(); initFilters(); r2();
+  renderAdminTkts(false); initFilters(); r2();
 }
 
 async function tReject(btn) {
@@ -498,7 +498,7 @@ async function tReject(btn) {
   // Delete after short delay (so manager can see message)
   DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
   await saveDB('Reject and delete');
-  renderAdminTkts();
+  renderAdminTkts(false);
 }
 
 async function tStatus(sel) {
@@ -506,7 +506,7 @@ async function tStatus(sel) {
   await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (t) { t.status=sel.value; await saveDB('Status update'); }
-  renderAdminTkts();
+  renderAdminTkts(false);
 }
 
 async function tSubmit() {
@@ -546,7 +546,7 @@ function switchTab(i) {
   // Button
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
-  if(i===3) renderAdminTkts();
+  if(i===3) renderAdminTkts(true);
   if(i===4) renderUsers();
 }
 
