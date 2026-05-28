@@ -283,9 +283,31 @@ tr:hover td{background:#fffbf0}
 
 <div class="saving" id="savingMsg">⏳ שומר ב-GitHub...</div>
 
-<script src="config.js"></script>
+
+
+
+
+
+
+<div class="pane" id="pane4" style="padding:14px 20px">
+  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
+  <div id="usersList"></div>
+  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">הוסף משתמש חדש</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap">+ הוסף</button>
+    </div>
+    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
+  </div>
+</div>
 
 <script>
+
+
+
 // ═══════════════════════════════════════
 // AUTH SYSTEM
 // ═══════════════════════════════════════
@@ -530,9 +552,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btnTfSubmit').addEventListener('click', tSubmit);
   document.getElementById('adminTFilter').addEventListener('change', renderAdminTkts);
 });
-</script>
 
-<script>
+
+
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
 let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
@@ -964,22 +986,7 @@ async function delUser(username) {
   await saveDB('Delete user');
   renderUsers();
 }
+
 </script>
-
-<div class="pane" id="pane4" style="padding:14px 20px">
-  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
-  <div id="usersList"></div>
-  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px">הוסף משתמש חדש</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
-      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap">+ הוסף</button>
-    </div>
-    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
-  </div>
-</div>
-
 </body>
 </html>
