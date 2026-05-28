@@ -1,0 +1,68 @@
+{
+  "tickets": [
+    {
+      "id": "TKT-1779987064173",
+      "username": "MNAOR",
+      "name": "TETS",
+      "type": "בקשת שיפור",
+      "pri": "2",
+      "title": "ASDASD",
+      "desc": "ASDASDASD",
+      "date": "28.5.2026 19:51",
+      "status": "חדש",
+      "chat": [
+        {
+          "sender": "TETS",
+          "side": "manager",
+          "text": "דכגדגכ",
+          "time": "28.5.2026 20:01"
+        },
+        {
+          "sender": "TETS",
+          "side": "manager",
+          "text": "ראטראט",
+          "time": "28.5.2026 20:04"
+        }
+      ]
+    },
+    {
+      "id": "TKT-1779987906294",
+      "username": "MNAOR",
+      "name": "TETS",
+      "type": "תקלה",
+      "pri": "3",
+      "title": "גכעגכע",
+      "desc": "גכעגכע",
+      "date": "28.5.2026 20:05",
+      "status": "חדש",
+      "chat": [
+        {
+          "sender": "TETS",
+          "side": "manager",
+          "text": "שששש",
+          "time": "28.5.2026 20:08"
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "name": "מנהל מערכת",
+      "username": "admin",
+      "password": "DHL123",
+      "role": "admin"
+    },
+    {
+      "name": "רבקה",
+      "username": "rivka",
+      "password": "MALAM123",
+      "role": "admin"
+    },
+    {
+      "name": "TETS",
+      "username": "MNAOR",
+      "password": "DHL123",
+      "role": "manager"
+    }
+  ]
+}
