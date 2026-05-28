@@ -316,6 +316,228 @@ tr:hover td{background:#fffbf0}
 
 <script src="config.js"></script>
 <script>
+// ── Auth & Portal ─────────────────────────────────────────────
+let currentUser = null;
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const user=DB.users?DB.users.find(x=>x.username===u&&x.password===p):null;
+  if(!user){document.getElementById('loginErr').textContent='שם משתמש או סיסמה שגויים';return;}
+  currentUser=user;
+  try{sessionStorage.setItem('malm_user',JSON.stringify(user));}catch(e){}
+  showAppForUser();
+}
+
+function doLogout(){
+  currentUser=null;
+  try{sessionStorage.removeItem('malm_user');}catch(e){}
+  location.reload();
+}
+
+function showAppForUser(){
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('userBadge').style.display='flex';
+  document.getElementById('userNameBadge').textContent='שלום, '+currentUser.name;
+
+  if(currentUser.role==='admin'){
+    // Admin sees everything
+    document.getElementById('tabsBar').style.display='flex';
+    document.getElementById('btnAdd').style.display='block';
+    document.getElementById('tab3').style.display='block';
+    // Count pending requests
+    const pending=(DB.tickets||[]).filter(r=>r.status==='חדש').length;
+    const badge=document.getElementById('reqBadge');
+    if(badge&&pending)badge.textContent=pending;
+    initFilters();r1();r2();
+  } else {
+    // Manager sees only their requests
+    document.getElementById('managerTabsBar').style.display='flex';
+    document.getElementById('pane2').classList.add('active');
+    renderMyReqs();
+  }
+}
+
+// ── Manager portal ──
+function toggleReqForm(){
+  document.getElementById('reqForm').classList.toggle('open');
+}
+
+async function submitReq(){
+  const title=document.getElementById('rf_title').value.trim();
+  const desc=document.getElementById('rf_desc').value.trim();
+  if(!title||!desc){alert('נא למלא כותרת ותיאור');return;}
+  const msg=document.getElementById('rfMsg');
+  msg.textContent='⏳ שולח...';
+  try{
+    await reloadDB();
+    const now=new Date();
+    const date=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    const ticket={
+      id:'TKT-'+Date.now(),
+      username:currentUser.username,
+      name:currentUser.name,
+      type:document.getElementById('rf_type').value,
+      pri:document.getElementById('rf_pri').value,
+      title,desc,date,status:'חדש',chat:[]
+    };
+    if(!DB.tickets)DB.tickets=[];
+    DB.tickets.push(ticket);
+    await saveDB('New request: '+title);
+    document.getElementById('rf_title').value='';
+    document.getElementById('rf_desc').value='';
+    document.getElementById('reqForm').classList.remove('open');
+    msg.textContent='✅ נשלח!';
+    setTimeout(()=>msg.textContent='',3000);
+    renderMyReqs();
+  }catch(e){msg.textContent='❌ שגיאה: '+e.message;}
+}
+
+function renderMyReqs(){
+  const mine=(DB.tickets||[]).filter(t=>t.username===currentUser.username);
+  const el=document.getElementById('myReqList');
+  if(!mine.length){el.innerHTML='<div class="portal-no">אין בקשות עדיין</div>';return;}
+  el.innerHTML=[...mine].reverse().map(t=>`
+    <div class="portal-card">
+      <div class="portal-card-top">
+        <div>
+          <div class="portal-card-title">${t.title}</div>
+          <div class="portal-card-meta">${t.type} · עדיפות ${t.pri} · ${t.date}</div>
+        </div>
+        <span class="badge rs-${t.status}">${t.status}</span>
+      </div>
+      <div class="portal-card-desc">${t.desc}</div>
+      <div class="chat-section">
+        <div class="chat-messages" style="max-height:180px" id="pcm-${t.id}">${renderPortalChat(t.chat,currentUser.username)}</div>
+        <div class="chat-input-row">
+          <textarea id="pci-${t.id}" placeholder="כתוב הודעה..."></textarea>
+          <button class="btn-send" onclick="sendPortalMsg('${t.id}','manager')">שלח</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderAdminReqs(){
+  const sf=(document.getElementById('reqStatusFilter')||{value:''}).value;
+  let tickets=[...(DB.tickets||[])].reverse();
+  if(sf)tickets=tickets.filter(t=>t.status===sf);
+  const el=document.getElementById('adminReqList');
+  if(!tickets.length){el.innerHTML='<div class="portal-no">אין בקשות</div>';return;}
+  el.innerHTML=tickets.map(t=>`
+    <div class="req-admin-card">
+      <div class="req-admin-top">
+        <div>
+          <div class="req-admin-title">${t.title}</div>
+          <div class="req-admin-meta">${t.name} · ${t.type} · עדיפות ${t.pri} · ${t.date}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select onchange="changeReqStatus('${t.id}',this.value)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial">
+            ${['חדש','בטיפול','הושלם','נדחה'].map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <span class="badge rs-${t.status}">${t.status}</span>
+        </div>
+      </div>
+      <div class="req-admin-desc">${t.desc}</div>
+      <div class="req-admin-actions">
+        ${t.status==='חדש'||t.status==='בטיפול'?`<button class="btn-approve" onclick="approveReq('${t.id}')">✅ אשר והעבר לרבקה</button>
+        <button class="btn-reject" onclick="rejectReq('${t.id}')">❌ דחה</button>`:''}
+      </div>
+      <div class="chat-section">
+        <div class="chat-messages" style="max-height:180px" id="pcm-${t.id}">${renderPortalChat(t.chat,'admin')}</div>
+        <div class="chat-input-row">
+          <textarea id="pci-${t.id}" placeholder="כתוב הודעה למנהל..."></textarea>
+          <button class="btn-send" onclick="sendPortalMsg('${t.id}','admin')">שלח</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderPortalChat(chat,myRole){
+  if(!chat||!chat.length)return'<div class="no-msgs">אין הודעות</div>';
+  return chat.map(m=>{
+    const isMine=(myRole==='admin'&&m.side==='admin')||(myRole==='manager'&&m.side==='manager');
+    return`<div class="msg ${isMine?'msg-malm':'msg-dhl'}">
+      <div class="msg-sender">${m.sender}</div>
+      <div>${m.text}</div>
+      <div class="msg-time">${m.time}</div>
+    </div>`;
+  }).join('');
+}
+
+async function sendPortalMsg(id,side){
+  const inp=document.getElementById('pci-'+id);
+  const text=inp.value.trim();
+  if(!text)return;
+  try{
+    await reloadDB();
+    const t=(DB.tickets||[]).find(x=>x.id===id);
+    if(!t)return;
+    const now=new Date();
+    const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    t.chat.push({sender:currentUser.name,side,text,time});
+    if(side==='admin'&&t.status==='חדש')t.status='בטיפול';
+    await saveDB('Chat update');
+    inp.value='';
+    if(side==='manager')renderMyReqs();
+    else renderAdminReqs();
+  }catch(e){alert('שגיאה בשמירה');}
+}
+
+async function approveReq(id){
+  if(!confirm('לאשר ולהעביר לרבקה?'))return;
+  await reloadDB();
+  const t=(DB.tickets||[]).find(x=>x.id===id);
+  if(!t)return;
+  t.status='הושלם';
+  const now=new Date();
+  const date=now.toLocaleDateString('he-IL');
+  const time=date+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  t.chat.push({sender:currentUser.name,side:'admin',text:'✅ הבקשה אושרה והועברה לטיפול.',time});
+  if(!DB.rivka)DB.rivka=[];
+  DB.rivka.unshift({נ:t.name,מב:t.name,ת:date,כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
+  await saveDB('Approve request: '+t.title);
+  renderAdminReqs();
+  initFilters();r2();
+}
+
+async function rejectReq(id){
+  const reason=prompt('סיבת הדחייה:');
+  if(reason===null)return;
+  await reloadDB();
+  const t=(DB.tickets||[]).find(x=>x.id===id);
+  if(!t)return;
+  t.status='נדחה';
+  const now=new Date();
+  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  t.chat.push({sender:currentUser.name,side:'admin',text:'❌ הבקשה נדחתה. '+(reason||''),time});
+  await saveDB('Reject request');
+  renderAdminReqs();
+}
+
+async function changeReqStatus(id,status){
+  await reloadDB();
+  const t=(DB.tickets||[]).find(x=>x.id===id);
+  if(t){t.status=status;await saveDB('Status update');}
+  renderAdminReqs();
+}
+
+async function reloadDB(){
+  const r=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/db.json?t=${Date.now()}`);
+  DB=await r.json();
+  if(!DB.users)DB.users=[];
+  if(!DB.tickets)DB.tickets=[];
+  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  const mj=await meta.json();
+  dbSha=mj.sha;
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.activeElement.id==='loginPass')doLogin();
+  if(e.key==='Enter'&&document.activeElement.id==='loginUser')document.getElementById('loginPass').focus();
+});
+loadDB()
+
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
 let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
@@ -558,224 +780,4 @@ document.addEventListener('mouseout',function(e){
   const tt=preview.querySelector('.chat-tooltip');
   if(tt)tt.style.display='none';
 });
-// ── Auth & Portal ─────────────────────────────────────────────
-let currentUser = null;
-
-function doLogin(){
-  const u=document.getElementById('loginUser').value.trim();
-  const p=document.getElementById('loginPass').value.trim();
-  const user=DB.users?DB.users.find(x=>x.username===u&&x.password===p):null;
-  if(!user){document.getElementById('loginErr').textContent='שם משתמש או סיסמה שגויים';return;}
-  currentUser=user;
-  try{sessionStorage.setItem('malm_user',JSON.stringify(user));}catch(e){}
-  showAppForUser();
-}
-
-function doLogout(){
-  currentUser=null;
-  try{sessionStorage.removeItem('malm_user');}catch(e){}
-  location.reload();
-}
-
-function showAppForUser(){
-  document.getElementById('loginOverlay').style.display='none';
-  document.getElementById('userBadge').style.display='flex';
-  document.getElementById('userNameBadge').textContent='שלום, '+currentUser.name;
-
-  if(currentUser.role==='admin'){
-    // Admin sees everything
-    document.getElementById('tabsBar').style.display='flex';
-    document.getElementById('btnAdd').style.display='block';
-    document.getElementById('tab3').style.display='block';
-    // Count pending requests
-    const pending=(DB.tickets||[]).filter(r=>r.status==='חדש').length;
-    const badge=document.getElementById('reqBadge');
-    if(badge&&pending)badge.textContent=pending;
-    initFilters();r1();r2();
-  } else {
-    // Manager sees only their requests
-    document.getElementById('managerTabsBar').style.display='flex';
-    document.getElementById('pane2').classList.add('active');
-    renderMyReqs();
-  }
-}
-
-// ── Manager portal ──
-function toggleReqForm(){
-  document.getElementById('reqForm').classList.toggle('open');
-}
-
-async function submitReq(){
-  const title=document.getElementById('rf_title').value.trim();
-  const desc=document.getElementById('rf_desc').value.trim();
-  if(!title||!desc){alert('נא למלא כותרת ותיאור');return;}
-  const msg=document.getElementById('rfMsg');
-  msg.textContent='⏳ שולח...';
-  try{
-    await reloadDB();
-    const now=new Date();
-    const date=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-    const ticket={
-      id:'TKT-'+Date.now(),
-      username:currentUser.username,
-      name:currentUser.name,
-      type:document.getElementById('rf_type').value,
-      pri:document.getElementById('rf_pri').value,
-      title,desc,date,status:'חדש',chat:[]
-    };
-    if(!DB.tickets)DB.tickets=[];
-    DB.tickets.push(ticket);
-    await saveDB('New request: '+title);
-    document.getElementById('rf_title').value='';
-    document.getElementById('rf_desc').value='';
-    document.getElementById('reqForm').classList.remove('open');
-    msg.textContent='✅ נשלח!';
-    setTimeout(()=>msg.textContent='',3000);
-    renderMyReqs();
-  }catch(e){msg.textContent='❌ שגיאה: '+e.message;}
-}
-
-function renderMyReqs(){
-  const mine=(DB.tickets||[]).filter(t=>t.username===currentUser.username);
-  const el=document.getElementById('myReqList');
-  if(!mine.length){el.innerHTML='<div class="portal-no">אין בקשות עדיין</div>';return;}
-  el.innerHTML=[...mine].reverse().map(t=>`
-    <div class="portal-card">
-      <div class="portal-card-top">
-        <div>
-          <div class="portal-card-title">${t.title}</div>
-          <div class="portal-card-meta">${t.type} · עדיפות ${t.pri} · ${t.date}</div>
-        </div>
-        <span class="badge rs-${t.status}">${t.status}</span>
-      </div>
-      <div class="portal-card-desc">${t.desc}</div>
-      <div class="chat-section">
-        <div class="chat-messages" style="max-height:180px" id="pcm-${t.id}">${renderPortalChat(t.chat,currentUser.username)}</div>
-        <div class="chat-input-row">
-          <textarea id="pci-${t.id}" placeholder="כתוב הודעה..."></textarea>
-          <button class="btn-send" onclick="sendPortalMsg('${t.id}','manager')">שלח</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function renderAdminReqs(){
-  const sf=(document.getElementById('reqStatusFilter')||{value:''}).value;
-  let tickets=[...(DB.tickets||[])].reverse();
-  if(sf)tickets=tickets.filter(t=>t.status===sf);
-  const el=document.getElementById('adminReqList');
-  if(!tickets.length){el.innerHTML='<div class="portal-no">אין בקשות</div>';return;}
-  el.innerHTML=tickets.map(t=>`
-    <div class="req-admin-card">
-      <div class="req-admin-top">
-        <div>
-          <div class="req-admin-title">${t.title}</div>
-          <div class="req-admin-meta">${t.name} · ${t.type} · עדיפות ${t.pri} · ${t.date}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select onchange="changeReqStatus('${t.id}',this.value)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial">
-            ${['חדש','בטיפול','הושלם','נדחה'].map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
-          </select>
-          <span class="badge rs-${t.status}">${t.status}</span>
-        </div>
-      </div>
-      <div class="req-admin-desc">${t.desc}</div>
-      <div class="req-admin-actions">
-        ${t.status==='חדש'||t.status==='בטיפול'?`<button class="btn-approve" onclick="approveReq('${t.id}')">✅ אשר והעבר לרבקה</button>
-        <button class="btn-reject" onclick="rejectReq('${t.id}')">❌ דחה</button>`:''}
-      </div>
-      <div class="chat-section">
-        <div class="chat-messages" style="max-height:180px" id="pcm-${t.id}">${renderPortalChat(t.chat,'admin')}</div>
-        <div class="chat-input-row">
-          <textarea id="pci-${t.id}" placeholder="כתוב הודעה למנהל..."></textarea>
-          <button class="btn-send" onclick="sendPortalMsg('${t.id}','admin')">שלח</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function renderPortalChat(chat,myRole){
-  if(!chat||!chat.length)return'<div class="no-msgs">אין הודעות</div>';
-  return chat.map(m=>{
-    const isMine=(myRole==='admin'&&m.side==='admin')||(myRole==='manager'&&m.side==='manager');
-    return`<div class="msg ${isMine?'msg-malm':'msg-dhl'}">
-      <div class="msg-sender">${m.sender}</div>
-      <div>${m.text}</div>
-      <div class="msg-time">${m.time}</div>
-    </div>`;
-  }).join('');
-}
-
-async function sendPortalMsg(id,side){
-  const inp=document.getElementById('pci-'+id);
-  const text=inp.value.trim();
-  if(!text)return;
-  try{
-    await reloadDB();
-    const t=(DB.tickets||[]).find(x=>x.id===id);
-    if(!t)return;
-    const now=new Date();
-    const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-    t.chat.push({sender:currentUser.name,side,text,time});
-    if(side==='admin'&&t.status==='חדש')t.status='בטיפול';
-    await saveDB('Chat update');
-    inp.value='';
-    if(side==='manager')renderMyReqs();
-    else renderAdminReqs();
-  }catch(e){alert('שגיאה בשמירה');}
-}
-
-async function approveReq(id){
-  if(!confirm('לאשר ולהעביר לרבקה?'))return;
-  await reloadDB();
-  const t=(DB.tickets||[]).find(x=>x.id===id);
-  if(!t)return;
-  t.status='הושלם';
-  const now=new Date();
-  const date=now.toLocaleDateString('he-IL');
-  const time=date+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  t.chat.push({sender:currentUser.name,side:'admin',text:'✅ הבקשה אושרה והועברה לטיפול.',time});
-  if(!DB.rivka)DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:date,כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await saveDB('Approve request: '+t.title);
-  renderAdminReqs();
-  initFilters();r2();
-}
-
-async function rejectReq(id){
-  const reason=prompt('סיבת הדחייה:');
-  if(reason===null)return;
-  await reloadDB();
-  const t=(DB.tickets||[]).find(x=>x.id===id);
-  if(!t)return;
-  t.status='נדחה';
-  const now=new Date();
-  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  t.chat.push({sender:currentUser.name,side:'admin',text:'❌ הבקשה נדחתה. '+(reason||''),time});
-  await saveDB('Reject request');
-  renderAdminReqs();
-}
-
-async function changeReqStatus(id,status){
-  await reloadDB();
-  const t=(DB.tickets||[]).find(x=>x.id===id);
-  if(t){t.status=status;await saveDB('Status update');}
-  renderAdminReqs();
-}
-
-async function reloadDB(){
-  const r=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/db.json?t=${Date.now()}`);
-  DB=await r.json();
-  if(!DB.users)DB.users=[];
-  if(!DB.tickets)DB.tickets=[];
-  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  const mj=await meta.json();
-  dbSha=mj.sha;
-}
-
-document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'&&document.activeElement.id==='loginPass')doLogin();
-  if(e.key==='Enter'&&document.activeElement.id==='loginUser')document.getElementById('loginPass').focus();
-});
-loadDB();
+;
