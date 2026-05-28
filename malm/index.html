@@ -316,7 +316,8 @@ function showForUser() {
     document.getElementById('adminTabs').style.display = 'flex';
     document.getElementById('btnAdd').style.display = 'block';
     var p = (DB.tickets||[]).filter(function(t){ return t.status==='חדש'; }).length;
-    if (p) { var b=document.getElementById('reqBadge'); b.textContent=p; b.style.display='inline'; }
+    var b = document.getElementById('reqBadge');
+    if (b) { if(p){ b.textContent=p; b.style.display='inline'; } else { b.style.display='none'; b.textContent=''; } }
     // Make sure only pane0 is active
     document.querySelectorAll('.pane').forEach(function(el){ el.classList.remove('active'); });
     document.getElementById('pane0').classList.add('active');
