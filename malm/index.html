@@ -338,7 +338,7 @@ function lgLogout() {
   location.reload();
 }
 
-function showForUser() {
+async function showForUser() {
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('ubadge').style.display = 'flex';
   document.getElementById('uname').textContent = 'שלום, ' + CU.name;
