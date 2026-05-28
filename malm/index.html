@@ -387,8 +387,19 @@ function nowStr() {
 }
 
 async function freshDB() {
+  // Only update SHA - don't overwrite in-memory DB
+  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  var mj = await m.json();
+  dbSha = mj.sha;
+}
+
+async function reloadDB() {
+  // Full reload from server (use only on login/tab switch)
   var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
   DB = await r.json();
+  if(!DB.users)DB.users=[];
+  if(!DB.tickets)DB.tickets=[];
   var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
   var mj = await m.json(); dbSha = mj.sha;
@@ -419,7 +430,7 @@ function renderMyTkts() {
 
 // ── Admin view ──────────────────────
 async function renderAdminTkts(reload) {
-  if (reload) await freshDB();
+  if (reload) await reloadDB();
   var sf = document.getElementById('adminTFilter').value;
   var all = (DB.tickets||[]).slice().reverse();
   if (sf) all = all.filter(function(t){ return t.status===sf; });
