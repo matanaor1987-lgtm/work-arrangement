@@ -475,14 +475,29 @@ async function tSend(btn) {
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
   inp.value='';
-  // Get fresh SHA only (don't overwrite in-memory DB)
-  await freshDB();
-  // Update only this ticket in memory
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  // Load FRESH DB from server before saving to avoid overwriting other chats
+  var fr = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
+  var serverDB = await fr.json();
+  var fm = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  var fmj = await fm.json(); dbSha = fmj.sha;
+  // Add message to the specific ticket in SERVER data
+  var t = (serverDB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
-  await saveDB('Chat');
+  // Save the server DB with only this ticket updated
+  var savedDB = serverDB;
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(savedDB,null,2))));
+  var r2 = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:'Chat',content:content,sha:dbSha})
+  });
+  var rj = await r2.json(); dbSha = rj.content.sha;
+  // Update in-memory DB to match
+  DB.tickets = savedDB.tickets;
   if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
 }
 
