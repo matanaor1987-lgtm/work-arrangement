@@ -111,105 +111,94 @@ tr:hover td{background:#fffbf0}
 
 .login-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
 .login-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
-.login-box .dhl-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
+.login-box .dhl{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
 .login-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
-.login-box input{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
-.login-box input:focus{border-color:#D40511;outline:none}
-.login-box .btn-login{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
+.login-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
+.login-inp:focus{border-color:#D40511;outline:none}
+.login-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
 .login-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
-.user-badge-wrap{display:flex;align-items:center;gap:8px}
-.user-badge-name{font-size:12px;color:#555}
-.btn-logout{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
-.portal-wrap{padding:14px 20px}
-.portal-header{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-.btn-new-req{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial}
-.req-form-wrap{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:16px;display:none}
-.req-form-wrap.open{display:block}
-.req-form-wrap h3{font-size:14px;color:#1a1a2e;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FECC02}
-.rf-row{margin-bottom:10px}
-.rf-row label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:3px}
-.rf-row input,.rf-row select,.rf-row textarea{width:100%;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl}
-.rf-row textarea{height:75px;resize:vertical}
-.rf-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.btn-rf-cancel{background:#757575;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.tkt-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
+.ubadge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
+.btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
+.mgr-wrap{padding:16px 20px}
+.mgr-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mgr-hdr h2{font-size:16px;font-weight:700;color:#1a1a2e}
+.btn-newt{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial}
+.tform{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:16px;display:none}
+.tform.open{display:block}
+.tform h3{font-size:14px;color:#1a1a2e;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FECC02}
+.tf-row{margin-bottom:10px}
+.tf-row label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:3px}
+.tf-row input,.tf-row select,.tf-row textarea{width:100%;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl}
+.tf-row textarea{height:75px;resize:vertical}
+.tf-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn-tf-cancel{background:#757575;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+.tkt{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
 .tkt-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
-.tkt-title{font-size:14px;font-weight:700;color:#1a1a2e}
+.tkt-ttl{font-size:14px;font-weight:700;color:#1a1a2e}
 .tkt-meta{font-size:11px;color:#888;margin-top:2px}
 .tkt-desc{font-size:12px;color:#555;line-height:1.6;margin-bottom:10px}
 .tkt-none{text-align:center;padding:30px;color:#aaa;font-size:14px}
 .bs-new{background:#fff3e0;color:#e65100}
-.bs-inprogress{background:#e3f2fd;color:#1565c0}
+.bs-ip{background:#e3f2fd;color:#1565c0}
 .bs-done{background:#e8f5e9;color:#2e7d32}
-.bs-rejected{background:#f5f5f5;color:#757575}
-.admin-req-actions{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.btn-approve{background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.btn-reject-req{background:#D40511;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+.bs-rej{background:#f5f5f5;color:#757575}
+.tkt-acts{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.btn-app{background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+.btn-rej{background:#D40511;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
 </style>
 </head>
 <body>
 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <div class="dhl-logo">DHL Express</div>
+    <div class="dhl">DHL Express</div>
     <h3>כניסה למערכת</h3>
-    <input type="text" id="loginUser" placeholder="שם משתמש...">
-    <input type="password" id="loginPass" placeholder="סיסמה...">
-    <button class="btn-login" id="loginBtn">כניסה</button>
-    <div class="login-err" id="loginErr"></div>
+    <input type="text" id="lgUser" class="login-inp" placeholder="שם משתמש...">
+    <input type="password" id="lgPass" class="login-inp" placeholder="סיסמה...">
+    <button class="login-btn" id="lgBtn">כניסה</button>
+    <div class="login-err" id="lgErr"></div>
   </div>
 </div>
-
 <div class="pane" id="pane2" style="padding:0">
-  <div class="portal-wrap">
-    <div class="portal-header">
-      <span>הבקשות שלי</span>
-      <button class="btn-new-req" id="btnNewReq">+ בקשה חדשה</button>
-    </div>
-    <div class="req-form-wrap" id="reqFormWrap">
+  <div class="mgr-wrap">
+    <div class="mgr-hdr"><h2>הבקשות שלי</h2><button class="btn-newt" id="btnNewT">+ בקשה חדשה</button></div>
+    <div class="tform" id="tForm">
       <h3>פתיחת בקשה חדשה</h3>
-      <div class="rf-row"><label>סוג</label><select id="rf_type"><option value="תקלה">🔴 תקלה</option><option value="בקשת שיפור">💡 בקשת שיפור</option><option value="שאלה">❓ שאלה</option></select></div>
-      <div class="rf-row"><label>עדיפות</label><select id="rf_pri"><option value="3">רגיל</option><option value="1">דחוף מאוד</option><option value="2">גבוה</option><option value="4">נמוך</option></select></div>
-      <div class="rf-row"><label>כותרת *</label><input id="rf_title" type="text" placeholder="תיאור קצר..."></div>
-      <div class="rf-row"><label>תיאור *</label><textarea id="rf_desc" placeholder="פרט את הבקשה..."></textarea></div>
-      <div class="rf-actions">
-        <button class="btn-rf-cancel" id="btnRfCancel">ביטול</button>
-        <button class="btn-login" style="width:auto;padding:8px 18px" id="btnRfSubmit">📨 שלח</button>
+      <div class="tf-row"><label>סוג</label><select id="tfType"><option value="תקלה">🔴 תקלה</option><option value="בקשת שיפור">💡 בקשת שיפור</option><option value="שאלה">❓ שאלה</option></select></div>
+      <div class="tf-row"><label>עדיפות</label><select id="tfPri"><option value="3">רגיל</option><option value="1">דחוף מאוד</option><option value="2">גבוה</option><option value="4">נמוך</option></select></div>
+      <div class="tf-row"><label>כותרת *</label><input id="tfTitle" type="text" placeholder="תיאור קצר..."></div>
+      <div class="tf-row"><label>תיאור *</label><textarea id="tfDesc" placeholder="פרט את הבקשה..."></textarea></div>
+      <div class="tf-actions">
+        <button class="btn-tf-cancel" id="btnTfCancel">ביטול</button>
+        <button class="login-btn" style="width:auto;padding:8px 18px" id="btnTfSubmit">📨 שלח</button>
       </div>
-      <div class="saving" id="rfMsg"></div>
+      <div class="saving" id="tfMsg"></div>
     </div>
-    <div id="myReqList"></div>
+    <div id="myTktList"></div>
   </div>
 </div>
-
 <div class="pane" id="pane3" style="padding:14px 20px">
-  <div style="margin-bottom:12px;display:flex;gap:8px">
-    <select id="adminReqFilter" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial">
-      <option value="">כל הסטטוסים</option>
-      <option value="חדש">חדש</option>
-      <option value="בטיפול">בטיפול</option>
-      <option value="הושלם">הושלם</option>
-      <option value="נדחה">נדחה</option>
-    </select>
-  </div>
-  <div id="adminReqList"></div>
+  <select id="adminTFilter" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;margin-bottom:12px">
+    <option value="">כל הסטטוסים</option>
+    <option value="חדש">חדש</option><option value="בטיפול">בטיפול</option>
+    <option value="הושלם">הושלם</option><option value="נדחה">נדחה</option>
+  </select>
+  <div id="adminTktList"></div>
 </div>
 
 <div class="header">
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות מלמ פוקוס</div>
-  <div class="user-badge-wrap" id="userBadgeWrap" style="display:none"><span class="user-badge-name" id="userBadgeName"></span><button class="btn-logout" id="btnLogout">יציאה</button></div>
+  <div class="ubadge" id="ubadge" style="display:none"><span id="uname"></span><button class="btn-out" id="btnOut">יציאה</button></div>
   <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
 <div class="tabs" id="adminTabs" style="display:none">
-  <div class="tab active" id="adminTab0" onclick="switchTab(0)">משימות מלמ כולל</div>
-  <div class="tab" id="adminTab1" onclick="switchTab(1)">משימות לרבקה</div>
-  <div class="tab" id="adminTab3" onclick="switchTab(3)">📥 בקשות <span id="reqBadge" style="background:#D40511;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-right:4px;display:none"></span></div>
+  <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
+  <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
+  <div class="tab" onclick="switchTab(3)">📥 בקשות<span id="reqBadge" style="display:none;background:#D40511;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-right:4px"></span></div>
 </div>
-<div class="tabs" id="managerTabs" style="display:none">
-  <div class="tab active">הבקשות שלי</div>
-</div>
+<div class="tabs" id="mgrTabs" style="display:none"><div class="tab active">הבקשות שלי</div></div>
 
 <div class="pane active" id="pane0">
   <div class="stats" id="s1"></div>
@@ -294,6 +283,239 @@ tr:hover td{background:#fffbf0}
 <div class="saving" id="savingMsg">⏳ שומר ב-GitHub...</div>
 
 <script src="config.js"></script>
+
+<script>
+// ═══════════════════════════════════════
+// AUTH SYSTEM
+// ═══════════════════════════════════════
+var CU = null; // current user
+
+function lgLogin() {
+  var u = document.getElementById('lgUser').value.trim();
+  var p = document.getElementById('lgPass').value.trim();
+  var found = null;
+  (DB.users||[]).forEach(function(x){ if(x.username===u && x.password===p) found=x; });
+  if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
+  CU = found;
+  try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
+  showForUser();
+}
+
+function lgLogout() {
+  CU = null;
+  try { sessionStorage.removeItem('mu'); } catch(e){}
+  location.reload();
+}
+
+function showForUser() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('ubadge').style.display = 'flex';
+  document.getElementById('uname').textContent = 'שלום, ' + CU.name;
+  if (CU.role === 'admin') {
+    document.getElementById('adminTabs').style.display = 'flex';
+    document.getElementById('btnAdd').style.display = 'block';
+    var p = (DB.tickets||[]).filter(function(t){ return t.status==='חדש'; }).length;
+    if (p) { var b=document.getElementById('reqBadge'); b.textContent=p; b.style.display='inline'; }
+    initFilters(); r1(); r2();
+  } else {
+    document.getElementById('mgrTabs').style.display = 'flex';
+    document.querySelectorAll('.pane').forEach(function(el){ el.classList.remove('active'); });
+    document.getElementById('pane2').classList.add('active');
+    renderMyTkts();
+  }
+}
+
+// ── Ticket helpers ──────────────────────
+function tBadge(s) {
+  if (s==='חדש') return 'bs-new';
+  if (s==='בטיפול') return 'bs-ip';
+  if (s==='הושלם') return 'bs-done';
+  return 'bs-rej';
+}
+
+function tChat(chat, me) {
+  if (!chat||!chat.length) return '<div class="no-msgs">אין הודעות</div>';
+  return chat.map(function(m) {
+    var mine = (me===m.side);
+    return '<div class="msg '+(mine?'msg-malm':'msg-dhl')+'">'
+      +'<div class="msg-sender">'+m.sender+'</div>'
+      +'<div>'+m.text+'</div>'
+      +'<div class="msg-time">'+m.time+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function nowStr() {
+  var n=new Date();
+  return n.toLocaleDateString('he-IL')+' '+n.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function freshDB() {
+  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now());
+  DB = await r.json();
+  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  var mj = await m.json(); dbSha = mj.sha;
+}
+
+// ── Manager view ──────────────────────
+function renderMyTkts() {
+  var mine = (DB.tickets||[]).filter(function(t){ return t.username===CU.username; }).slice().reverse();
+  var el = document.getElementById('myTktList');
+  if (!mine.length) { el.innerHTML='<div class="tkt-none">אין בקשות עדיין</div>'; return; }
+  var html = '';
+  mine.forEach(function(t) {
+    html += '<div class="tkt">'
+      +'<div class="tkt-top"><div><div class="tkt-ttl">'+t.title+'</div>'
+      +'<div class="tkt-meta">'+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
+      +'<span class="badge '+tBadge(t.status)+'">'+t.status+'</span></div>'
+      +'<div class="tkt-desc">'+t.desc+'</div>'
+      +'<div class="chat-section">'
+      +'<div class="chat-messages" style="max-height:160px" id="tc-'+t.id+'">'
+      +tChat(t.chat,'manager')+'</div>'
+      +'<div class="chat-input-row">'
+      +'<textarea id="ti-'+t.id+'" placeholder="כתוב הודעה..."></textarea>'
+      +'<button class="btn-send" data-tid="'+t.id+'" data-side="manager" onclick="tSend(this)">שלח</button>'
+      +'</div></div></div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── Admin view ──────────────────────
+function renderAdminTkts() {
+  var sf = document.getElementById('adminTFilter').value;
+  var all = (DB.tickets||[]).slice().reverse();
+  if (sf) all = all.filter(function(t){ return t.status===sf; });
+  var el = document.getElementById('adminTktList');
+  if (!all.length) { el.innerHTML='<div class="tkt-none">אין בקשות</div>'; return; }
+  var html = '';
+  all.forEach(function(t) {
+    var acts = '';
+    if (t.status==='חדש'||t.status==='בטיפול') {
+      acts = '<button class="btn-app" data-tid="'+t.id+'" onclick="tApprove(this)">✅ אשר → רבקה</button>'
+           + '<button class="btn-rej" data-tid="'+t.id+'" onclick="tReject(this)">❌ דחה</button>';
+    }
+    var opts = ['חדש','בטיפול','הושלם','נדחה'].map(function(s){
+      return '<option'+(t.status===s?' selected':'')+'>'+s+'</option>';
+    }).join('');
+    html += '<div class="tkt">'
+      +'<div class="tkt-top"><div><div class="tkt-ttl">'+t.title+'</div>'
+      +'<div class="tkt-meta">'+t.name+' · '+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +'<select data-tid="'+t.id+'" onchange="tStatus(this)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial">'+opts+'</select>'
+      +'<span class="badge '+tBadge(t.status)+'">'+t.status+'</span>'
+      +'</div></div>'
+      +'<div class="tkt-desc">'+t.desc+'</div>'
+      +'<div class="tkt-acts">'+acts+'</div>'
+      +'<div class="chat-section">'
+      +'<div class="chat-messages" style="max-height:160px" id="tc-'+t.id+'">'
+      +tChat(t.chat,'admin')+'</div>'
+      +'<div class="chat-input-row">'
+      +'<textarea id="ti-'+t.id+'" placeholder="כתוב הודעה למנהל..."></textarea>'
+      +'<button class="btn-send" data-tid="'+t.id+'" data-side="admin" onclick="tSend(this)">שלח</button>'
+      +'</div></div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function tSend(btn) {
+  var id = btn.getAttribute('data-tid');
+  var side = btn.getAttribute('data-side');
+  var inp = document.getElementById('ti-'+id);
+  if (!inp||!inp.value.trim()) return;
+  var text = inp.value.trim();
+  await freshDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
+  if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
+  inp.value='';
+  await saveDB('Chat');
+  if (side==='manager') renderMyTkts(); else renderAdminTkts();
+}
+
+async function tApprove(btn) {
+  var id = btn.getAttribute('data-tid');
+  if (!confirm('לאשר ולהעביר לרבקה?')) return;
+  await freshDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  t.status='הושלם';
+  t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
+  if(!DB.rivka)DB.rivka=[];
+  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
+  await saveDB('Approve: '+t.title);
+  renderAdminTkts(); initFilters(); r2();
+}
+
+async function tReject(btn) {
+  var id = btn.getAttribute('data-tid');
+  var reason = prompt('סיבת הדחייה:');
+  if (reason===null) return;
+  await freshDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  t.status='נדחה';
+  t.chat.push({sender:CU.name,side:'admin',text:'❌ הבקשה נדחתה. '+(reason||''),time:nowStr()});
+  await saveDB('Reject');
+  renderAdminTkts();
+}
+
+async function tStatus(sel) {
+  var id = sel.getAttribute('data-tid');
+  await freshDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (t) { t.status=sel.value; await saveDB('Status update'); }
+  renderAdminTkts();
+}
+
+async function tSubmit() {
+  var title = document.getElementById('tfTitle').value.trim();
+  var desc = document.getElementById('tfDesc').value.trim();
+  if (!title||!desc) { alert('נא למלא כותרת ותיאור'); return; }
+  var msg = document.getElementById('tfMsg');
+  msg.textContent='⏳ שולח...';
+  try {
+    await freshDB();
+    if (!DB.tickets) DB.tickets=[];
+    DB.tickets.push({
+      id:'TKT-'+Date.now(), username:CU.username, name:CU.name,
+      type:document.getElementById('tfType').value,
+      pri:document.getElementById('tfPri').value,
+      title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
+    });
+    await saveDB('New ticket');
+    document.getElementById('tfTitle').value='';
+    document.getElementById('tfDesc').value='';
+    document.getElementById('tForm').classList.remove('open');
+    msg.textContent='✅ נשלח!';
+    setTimeout(function(){ msg.textContent=''; },3000);
+    renderMyTkts();
+  } catch(e) { msg.textContent='❌ '+e.message; }
+}
+
+function switchTab(i) {
+  currentTab=i;
+  document.querySelectorAll('#adminTabs .tab').forEach(function(t,j){ t.classList.toggle('active',j===i||(j===2&&i===3)); });
+  document.querySelectorAll('.pane').forEach(function(p,j){ p.classList.toggle('active',j===i); });
+  var ba=document.getElementById('btnAdd');
+  if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
+  if(i===3) renderAdminTkts();
+}
+
+// Init events
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('lgBtn').addEventListener('click', lgLogin);
+  document.getElementById('lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') lgLogin(); });
+  document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
+  document.getElementById('btnOut').addEventListener('click', lgLogout);
+  document.getElementById('btnNewT').addEventListener('click', function(){ document.getElementById('tForm').classList.toggle('open'); });
+  document.getElementById('btnTfCancel').addEventListener('click', function(){ document.getElementById('tForm').classList.remove('open'); });
+  document.getElementById('btnTfSubmit').addEventListener('click', tSubmit);
+  document.getElementById('adminTFilter').addEventListener('change', renderAdminTkts);
+});
+</script>
+
 <script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
 let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
@@ -306,6 +528,12 @@ async function loadDB(){
     const raw=await fetch(rawUrl);
     if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
     DB=await raw.json();
+    if(!DB.users)DB.users=[];
+    if(!DB.tickets)DB.tickets=[];
+    // Check saved session
+    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;showForUser();return;}}}catch(e){}
+    document.getElementById('loginOverlay').style.display='flex';
+    return;
     const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
     const jj=await meta.json();
@@ -340,12 +568,7 @@ async function saveDB(){
   }
 }
 
-function switchTab(i){
-  currentTab=i;
-  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
-  document.querySelectorAll('.pane').forEach((p,j)=>p.classList.toggle('active',i===j));
-  document.getElementById('btnAdd').textContent=i===0?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)';
-}
+
 
 function sc(s){const k=(s||'פתוח').replace(/ /g,'-');return`<span class="badge s-${k}">${s||'פתוח'}</span>`}
 function pc(p){if(!p)return'<span class="muted">—</span>';let n=Number(p);let bg=n<=1?'#fde8e8':n<=3?'#fff3e0':n<=5?'#fff9c4':'#e8f5e9';let co=n<=1?'#c62828':n<=3?'#e65100':n<=5?'#f57f17':'#2e7d32';return`<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;background:${bg};color:${co}">${p}</span>`}
@@ -516,254 +739,7 @@ document.addEventListener('mouseout',function(e){
   const tt=preview.querySelector('.chat-tooltip');
   if(tt)tt.style.display='none';
 });
-
-// ════════════════════════════════════════════
-// AUTH & PORTAL
-// ════════════════════════════════════════════
-var currentUser = null;
-
-function doLogin() {
-  var u = document.getElementById('loginUser').value.trim();
-  var p = document.getElementById('loginPass').value.trim();
-  var user = (DB.users||[]).find(function(x){ return x.username===u && x.password===p; });
-  if (!user) { document.getElementById('loginErr').textContent = 'שם משתמש או סיסמה שגויים'; return; }
-  currentUser = user;
-  try { sessionStorage.setItem('malm_user', JSON.stringify(user)); } catch(e) {}
-  showAppForUser();
-}
-
-function doLogout() {
-  currentUser = null;
-  try { sessionStorage.removeItem('malm_user'); } catch(e) {}
-  location.reload();
-}
-
-function showAppForUser() {
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('userBadgeWrap').style.display = 'flex';
-  document.getElementById('userBadgeName').textContent = 'שלום, ' + currentUser.name;
-  if (currentUser.role === 'admin') {
-    document.getElementById('adminTabs').style.display = 'flex';
-    document.getElementById('btnAdd').style.display = 'block';
-    var pending = (DB.tickets||[]).filter(function(t){ return t.status==='חדש'; }).length;
-    if (pending) { var b=document.getElementById('reqBadge'); b.textContent=pending; b.style.display='inline'; }
-    initFilters(); r1(); r2();
-  } else {
-    document.getElementById('managerTabs').style.display = 'flex';
-    document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
-    document.getElementById('pane2').classList.add('active');
-    renderMyReqs();
-  }
-}
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('loginBtn').addEventListener('click', doLogin);
-  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-  document.getElementById('loginUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
-  document.getElementById('btnLogout').addEventListener('click', doLogout);
-  document.getElementById('btnNewReq').addEventListener('click', function(){ document.getElementById('reqFormWrap').classList.toggle('open'); });
-  document.getElementById('btnRfCancel').addEventListener('click', function(){ document.getElementById('reqFormWrap').classList.remove('open'); });
-  document.getElementById('btnRfSubmit').addEventListener('click', submitReq);
-  document.getElementById('adminReqFilter').addEventListener('change', renderAdminReqs);
-});
-
-function switchTab(i) {
-  currentTab = i;
-  document.querySelectorAll('#adminTabs .tab').forEach(function(t,j){
-    t.classList.toggle('active', j===i||(j===2&&i===3));
-  });
-  document.querySelectorAll('.pane').forEach(function(p,j){ p.classList.toggle('active', j===i); });
-  var btn = document.getElementById('btnAdd');
-  if (btn) {
-    btn.style.display = (i===3) ? 'none' : 'block';
-    btn.textContent = (i===0) ? '+ משימה חדשה (מלמ)' : '+ משימה חדשה (רבקה)';
-  }
-  if (i===3) renderAdminReqs();
-}
-
-// ── Manager: my requests ──
-function renderMyReqs() {
-  var mine = (DB.tickets||[]).filter(function(t){ return t.username===currentUser.username; }).reverse();
-  var el = document.getElementById('myReqList');
-  if (!mine.length) { el.innerHTML='<div class="tkt-none">אין בקשות עדיין</div>'; return; }
-  el.innerHTML = mine.map(function(t) {
-    var cls = t.status==='חדש'?'bs-new':t.status==='בטיפול'?'bs-inprogress':t.status==='הושלם'?'bs-done':'bs-rejected';
-    return '<div class="tkt-card">'
-      +'<div class="tkt-top"><div><div class="tkt-title">'+t.title+'</div><div class="tkt-meta">'+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
-      +'<span class="badge '+cls+'">'+t.status+'</span></div>'
-      +'<div class="tkt-desc">'+t.desc+'</div>'
-      +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'manager')+'</div>'
-      +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה..."></textarea>'
-      +('<button class="btn-send" onclick="doTktSend(this)" data-side="manager" data-side="admin">שלח</button></div></div></div>');
-  }).join('');
-}
-
-// ── Admin: all requests ──
-function renderAdminReqs() {
-  var sf = (document.getElementById('adminReqFilter')||{value:''}).value;
-  var tickets = (DB.tickets||[]).slice().reverse();
-  if (sf) tickets = tickets.filter(function(t){ return t.status===sf; });
-  var el = document.getElementById('adminReqList');
-  if (!tickets.length) { el.innerHTML='<div class="tkt-none">אין בקשות</div>'; return; }
-  el.innerHTML = tickets.map(function(t) {
-    var cls = t.status==='חדש'?'bs-new':t.status==='בטיפול'?'bs-inprogress':t.status==='הושלם'?'bs-done':'bs-rejected';
-    var approveBtn = (t.status==='חדש'||t.status==='בטיפול')
-      ? '<button class="btn-approve" onclick="approveReq(''+t.id+'')">✅ אשר → רבקה</button>'
-        +'<button class="btn-reject-req" onclick="rejectReq(''+t.id+'')">❌ דחה</button>' : '';
-    return '<div class="tkt-card">'
-      +'<div class="tkt-top"><div><div class="tkt-title">'+t.title+'</div>'
-      +'<div class="tkt-meta">'+t.name+' · '+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:8px">'
-      +'<select onchange="changeReqStatus(''+t.id+'',this.value)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial">'
-      +['חדש','בטיפול','הושלם','נדחה'].map(function(s){ return '<option'+(t.status===s?' selected':'')+'>'+s+'</option>'; }).join('')
-      +'</select><span class="badge '+cls+'">'+t.status+'</span></div></div>'
-      +'<div class="tkt-desc">'+t.desc+'</div>'
-      +'<div class="admin-req-actions">'+approveBtn+'</div>'
-      +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'admin')+'</div>'
-      +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה למנהל..."></textarea>'
-      +('<button class="btn-send" onclick="doTktSend(this)">שלח</button></div></div></div>');
-  }).join('');
-}
-
-function renderTktChat(chat, myRole) {
-  if (!chat||!chat.length) return '<div class="no-msgs">אין הודעות</div>';
-  return chat.map(function(m) {
-    var mine = (myRole===m.side);
-    return '<div class="msg '+(mine?'msg-malm':'msg-dhl')+'">'
-      +'<div class="msg-sender">'+m.sender+'</div><div>'+m.text+'</div>'
-      +'<div class="msg-time">'+m.time+'</div></div>';
-  }).join('');
-}
-
-
-var _tktSendQueue = {};
-function regTkt(id, side) {
-  _tktSendQueue[id] = side;
-  return id;
-}
-function doTktSend(btn) {
-  var card = btn.closest('.tkt-card');
-  var ta = card ? card.querySelector('textarea') : null;
-  var id = ta ? ta.id.replace('pci-','') : null;
-  var side = btn.getAttribute('data-side') || 'manager';
-  if (id) sendTktMsg(id, side);
-}
-
-async function sendTktMsg(id, side) {
-  if (!id) return;
-  var inp = document.getElementById('pci-'+id);
-  var text = inp.value.trim();
-  if (!text) return;
-  var r = await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/main/db.json?t='+Date.now());
-  DB = await r.json();
-  var meta = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await meta.json(); dbSha = mj.sha;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  var now = new Date();
-  var time = now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  t.chat.push({sender:currentUser.name, side:side, text:text, time:time});
-  if (side==='admin' && t.status==='חדש') t.status='בטיפול';
-  inp.value='';
-  await saveDB('Chat update');
-  if (side==='manager') renderMyReqs(); else renderAdminReqs();
-}
-
-async function approveReq(id) {
-  if (!confirm('לאשר ולהעביר לרבקה?')) return;
-  var r = await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/main/db.json?t='+Date.now());
-  DB = await r.json();
-  var meta = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await meta.json(); dbSha = mj.sha;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status = 'הושלם';
-  var now = new Date();
-  var date = now.toLocaleDateString('he-IL');
-  var time = date+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  t.chat.push({sender:currentUser.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה לטיפול.',time:time});
-  if (!DB.rivka) DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:date,כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await saveDB('Approve: '+t.title);
-  renderAdminReqs(); initFilters(); r2();
-}
-
-async function rejectReq(id) {
-  var reason = prompt('סיבת הדחייה:');
-  if (reason===null) return;
-  var r = await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/main/db.json?t='+Date.now());
-  DB = await r.json();
-  var meta = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await meta.json(); dbSha = mj.sha;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status = 'נדחה';
-  var now = new Date();
-  var time = now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  t.chat.push({sender:currentUser.name,side:'admin',text:'❌ הבקשה נדחתה. '+(reason||''),time:time});
-  await saveDB('Reject request');
-  renderAdminReqs();
-}
-
-async function changeReqStatus(id, status) {
-  var r = await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/main/db.json?t='+Date.now());
-  DB = await r.json();
-  var meta = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await meta.json(); dbSha = mj.sha;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=status; await saveDB('Status update'); }
-  renderAdminReqs();
-}
-
-async function submitReq() {
-  var title = document.getElementById('rf_title').value.trim();
-  var desc = document.getElementById('rf_desc').value.trim();
-  if (!title||!desc) { alert('נא למלא כותרת ותיאור'); return; }
-  var msg = document.getElementById('rfMsg');
-  msg.textContent = '⏳ שולח...';
-  try {
-    var r = await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/main/db.json?t='+Date.now());
-    DB = await r.json();
-    var meta = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/db.json',
-      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    var mj = await meta.json(); dbSha = mj.sha;
-    if (!DB.tickets) DB.tickets=[];
-    var now = new Date();
-    var date = now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-    DB.tickets.push({
-      id:'TKT-'+Date.now(), username:currentUser.username, name:currentUser.name,
-      type:document.getElementById('rf_type').value, pri:document.getElementById('rf_pri').value,
-      title:title, desc:desc, date:date, status:'חדש', chat:[]
-    });
-    await saveDB('New request: '+title);
-    document.getElementById('rf_title').value='';
-    document.getElementById('rf_desc').value='';
-    document.getElementById('reqFormWrap').classList.remove('open');
-    msg.textContent='✅ נשלח!';
-    setTimeout(function(){ msg.textContent=''; },3000);
-    renderMyReqs();
-  } catch(e) { msg.textContent='❌ שגיאה: '+e.message; }
-}
-
-
-// Check session on load
-loadDB().then(function(){
-  try{
-    var saved=sessionStorage.getItem("malm_user");
-    if(saved){
-      var u=JSON.parse(saved);
-      var fresh=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});
-      if(fresh){currentUser=fresh;showAppForUser();return;}
-    }
-  }catch(e){}
-  document.getElementById("loginOverlay").style.display="flex";
-});
-
+loadDB();
 
 
 function chatPreviewHtml(r){
