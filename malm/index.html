@@ -410,7 +410,8 @@ function renderMyTkts() {
 }
 
 // ── Admin view ──────────────────────
-function renderAdminTkts() {
+async function renderAdminTkts() {
+  await freshDB();
   var sf = document.getElementById('adminTFilter').value;
   var all = (DB.tickets||[]).slice().reverse();
   if (sf) all = all.filter(function(t){ return t.status===sf; });
