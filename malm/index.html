@@ -316,6 +316,10 @@ function showForUser() {
     document.getElementById('btnAdd').style.display = 'block';
     var p = (DB.tickets||[]).filter(function(t){ return t.status==='חדש'; }).length;
     if (p) { var b=document.getElementById('reqBadge'); b.textContent=p; b.style.display='inline'; }
+    // Make sure only pane0 is active
+    document.querySelectorAll('.pane').forEach(function(el){ el.classList.remove('active'); });
+    document.getElementById('pane0').classList.add('active');
+    document.querySelectorAll('#adminTabs .tab').forEach(function(t,i){ t.classList.toggle('active',i===0); });
     initFilters(); r1(); r2();
   } else {
     document.getElementById('mgrTabs').style.display = 'flex';
@@ -496,8 +500,14 @@ async function tSubmit() {
 
 function switchTab(i) {
   currentTab=i;
+  // Update tab highlights
   document.querySelectorAll('#adminTabs .tab').forEach(function(t,j){ t.classList.toggle('active',j===i||(j===2&&i===3)); });
-  document.querySelectorAll('.pane').forEach(function(p,j){ p.classList.toggle('active',j===i); });
+  // Show only the correct pane
+  var paneId = 'pane'+i;
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
+  var target = document.getElementById(paneId);
+  if(target) target.classList.add('active');
+  // Button
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
   if(i===3) renderAdminTkts();
