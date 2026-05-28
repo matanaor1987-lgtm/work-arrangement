@@ -387,18 +387,11 @@ function nowStr() {
 }
 
 async function freshDB() {
-  // Use API directly - no cache issues
+  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
+  DB = await r.json();
   var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await m.json();
-  dbSha = mj.sha;
-  const b64f=mj.content.replace(/\n/g,'');
-  const binf=atob(b64f);
-  const bytesf=new Uint8Array(binf.length);
-  for(var i=0;i<binf.length;i++)bytesf[i]=binf.charCodeAt(i);
-  DB=JSON.parse(new TextDecoder('utf-8').decode(bytesf));
-  if(!DB.users)DB.users=[];
-  if(!DB.tickets)DB.tickets=[];
+  var mj = await m.json(); dbSha = mj.sha;
 }
 
 // ── Manager view ──────────────────────
@@ -468,13 +461,14 @@ async function tSend(btn) {
   var inp = document.getElementById('ti-'+id);
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
+  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
   inp.value='';
-  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
   await saveDB('Chat');
+  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
 }
 
 async function tApprove(btn) {
@@ -486,7 +480,7 @@ async function tApprove(btn) {
   t.status='הושלם';
   t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
   if(!DB.rivka)DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]},reqId:t.id});
+  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
   await saveDB('Approve: '+t.title);
   renderAdminTkts(false); initFilters(); r2();
 }
@@ -509,8 +503,10 @@ async function tReject(btn) {
 
 async function tStatus(sel) {
   var id = sel.getAttribute('data-tid');
+  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; renderAdminTkts(false); await saveDB('Status update'); }
+  if (t) { t.status=sel.value; await saveDB('Status update'); }
+  renderAdminTkts(false);
 }
 
 async function tSubmit() {
@@ -550,7 +546,7 @@ function switchTab(i) {
   // Button
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
-  if(i===3) renderAdminTkts(false);
+  if(i===3) renderAdminTkts(true);
   if(i===4) renderUsers();
 }
 
@@ -570,18 +566,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadDB(){
   try{
-    // Use API to avoid cache
-    const apiR=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    if(!apiR.ok)throw new Error('api fetch failed: '+apiR.status);
-    const apiJ=await apiR.json();
-    dbSha=apiJ.sha;
-    // Decode base64 with UTF-8 support
-    const b64=apiJ.content.replace(/\n/g,'');
-    const bin=atob(b64);
-    const bytes=new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-    DB=JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now();
+    const raw=await fetch(rawUrl);
+    if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
+    DB=await raw.json();
     if(!DB.users)DB.users=[];
     if(!DB.tickets)DB.tickets=[];
     // Check saved session
