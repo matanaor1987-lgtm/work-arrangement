@@ -392,7 +392,11 @@ async function freshDB() {
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
   var mj = await m.json();
   dbSha = mj.sha;
-  DB = JSON.parse(atob(mj.content.replace(/\n/g,'')));
+  const b64f=mj.content.replace(/\n/g,'');
+  const binf=atob(b64f);
+  const bytesf=new Uint8Array(binf.length);
+  for(var i=0;i<binf.length;i++)bytesf[i]=binf.charCodeAt(i);
+  DB=JSON.parse(new TextDecoder('utf-8').decode(bytesf));
   if(!DB.users)DB.users=[];
   if(!DB.tickets)DB.tickets=[];
 }
@@ -572,7 +576,12 @@ async function loadDB(){
     if(!apiR.ok)throw new Error('api fetch failed: '+apiR.status);
     const apiJ=await apiR.json();
     dbSha=apiJ.sha;
-    DB=JSON.parse(atob(apiJ.content.replace(/\n/g,'')));
+    // Decode base64 with UTF-8 support
+    const b64=apiJ.content.replace(/\n/g,'');
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    DB=JSON.parse(new TextDecoder('utf-8').decode(bytes));
     if(!DB.users)DB.users=[];
     if(!DB.tickets)DB.tickets=[];
     // Check saved session
