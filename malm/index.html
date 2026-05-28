@@ -390,15 +390,15 @@ function nowStr() {
 
 async function loadTickets() {
   try {
-    var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
+    // Get SHA
+    var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
       {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    var j = await r.json();
-    ticketsSha = j.sha;
-    var b64=j.content.replace(/\n/g,'');
-    var bin=atob(b64);
-    var bytes=new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-    var data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    var mj = await m.json();
+    ticketsSha = mj.sha;
+    // Get raw content (no base64, proper Hebrew)
+    var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
+      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
+    var data = await r.json();
     DB.tickets = data.tickets||[];
     DB.users = data.users||DB.users||[];
   } catch(e) {
