@@ -305,7 +305,7 @@ tr:hover td{background:#fffbf0}
 </div>
 
 <script src="config.js"></script>
-<script>let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
+<script>let DB={malm:[],rivka:[]},dbSha='',ticketsSha='',currentTab=0,editIdx=-1,editSheet='';
 var CU = null;
 
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
@@ -342,6 +342,7 @@ function showForUser() {
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('ubadge').style.display = 'flex';
   document.getElementById('uname').textContent = 'שלום, ' + CU.name;
+  await loadTickets();
   if (CU.role === 'admin') {
     document.getElementById('adminTabs').style.display = 'flex';
     document.getElementById('btnAdd').style.display = 'block';
@@ -384,6 +385,32 @@ function tChat(chat, me) {
 function nowStr() {
   var n=new Date();
   return n.toLocaleDateString('he-IL')+' '+n.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+}
+
+
+async function loadTickets() {
+  var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  var j = await r.json();
+  ticketsSha = j.sha;
+  var b64=j.content.replace(/\n/g,'');
+  var bin=atob(b64);
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  DB.tickets = data.tickets||[];
+  DB.users = data.users||[];
+}
+
+async function saveTickets() {
+  var content=btoa(unescape(encodeURIComponent(JSON.stringify({tickets:DB.tickets,users:DB.users},null,2))));
+  var r=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:'Update tickets',content:content,sha:ticketsSha})
+  });
+  if(!r.ok)throw new Error('Save tickets failed: '+(await r.text()));
+  var rj=await r.json(); ticketsSha=rj.content.sha;
 }
 
 async function freshDB() {
@@ -475,32 +502,13 @@ async function tSend(btn) {
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
   inp.value='';
-  // Load FRESH DB with SHA in one call
-  var fm = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var fmj = await fm.json();
-  dbSha = fmj.sha;
-  var b64 = fmj.content.replace(/\n/g,'');
-  var bin = atob(b64);
-  var bytes = new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  var serverDB = JSON.parse(new TextDecoder('utf-8').decode(bytes));
-  // Add message to the specific ticket in SERVER data
-  var t = (serverDB.tickets||[]).find(function(x){ return x.id===id; });
+  // Load fresh tickets from separate file (small, fast, no conflict with main DB)
+  await loadTickets();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
-  // Save the server DB with only this ticket updated
-  var savedDB = serverDB;
-  var content = btoa(unescape(encodeURIComponent(JSON.stringify(savedDB,null,2))));
-  var r2 = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',{
-    method:'PUT',
-    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-    body:JSON.stringify({message:'Chat',content:content,sha:dbSha})
-  });
-  var rj = await r2.json(); dbSha = rj.content.sha;
-  // Update in-memory DB to match
-  DB.tickets = savedDB.tickets;
+  await saveTickets();
   if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
 }
 
@@ -513,7 +521,7 @@ async function tApprove(btn) {
   t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
   if(!DB.rivka)DB.rivka=[];
   DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await saveDB('Approve: '+t.title);
+  await loadTickets(); DB.tickets=(DB.tickets||[]).filter(function(x){return x.id!==id;}); await saveTickets();
   renderAdminTkts(false); initFilters(); r2();
 }
 
@@ -525,14 +533,14 @@ async function tReject(btn) {
   if (!t) return;
   DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
   renderAdminTkts(false);
-  await saveDB('Reject and delete');
+  await saveTickets();
 }
 
 async function tStatus(sel) {
   var id = sel.getAttribute('data-tid');
   await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; await saveDB('Status update'); }
+  if (t) { t.status=sel.value; await saveTickets(); }
   renderAdminTkts(false);
 }
 
@@ -543,7 +551,7 @@ async function tSubmit() {
   var msg = document.getElementById('tfMsg');
   msg.textContent='⏳ שולח...';
   try {
-    await reloadDB();
+    await loadTickets();
     if (!DB.tickets) DB.tickets=[];
     DB.tickets.push({
       id:'TKT-'+Date.now(), username:CU.username, name:CU.name,
@@ -551,7 +559,7 @@ async function tSubmit() {
       pri:document.getElementById('tfPri').value,
       title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
     });
-    await saveDB('New ticket');
+    await saveTickets();
     document.getElementById('tfTitle').value='';
     document.getElementById('tfDesc').value='';
     document.getElementById('tForm').classList.remove('open');
@@ -585,7 +593,7 @@ async function tApprove(btn) {
   t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
   if(!DB.rivka)DB.rivka=[];
   DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await saveDB('Approve: '+t.title);
+  await loadTickets(); DB.tickets=(DB.tickets||[]).filter(function(x){return x.id!==id;}); await saveTickets();
   renderAdminTkts(false); initFilters(); r2();
 }
 
@@ -597,14 +605,14 @@ async function tReject(btn) {
   if (!t) return;
   DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
   renderAdminTkts(false);
-  await saveDB('Reject and delete');
+  await saveTickets();
 }
 
 async function tStatus(sel) {
   var id = sel.getAttribute('data-tid');
   await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; await saveDB('Status update'); }
+  if (t) { t.status=sel.value; await saveTickets(); }
   renderAdminTkts(false);
 }
 
@@ -623,7 +631,7 @@ async function tSubmit() {
       pri:document.getElementById('tfPri').value,
       title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
     });
-    await saveDB('New ticket');
+    await saveTickets();
     document.getElementById('tfTitle').value='';
     document.getElementById('tfDesc').value='';
     document.getElementById('tForm').classList.remove('open');
@@ -1084,9 +1092,9 @@ async function addUser() {
 }
 async function delUser(username) {
   if(!confirm('למחוק?'))return;
-  await reloadDB();
+  await loadTickets();
   DB.users=DB.users.filter(function(u){return u.username!==username;});
-  await saveDB('Delete user');
+  await saveTickets();
   renderUsers();
 }
 
