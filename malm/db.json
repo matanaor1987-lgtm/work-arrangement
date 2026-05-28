@@ -13255,6 +13255,18 @@
       "username": "rivka",
       "password": "MALAM123",
       "role": "admin"
+    },
+    {
+      "name": "TETS",
+      "username": "MNAOR",
+      "password": "DHL123",
+      "role": "manager"
+    },
+    {
+      "name": "מתן נאור",
+      "username": "MNAOR",
+      "password": "DHL123",
+      "role": "manager"
     }
   ],
   "tickets": []
