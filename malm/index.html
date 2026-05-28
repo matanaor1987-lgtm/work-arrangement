@@ -327,6 +327,19 @@ async function loadDB(){
     const raw=await fetch(rawUrl);
     if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
     DB=await raw.json();
+    if(!DB.users)DB.users=[];
+    if(!DB.tickets)DB.tickets=[];
+    // Auth check
+    try{
+      const saved=sessionStorage.getItem('malm_user');
+      if(saved){
+        const u=JSON.parse(saved);
+        const fresh=DB.users.find(x=>x.username===u.username&&x.password===u.password);
+        if(fresh){currentUser=fresh;showAppForUser();return;}
+      }
+    }catch(e){}
+    document.getElementById('loginOverlay').style.display='flex';
+    return;
     const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
     const jj=await meta.json();
@@ -363,9 +376,17 @@ async function saveDB(){
 
 function switchTab(i){
   currentTab=i;
-  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
-  document.querySelectorAll('.pane').forEach((p,j)=>p.classList.toggle('active',i===j));
-  document.getElementById('btnAdd').textContent=i===0?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)';
+  document.querySelectorAll('#tabsBar .tab').forEach((t,j)=>{
+    const ids=[0,1,3];t.classList.toggle('active',ids[j]===i);
+  });
+  document.querySelectorAll('.pane').forEach((p,j)=>p.classList.toggle('active',j===i));
+  const btnAdd=document.getElementById('btnAdd');
+  if(btnAdd){
+    btnAdd.style.display=(i===3)?'none':'block';
+    if(i===0)btnAdd.textContent='+ משימה חדשה (מלמ)';
+    else if(i===1)btnAdd.textContent='+ משימה חדשה (רבקה)';
+  }
+  if(i===3)renderAdminReqs();
 }
 
 function sc(s){const k=(s||'פתוח').replace(/ /g,'-');return`<span class="badge s-${k}">${s||'פתוח'}</span>`}
@@ -758,159 +779,3 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.activeElement.id==='loginUser')document.getElementById('loginPass').focus();
 });
 loadDB();
-
-
-function chatPreviewHtml(r){
-  const chat=r.chat||{};
-  const malm=chat.malm||[];
-  const dhl=chat.dhl||[];
-  if(!malm.length&&!dhl.length) return '<span class="no-chat">—</span>';
-  
-  // Last message from each
-  const lastM=malm[malm.length-1];
-  const lastD=dhl[dhl.length-1];
-  
-  // Full thread for tooltip
-  const all=[
-    ...malm.map(m=>({...m,side:'malm'})),
-    ...dhl.map(m=>({...m,side:'dhl'}))
-  ].sort((a,b)=>a.time.localeCompare(b.time));
-  
-  const tooltip=all.map(m=>`
-    <div class="tt-msg ${m.side}">
-      <div class="tt-sender ${m.side}">${m.sender}</div>
-      <div>${m.text}</div>
-      <div class="tt-time">${m.time}</div>
-    </div>`).join('');
-  
-  const preview=[
-    lastM?`<div><span class="ml">מלמ</span> <span style="color:#888">${lastM.time.split(' ')[0]}</span>: ${lastM.text.slice(0,40)}${lastM.text.length>40?'...':''}</div>`:'',
-    lastD?`<div><span class="dh">DHL</span> <span style="color:#888">${lastD.time.split(' ')[0]}</span>: ${lastD.text.slice(0,40)}${lastD.text.length>40?'...':''}</div>`:''
-  ].filter(Boolean).join('');
-  
-  return `<div class="chat-preview">
-    <div class="chat-last">${preview}</div>
-    <div class="chat-tooltip">${tooltip||'<span class="no-chat">אין הערות</span>'}</div>
-  </div>`;
-}
-
-
-// File upload
-let pendingFiles=[];
-
-function initDropZone(){
-  const dz=document.getElementById('dropZone');
-  if(!dz)return;
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-  dz.addEventListener('drop',e=>{
-    e.preventDefault();
-    dz.classList.remove('drag-over');
-    handleFiles(e.dataTransfer.files);
-  });
-}
-
-async function handleFiles(files){
-  const status=document.getElementById('uploadStatus');
-  for(const file of files){
-    status.innerHTML=`<div class="uploading">⏳ מעלה: ${file.name}...</div>`;
-    try{
-      const url=await uploadFile(file);
-      pendingFiles.push({name:file.name,url,size:formatSize(file.size)});
-      renderAttachments();
-      status.innerHTML='';
-    }catch(e){
-      status.innerHTML=`<div class="uploading" style="color:#c62828">❌ שגיאה: ${e.message}</div>`;
-      setTimeout(()=>status.innerHTML='',3000);
-    }
-  }
-}
-
-function formatSize(bytes){
-  if(bytes<1024)return bytes+'B';
-  if(bytes<1024*1024)return Math.round(bytes/1024)+'KB';
-  return (bytes/1024/1024).toFixed(1)+'MB';
-}
-
-async function uploadFile(file){
-  const path='attachments/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._\-\u0590-\u05ff]/g,'_');
-  const content=await new Promise((res,rej)=>{
-    const r=new FileReader();
-    r.onload=()=>res(r.result.split(',')[1]);
-    r.onerror=rej;
-    r.readAsDataURL(file);
-  });
-  const resp=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
-    method:'PUT',
-    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-    body:JSON.stringify({message:'Upload attachment: '+file.name,content})
-  });
-  if(!resp.ok){const e=await resp.json();throw new Error(e.message||resp.status);}
-  return `https://github.com/${OWNER}/${REPO}/raw/main/${path}`;
-}
-
-function renderAttachments(){
-  const el=document.getElementById('attachments');
-  if(!pendingFiles.length){el.innerHTML='';return;}
-  el.innerHTML=pendingFiles.map((f,i)=>`
-    <div class="att-item">
-      📎 <a href="${f.url}" target="_blank">${f.name}</a>
-      <span class="att-size">${f.size}</span>
-      <span style="cursor:pointer;color:#999" onclick="pendingFiles.splice(${i},1);renderAttachments()">✕</span>
-    </div>`).join('');
-}
-
-// Chat
-let chatTab='malm';
-
-function switchChatTab(tab){
-  chatTab=tab;
-  document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='malm'&&i===0)||(tab==='dhl'&&i===1)));
-  renderChat();
-}
-
-function renderChat(){
-  if(editIdx===-1)return;
-  const rec=DB[editSheet][editIdx];
-  const msgs=(rec.chat||{})[chatTab]||[];
-  const el=document.getElementById('chatMessages');
-  if(!msgs.length){el.innerHTML='<div class="no-msgs">אין הערות עדיין</div>';return}
-  el.innerHTML=msgs.map(m=>`
-    <div class="msg msg-${m.side==='מלמ'?'malm':'dhl'}">
-      <div class="msg-sender">${m.sender}</div>
-      <div>${m.text}</div>
-      ${(m.files||[]).map(f=>`<div style="margin-top:4px"><a href="${f.url}" target="_blank" style="font-size:11px;color:#1565c0">📎 ${f.name} <span style="color:#999">${f.size}</span></a></div>`).join('')}
-      <div class="msg-time">${m.time}</div>
-    </div>`).join('');
-  el.scrollTop=el.scrollHeight;
-}
-
-function sendMsg(){
-  const text=document.getElementById('chatInput').value.trim();
-  const sender=document.getElementById('chatSender').value;
-  if(!text&&!pendingFiles.length)return;
-  if(editIdx===-1)return;
-  const rec=DB[editSheet][editIdx];
-  if(!rec.chat)rec.chat={malm:[],dhl:[]};
-  if(!rec.chat[chatTab])rec.chat[chatTab]=[];
-  const now=new Date();
-  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  const files=[...pendingFiles];
-  rec.chat[chatTab].push({sender,side:sender,text:text||'📎 צרף קבצים',time,files});
-  document.getElementById('chatInput').value='';
-  pendingFiles=[];
-  renderAttachments();
-  renderChat();
-  if(editSheet==='malm')r1();else r2();
-  saveDB();
-}
-
-// Allow Enter to send (Shift+Enter for newline)
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.shiftKey&&document.activeElement.id==='chatInput'){
-    e.preventDefault();sendMsg();
-  }
-});
-</script>
-</body>
-</html>
