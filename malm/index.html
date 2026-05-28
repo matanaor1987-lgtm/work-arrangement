@@ -566,7 +566,7 @@ async function saveDB(){
   el.textContent='⏳ שומר...';
   try{
     const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB,null,2))));
-    const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
+    const r=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',{
       method:'PUT',
       headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
       body:JSON.stringify({message:'Update tasks',content,sha:dbSha})
