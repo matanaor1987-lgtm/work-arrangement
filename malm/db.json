@@ -13242,5 +13242,39 @@
         "manager": []
       }
     }
+  ],
+  "users": [
+    {
+      "name": "מנהל מערכת",
+      "username": "admin",
+      "password": "DHL123",
+      "role": "admin"
+    },
+    {
+      "name": "רבקה",
+      "username": "rivka",
+      "password": "MALAM123",
+      "role": "admin"
+    },
+    {
+      "name": "TETS",
+      "username": "MNAOR",
+      "password": "DHL123",
+      "role": "manager"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "TKT-1779981851398",
+      "username": "MNAOR",
+      "name": "TETS",
+      "type": "תקלה",
+      "pri": "3",
+      "title": "דוח חדש",
+      "desc": "יש לעשות דוח חדש",
+      "date": "28.5.2026 18:24",
+      "status": "חדש",
+      "chat": []
+    }
   ]
 }
