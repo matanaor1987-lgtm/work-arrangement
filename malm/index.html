@@ -387,11 +387,14 @@ function nowStr() {
 }
 
 async function freshDB() {
-  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
-  DB = await r.json();
+  // Use API directly - no cache issues
   var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await m.json(); dbSha = mj.sha;
+  var mj = await m.json();
+  dbSha = mj.sha;
+  DB = JSON.parse(atob(mj.content.replace(/\n/g,'')));
+  if(!DB.users)DB.users=[];
+  if(!DB.tickets)DB.tickets=[];
 }
 
 // ── Manager view ──────────────────────
@@ -563,10 +566,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadDB(){
   try{
-    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now();
-    const raw=await fetch(rawUrl);
-    if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
-    DB=await raw.json();
+    // Use API to avoid cache
+    const apiR=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
+      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+    if(!apiR.ok)throw new Error('api fetch failed: '+apiR.status);
+    const apiJ=await apiR.json();
+    dbSha=apiJ.sha;
+    DB=JSON.parse(atob(apiJ.content.replace(/\n/g,'')));
     if(!DB.users)DB.users=[];
     if(!DB.tickets)DB.tickets=[];
     // Check saved session
