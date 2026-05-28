@@ -595,7 +595,7 @@ function renderMyReqs() {
       +'<div class="tkt-desc">'+t.desc+'</div>'
       +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'manager')+'</div>'
       +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה..."></textarea>'
-      +'<button class="btn-send" class="btn-send-tkt" data-id='" data-side="manager" onclick="sendTktMsg(this.dataset.id,this.dataset.side)">שלח</button></div></div></div>';
+      +('<button class="btn-send" onclick="doTktSend(this)" data-side="manager" data-side="admin">שלח</button></div></div></div>');
   }).join('');
 }
 
@@ -622,7 +622,7 @@ function renderAdminReqs() {
       +'<div class="admin-req-actions">'+approveBtn+'</div>'
       +'<div class="chat-section"><div class="chat-messages" style="max-height:160px" id="pcm-'+t.id+'">'+renderTktChat(t.chat,'admin')+'</div>'
       +'<div class="chat-input-row"><textarea id="pci-'+t.id+'" placeholder="כתוב הודעה למנהל..."></textarea>'
-      +'<button class="btn-send" data-id="'+t.id+'" data-side="admin" onclick="sendTktMsg(this.getAttribute('data-id'),this.getAttribute('data-side'))">שלח</button></div></div></div>';
+      +('<button class="btn-send" onclick="doTktSend(this)">שלח</button></div></div></div>');
   }).join('');
 }
 
@@ -636,7 +636,22 @@ function renderTktChat(chat, myRole) {
   }).join('');
 }
 
+
+var _tktSendQueue = {};
+function regTkt(id, side) {
+  _tktSendQueue[id] = side;
+  return id;
+}
+function doTktSend(btn) {
+  var card = btn.closest('.tkt-card');
+  var ta = card ? card.querySelector('textarea') : null;
+  var id = ta ? ta.id.replace('pci-','') : null;
+  var side = btn.getAttribute('data-side') || 'manager';
+  if (id) sendTktMsg(id, side);
+}
+
 async function sendTktMsg(id, side) {
+  if (!id) return;
   var inp = document.getElementById('pci-'+id);
   var text = inp.value.trim();
   if (!text) return;
