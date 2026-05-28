@@ -197,6 +197,7 @@ tr:hover td{background:#fffbf0}
   <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
   <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
   <div class="tab" onclick="switchTab(3)">📥 בקשות<span id="reqBadge" style="display:none;background:#D40511;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-right:4px"></span></div>
+  <div class="tab" onclick="switchTab(4)">👥 משתמשים</div>
 </div>
 <div class="tabs" id="mgrTabs" style="display:none"><div class="tab active">הבקשות שלי</div></div>
 
@@ -355,9 +356,9 @@ function nowStr() {
 }
 
 async function freshDB() {
-  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now());
+  var r = await fetch('https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now());
   DB = await r.json();
-  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json',
+  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
   var mj = await m.json(); dbSha = mj.sha;
 }
@@ -511,6 +512,7 @@ function switchTab(i) {
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
   if(i===3) renderAdminTkts();
+  if(i===4) renderUsers();
 }
 
 // Init events
@@ -534,7 +536,7 @@ const SR=['פתוח','בוצע'];
 
 async function loadDB(){
   try{
-    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
+    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/work-arrangement/main/malm/db.json?t='+Date.now();
     const raw=await fetch(rawUrl);
     if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
     DB=await raw.json();
@@ -544,7 +546,7 @@ async function loadDB(){
     try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;showForUser();return;}}}catch(e){}
     document.getElementById('loginOverlay').style.display='flex';
     return;
-    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
+    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json';
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
     const jj=await meta.json();
     dbSha=jj.sha;
@@ -904,5 +906,21 @@ document.addEventListener('keydown',e=>{
   }
 });
 </script>
+
+<div class="pane" id="pane4" style="padding:14px 20px">
+  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
+  <div id="usersList"></div>
+  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">הוסף משתמש חדש</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap">+ הוסף</button>
+    </div>
+    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+
 </body>
 </html>
