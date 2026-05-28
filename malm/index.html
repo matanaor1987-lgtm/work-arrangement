@@ -474,7 +474,6 @@ async function tSend(btn) {
 async function tApprove(btn) {
   var id = btn.getAttribute('data-tid');
   if (!confirm('לאשר ולהעביר לרבקה?')) return;
-  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.status='הושלם';
@@ -487,18 +486,13 @@ async function tApprove(btn) {
 
 async function tReject(btn) {
   var id = btn.getAttribute('data-tid');
-  var reason = prompt('סיבת הדחייה (הבקשה תימחק לאחר הדחייה):');
+  var reason = prompt('סיבת הדחייה:');
   if (reason===null) return;
-  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
-  // Add rejection message to chat before deleting
-  t.status='נדחה';
-  t.chat.push({sender:CU.name,side:'admin',text:'❌ הבקשה נדחתה. '+(reason||''),time:nowStr()});
-  // Delete after short delay (so manager can see message)
   DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
-  await saveDB('Reject and delete');
   renderAdminTkts(false);
+  await saveDB('Reject and delete');
 }
 
 async function tStatus(sel) {
