@@ -461,14 +461,13 @@ async function tSend(btn) {
   var inp = document.getElementById('ti-'+id);
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
-  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
   t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
   if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
   inp.value='';
-  await saveDB('Chat');
   if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
+  await saveDB('Chat');
 }
 
 async function tApprove(btn) {
@@ -503,10 +502,8 @@ async function tReject(btn) {
 
 async function tStatus(sel) {
   var id = sel.getAttribute('data-tid');
-  await freshDB();
   var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; await saveDB('Status update'); }
-  renderAdminTkts(false);
+  if (t) { t.status=sel.value; renderAdminTkts(false); await saveDB('Status update'); }
 }
 
 async function tSubmit() {
