@@ -482,7 +482,7 @@ async function tApprove(btn) {
   t.status='הושלם';
   t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
   if(!DB.rivka)DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
+  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]},reqId:t.id});
   await saveDB('Approve: '+t.title);
   renderAdminTkts(false); initFilters(); r2();
 }
@@ -743,7 +743,16 @@ function saveModal(){
   if(editSheet==='malm'){
     rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
   }else{
-    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:r&&r.ה||''};
+    const oldRec=editIdx>=0?DB.rivka[editIdx]:null;
+    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:oldRec&&oldRec.ה||'',chat:oldRec&&oldRec.chat||{malm:[],dhl:[]},reqId:oldRec&&oldRec.reqId||null};
+    // Sync status back to linked ticket
+    if(rec.reqId){
+      const linkedTicket=(DB.tickets||[]).find(t=>t.id===rec.reqId);
+      if(linkedTicket){
+        const statusMap={'פתוח':'בטיפול','בוצע':'הושלם','בוטל':'נדחה','מוקפא':'בטיפול'};
+        linkedTicket.status=statusMap[rec.ס]||'בטיפול';
+      }
+    }
   }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
