@@ -13263,18 +13263,5 @@
       "role": "manager"
     }
   ],
-  "tickets": [
-    {
-      "id": "TKT-1779981851398",
-      "username": "MNAOR",
-      "name": "TETS",
-      "type": "תקלה",
-      "pri": "3",
-      "title": "דוח חדש",
-      "desc": "יש לעשות דוח חדש",
-      "date": "28.5.2026 18:24",
-      "status": "חדש",
-      "chat": []
-    }
-  ]
+  "tickets": []
 }
