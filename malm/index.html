@@ -521,6 +521,78 @@ async function tSubmit() {
   var msg = document.getElementById('tfMsg');
   msg.textContent='⏳ שולח...';
   try {
+    await reloadDB();
+    if (!DB.tickets) DB.tickets=[];
+    DB.tickets.push({
+      id:'TKT-'+Date.now(), username:CU.username, name:CU.name,
+      type:document.getElementById('tfType').value,
+      pri:document.getElementById('tfPri').value,
+      title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
+    });
+    await saveDB('New ticket');
+    document.getElementById('tfTitle').value='';
+    document.getElementById('tfDesc').value='';
+    document.getElementById('tForm').classList.remove('open');
+    msg.textContent='✅ נשלח!';
+    setTimeout(function(){ msg.textContent=''; },3000);
+    renderMyTkts();
+  } catch(e) { msg.textContent='❌ '+e.message; }
+}
+async function tSend(btn) {
+  var id = btn.getAttribute('data-tid');
+  var side = btn.getAttribute('data-side');
+  var inp = document.getElementById('ti-'+id);
+  if (!inp||!inp.value.trim()) return;
+  var text = inp.value.trim();
+  await reloadDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
+  if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
+  inp.value='';
+  await saveDB('Chat');
+  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
+}
+
+async function tApprove(btn) {
+  var id = btn.getAttribute('data-tid');
+  if (!confirm('לאשר ולהעביר לרבקה?')) return;
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  t.status='הושלם';
+  t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
+  if(!DB.rivka)DB.rivka=[];
+  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
+  await saveDB('Approve: '+t.title);
+  renderAdminTkts(false); initFilters(); r2();
+}
+
+async function tReject(btn) {
+  var id = btn.getAttribute('data-tid');
+  var reason = prompt('סיבת הדחייה:');
+  if (reason===null) return;
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (!t) return;
+  DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
+  renderAdminTkts(false);
+  await saveDB('Reject and delete');
+}
+
+async function tStatus(sel) {
+  var id = sel.getAttribute('data-tid');
+  await freshDB();
+  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
+  if (t) { t.status=sel.value; await saveDB('Status update'); }
+  renderAdminTkts(false);
+}
+
+async function tSubmit() {
+  var title = document.getElementById('tfTitle').value.trim();
+  var desc = document.getElementById('tfDesc').value.trim();
+  if (!title||!desc) { alert('נא למלא כותרת ותיאור'); return; }
+  var msg = document.getElementById('tfMsg');
+  msg.textContent='⏳ שולח...';
+  try {
     await freshDB();
     if (!DB.tickets) DB.tickets=[];
     DB.tickets.push({
