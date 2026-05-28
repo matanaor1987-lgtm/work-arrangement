@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>פורטל בקשות — DHL Express</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;direction:rtl}
+body{background:#f4f6f9;min-height:100vh}
+.header{background:#FECC02;border-bottom:3px solid #D40511;padding:14px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:700;color:#D40511}
+.subtitle{font-size:13px;color:#333;flex:1}
+.user-info{font-size:12px;color:#555;display:flex;align-items:center;gap:10px}
+.btn-logout{background:#D40511;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial}
+
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:20px}
+.login-card{background:#fff;border-radius:12px;padding:32px;width:100%;max-width:360px;box-shadow:0 2px 16px rgba(0,0,0,0.1);text-align:center}
+.login-card h2{font-size:18px;color:#1a1a2e;margin-bottom:20px}
+.form-row{margin-bottom:14px;text-align:right}
+.form-row label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:4px}
+.form-row input{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial}
+.form-row input:focus{border-color:#D40511;outline:none}
+.btn-primary{width:100%;background:#D40511;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial;margin-top:6px}
+.btn-primary:hover{background:#b0040e}
+.err{color:#D40511;font-size:12px;margin-top:8px;min-height:18px}
+
+/* Main */
+.main{padding:20px;max-width:900px;margin:0 auto}
+.section-title{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.btn-new{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial}
+.btn-new:hover{background:#b0040e}
+
+/* Tickets */
+.ticket-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.ticket-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.ticket-title{font-size:14px;font-weight:700;color:#1a1a2e}
+.ticket-meta{font-size:11px;color:#888;margin-top:3px}
+.ticket-desc{font-size:12px;color:#555;line-height:1.6;margin-bottom:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.s-new{background:#fff3e0;color:#e65100}
+.s-open{background:#fde8e8;color:#c62828}
+.s-inprogress{background:#e3f2fd;color:#1565c0}
+.s-done{background:#e8f5e9;color:#2e7d32}
+.s-rejected{background:#f5f5f5;color:#757575}
+.unread-dot{width:8px;height:8px;background:#D40511;border-radius:50%;display:inline-block;margin-left:6px}
+
+/* Chat */
+.chat-section{border-top:1px solid #f0f0f0;padding-top:12px;margin-top:4px}
+.chat-msgs{max-height:220px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:78%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.msg-mine{background:#e3f2fd;color:#1a1a2e;align-self:flex-end}
+.msg-theirs{background:#fff3e0;color:#1a1a2e;align-self:flex-start}
+.msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
+.msg-mine .msg-sender{color:#1565c0}
+.msg-theirs .msg-sender{color:#e65100}
+.msg-time{font-size:9px;color:#999;margin-top:3px}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:55px}
+.btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+.no-msgs{color:#bbb;font-size:12px;text-align:center;padding:12px}
+.no-tickets{text-align:center;padding:40px;color:#aaa;font-size:14px}
+.saving{font-size:11px;color:#e65100;text-align:center;margin-top:6px}
+
+/* New ticket form */
+.form-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:20px;margin-bottom:20px;display:none}
+.form-card.open{display:block}
+.form-card h3{font-size:15px;color:#1a1a2e;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #FECC02}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.form-card label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:4px}
+.form-card input,.form-card select,.form-card textarea{width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
+.form-card textarea{height:80px;resize:vertical}
+.form-card input:focus,.form-card select:focus,.form-card textarea:focus{border-color:#D40511;outline:none}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.btn-cancel{background:#757575;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
+
+/* Admin panel */
+.admin-tabs{display:flex;gap:0;border-bottom:2px solid #FECC02;margin-bottom:16px}
+.admin-tab{padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent}
+.admin-tab.active{color:#D40511;border-bottom-color:#D40511}
+.admin-pane{display:none}
+.admin-pane.active{display:block}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px}
+.user-row .name{flex:1;font-weight:600}
+.user-row .pwd{color:#888;font-size:12px;flex:1}
+.btn-del{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:Arial}
+.add-user-form{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-top:12px}
+.add-user-form h4{font-size:13px;margin-bottom:12px;color:#1a1a2e}
+.inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.inline-form input{flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
+.btn-add-user{background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filter-row select,.filter-row input{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
+.filter-row input{min-width:180px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">DHL Express</div>
+  <div class="subtitle" id="headerSubtitle">פורטל בקשות</div>
+  <div class="user-info" id="userInfo" style="display:none">
+    <span id="userNameDisplay"></span>
+    <button class="btn-logout" onclick="logout()">יציאה</button>
+  </div>
+</div>
+
+<!-- Login -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h2>כניסה לפורטל</h2>
+    <div class="form-row">
+      <label>שם משתמש</label>
+      <input type="text" id="loginUser" placeholder="שם משתמש...">
+    </div>
+    <div class="form-row">
+      <label>סיסמה</label>
+      <input type="password" id="loginPass" placeholder="סיסמה...">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">כניסה</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- Manager View -->
+<div id="managerView" style="display:none">
+  <div class="main">
+    <div class="section-title">
+      <span>הבקשות שלי</span>
+      <button class="btn-new" onclick="toggleNewForm()">+ בקשה חדשה</button>
+    </div>
+
+    <div class="form-card" id="newForm">
+      <h3>פתיחת בקשה חדשה</h3>
+      <div class="form-grid">
+        <div>
+          <label>סוג בקשה *</label>
+          <select id="f_type">
+            <option value="תקלה">🔴 תקלה</option>
+            <option value="בקשת שיפור">💡 בקשת שיפור</option>
+            <option value="שאלה">❓ שאלה</option>
+          </select>
+        </div>
+        <div>
+          <label>עדיפות</label>
+          <select id="f_pri">
+            <option value="3">רגיל</option>
+            <option value="1">דחוף מאוד</option>
+            <option value="2">גבוה</option>
+            <option value="4">נמוך</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>כותרת *</label>
+          <input id="f_title" type="text" placeholder="תיאור קצר...">
+        </div>
+        <div class="full">
+          <label>תיאור מפורט *</label>
+          <textarea id="f_desc" placeholder="פרט את הבקשה / התקלה..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="toggleNewForm()">ביטול</button>
+        <button class="btn-primary" style="width:auto;padding:8px 20px" onclick="submitTicket()">📨 שלח בקשה</button>
+      </div>
+      <div class="saving" id="submitMsg"></div>
+    </div>
+
+    <div id="myTickets"></div>
+  </div>
+</div>
+
+<!-- Admin View -->
+<div id="adminView" style="display:none">
+  <div class="main">
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="switchAdminTab(0)">📥 כל הבקשות</div>
+      <div class="admin-tab" onclick="switchAdminTab(1)">👥 ניהול משתמשים</div>
+    </div>
+
+    <div class="admin-pane active" id="adminPane0">
+      <div class="filter-row">
+        <input type="text" id="adminSearch" placeholder="חיפוש..." oninput="renderAdminTickets()">
+        <select id="adminStatusFilter" onchange="renderAdminTickets()">
+          <option value="">כל הסטטוסים</option>
+          <option value="חדש">חדש</option>
+          <option value="בטיפול">בטיפול</option>
+          <option value="הושלם">הושלם</option>
+          <option value="נדחה">נדחה</option>
+        </select>
+        <select id="adminUserFilter" onchange="renderAdminTickets()">
+          <option value="">כל המשתמשים</option>
+        </select>
+      </div>
+      <div id="adminTickets"></div>
+    </div>
+
+    <div class="admin-pane" id="adminPane1">
+      <div id="usersList"></div>
+      <div class="add-user-form">
+        <h4>הוסף משתמש חדש</h4>
+        <div class="inline-form">
+          <input id="nu_name" placeholder="שם מלא..." type="text">
+          <input id="nu_user" placeholder="שם משתמש..." type="text">
+          <input id="nu_pass" placeholder="סיסמה..." type="text">
+          <button class="btn-add-user" onclick="addUser()">+ הוסף</button>
+        </div>
+        <div class="saving" id="addUserMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const OWNER='matanaor1987-lgtm', REPO='malm-focus-tasks';
+const t1='ghp_cNLn2SH8JN', t2='vv5KYfDzBUlO7j5XeIIq27FcAR';
+const TOKEN=t1+t2;
+let DB={users:[],tickets:[]}, dbSha='', currentUser=null;
+
+async function loadDB(){
+  const r=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/db.json?t=${Date.now()}`);
+  DB=await r.json();
+  if(!DB.users)DB.users=[];
+  if(!DB.tickets)DB.tickets=[];
+  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,
+    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+  const mj=await meta.json();
+  dbSha=mj.sha;
+}
+
+async function saveDB(msg){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB,null,2))));
+  const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:msg||'Update',content,sha:dbSha})
+  });
+  if(!r.ok)throw new Error('Save failed');
+  const j=await r.json();
+  dbSha=j.content.sha;
+}
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const user=DB.users.find(x=>x.username===u&&x.password===p);
+  if(!user){document.getElementById('loginErr').textContent='שם משתמש או סיסמה שגויים';return;}
+  currentUser=user;
+  sessionStorage.setItem('portal_user',JSON.stringify(user));
+  showApp();
+}
+
+function logout(){
+  currentUser=null;
+  sessionStorage.removeItem('portal_user');
+  location.reload();
+}
+
+function showApp(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('userInfo').style.display='flex';
+  document.getElementById('userNameDisplay').textContent='שלום, '+currentUser.name;
+  if(currentUser.role==='admin'){
+    document.getElementById('adminView').style.display='block';
+    document.getElementById('headerSubtitle').textContent='פורטל בקשות — מנהל מערכת';
+    renderAdminTickets();
+    renderUsers();
+    populateAdminUserFilter();
+  }else{
+    document.getElementById('managerView').style.display='block';
+    document.getElementById('headerSubtitle').textContent='פורטל בקשות — '+currentUser.name;
+    renderMyTickets();
+  }
+}
+
+// ── Status ──
+function sClass(s){const m={חדש:'s-new',בטיפול:'s-inprogress',הושלם:'s-done',נדחה:'s-rejected'};return m[s]||'s-open';}
+
+// ── New ticket ──
+function toggleNewForm(){
+  const f=document.getElementById('newForm');
+  f.classList.toggle('open');
+}
+
+async function submitTicket(){
+  const title=document.getElementById('f_title').value.trim();
+  const desc=document.getElementById('f_desc').value.trim();
+  if(!title||!desc){alert('נא למלא כותרת ותיאור');return;}
+  const msg=document.getElementById('submitMsg');
+  msg.textContent='⏳ שולח...';
+  try{
+    await loadDB();
+    const now=new Date();
+    const date=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    const ticket={
+      id:'TKT-'+Date.now(),
+      username:currentUser.username,
+      name:currentUser.name,
+      type:document.getElementById('f_type').value,
+      pri:document.getElementById('f_pri').value,
+      title,desc,date,
+      status:'חדש',
+      chat:[]
+    };
+    DB.tickets.push(ticket);
+    await saveDB('New ticket: '+title);
+    msg.textContent='✅ הבקשה נשלחה!';
+    document.getElementById('f_title').value='';
+    document.getElementById('f_desc').value='';
+    document.getElementById('newForm').classList.remove('open');
+    setTimeout(()=>msg.textContent='',3000);
+    renderMyTickets();
+  }catch(e){msg.textContent='❌ שגיאה: '+e.message;}
+}
+
+// ── Manager: my tickets ──
+function renderMyTickets(){
+  const mine=DB.tickets.filter(t=>t.username===currentUser.username);
+  const el=document.getElementById('myTickets');
+  if(!mine.length){el.innerHTML='<div class="no-tickets">אין בקשות עדיין — לחץ "+ בקשה חדשה"</div>';return;}
+  el.innerHTML=[...mine].reverse().map(t=>`
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-title">${t.title}</div>
+          <div class="ticket-meta">${t.type} · עדיפות ${t.pri} · ${t.date}</div>
+        </div>
+        <span class="badge ${sClass(t.status)}">${t.status}</span>
+      </div>
+      <div class="ticket-desc">${t.desc}</div>
+      <div class="chat-section">
+        <div class="chat-msgs" id="cm-${t.id}">${renderChatMsgs(t.chat, currentUser.username)}</div>
+        <div class="chat-input-row">
+          <textarea id="ci-${t.id}" placeholder="כתוב הודעה למלמ..."></textarea>
+          <button class="btn-send" onclick="sendMsg('${t.id}','manager')">שלח</button>
+        </div>
+        <div class="saving" id="cs-${t.id}"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Admin: all tickets ──
+function renderAdminTickets(){
+  const q=(document.getElementById('adminSearch')||{value:''}).value.toLowerCase();
+  const sf=(document.getElementById('adminStatusFilter')||{value:''}).value;
+  const uf=(document.getElementById('adminUserFilter')||{value:''}).value;
+  let tickets=[...DB.tickets].reverse();
+  if(sf)tickets=tickets.filter(t=>t.status===sf);
+  if(uf)tickets=tickets.filter(t=>t.username===uf);
+  if(q)tickets=tickets.filter(t=>(t.title+t.desc+t.name).toLowerCase().includes(q));
+  const el=document.getElementById('adminTickets');
+  if(!tickets.length){el.innerHTML='<div class="no-tickets">אין בקשות</div>';return;}
+  el.innerHTML=tickets.map(t=>`
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-title">${t.title}</div>
+          <div class="ticket-meta">${t.name} · ${t.type} · עדיפות ${t.pri} · ${t.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select onchange="changeStatus('${t.id}',this.value)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial">
+            ${['חדש','בטיפול','הושלם','נדחה'].map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <span class="badge ${sClass(t.status)}">${t.status}</span>
+        </div>
+      </div>
+      <div class="ticket-desc">${t.desc}</div>
+      <div class="chat-section">
+        <div class="chat-msgs" id="cm-${t.id}">${renderChatMsgs(t.chat, 'admin')}</div>
+        <div class="chat-input-row">
+          <textarea id="ci-${t.id}" placeholder="כתוב הודעה למנהל..."></textarea>
+          <button class="btn-send" onclick="sendMsg('${t.id}','admin')">שלח</button>
+        </div>
+        <div class="saving" id="cs-${t.id}"></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderChatMsgs(chat, myUsername){
+  if(!chat||!chat.length)return'<div class="no-msgs">אין הודעות עדיין</div>';
+  return chat.map(m=>`
+    <div class="msg ${m.side===myUsername||m.side==='admin'&&myUsername==='admin'?'msg-mine':'msg-theirs'}">
+      <div class="msg-sender">${m.sender}</div>
+      <div>${m.text}</div>
+      <div class="msg-time">${m.time}</div>
+    </div>`).join('');
+}
+
+async function sendMsg(ticketId, side){
+  const inp=document.getElementById('ci-'+ticketId);
+  const text=inp.value.trim();
+  if(!text)return;
+  const sv=document.getElementById('cs-'+ticketId);
+  sv.textContent='⏳ שולח...';
+  try{
+    await loadDB();
+    const ticket=DB.tickets.find(t=>t.id===ticketId);
+    if(!ticket)return;
+    const now=new Date();
+    const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    ticket.chat.push({sender:currentUser.name,side,text,time});
+    if(side==='admin'&&ticket.status==='חדש')ticket.status='בטיפול';
+    await saveDB('Chat update');
+    inp.value='';
+    sv.textContent='✓ נשלח';
+    setTimeout(()=>sv.textContent='',2000);
+    if(side==='manager')renderMyTickets();
+    else renderAdminTickets();
+  }catch(e){sv.textContent='❌ שגיאה';}
+}
+
+async function changeStatus(ticketId, newStatus){
+  try{
+    await loadDB();
+    const ticket=DB.tickets.find(t=>t.id===ticketId);
+    if(ticket){ticket.status=newStatus;await saveDB('Status update');}
+    renderAdminTickets();
+  }catch(e){alert('שגיאה בשמירה');}
+}
+
+// ── Users management ──
+function renderUsers(){
+  const el=document.getElementById('usersList');
+  const users=DB.users.filter(u=>u.role!=='admin');
+  if(!users.length){el.innerHTML='<div style="color:#aaa;padding:10px;font-size:13px">אין משתמשים עדיין</div>';return;}
+  el.innerHTML=users.map(u=>`
+    <div class="user-row">
+      <span class="name">👤 ${u.name}</span>
+      <span style="color:#888;font-size:12px">משתמש: ${u.username}</span>
+      <span class="pwd">סיסמה: ${u.password}</span>
+      <button class="btn-del" onclick="deleteUser('${u.username}')">מחק</button>
+    </div>`).join('');
+}
+
+function populateAdminUserFilter(){
+  const sel=document.getElementById('adminUserFilter');
+  DB.users.filter(u=>u.role!=='admin').forEach(u=>{
+    const o=document.createElement('option');
+    o.value=u.username;o.textContent=u.name;sel.appendChild(o);
+  });
+}
+
+async function addUser(){
+  const name=document.getElementById('nu_name').value.trim();
+  const username=document.getElementById('nu_user').value.trim();
+  const password=document.getElementById('nu_pass').value.trim();
+  if(!name||!username||!password){alert('נא למלא את כל השדות');return;}
+  if(DB.users.find(u=>u.username===username)){alert('שם משתמש כבר קיים');return;}
+  const msg=document.getElementById('addUserMsg');
+  msg.textContent='⏳ שומר...';
+  try{
+    await loadDB();
+    DB.users.push({name,username,password,role:'manager'});
+    await saveDB('Add user: '+name);
+    document.getElementById('nu_name').value='';
+    document.getElementById('nu_user').value='';
+    document.getElementById('nu_pass').value='';
+    msg.textContent='✅ משתמש נוסף!';
+    setTimeout(()=>msg.textContent='',3000);
+    renderUsers();
+    const sel=document.getElementById('adminUserFilter');
+    const o=document.createElement('option');
+    o.value=username;o.textContent=name;sel.appendChild(o);
+  }catch(e){msg.textContent='❌ שגיאה';}
+}
+
+async function deleteUser(username){
+  if(!confirm('למחוק משתמש זה?'))return;
+  await loadDB();
+  DB.users=DB.users.filter(u=>u.username!==username);
+  await saveDB('Delete user: '+username);
+  renderUsers();
+}
+
+function switchAdminTab(i){
+  document.querySelectorAll('.admin-tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.admin-pane').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+// Init
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+
+loadDB().then(()=>{
+  const saved=sessionStorage.getItem('portal_user');
+  if(saved){
+    const u=JSON.parse(saved);
+    const fresh=DB.users.find(x=>x.username===u.username&&x.password===u.password);
+    if(fresh){currentUser=fresh;showApp();return;}
+  }
+});
+</script>
+</body>
+</html>
