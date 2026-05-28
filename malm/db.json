@@ -13274,14 +13274,19 @@
       "desc": "ASDASDASD",
       "date": "28.5.2026 19:51",
       "status": "חדש",
-      "chat": [
-        {
-          "sender": "TETS",
-          "side": "manager",
-          "text": "DFGDFGHFDGJH",
-          "time": "28.5.2026 19:57"
-        }
-      ]
+      "chat": []
+    },
+    {
+      "id": "TKT-1779987457917",
+      "username": "MNAOR",
+      "name": "TETS",
+      "type": "תקלה",
+      "pri": "1",
+      "title": "GFHFGH",
+      "desc": "FGHJFGHJKGHJKLGHJKGFJGFK",
+      "date": "28.5.2026 19:57",
+      "status": "חדש",
+      "chat": []
     }
   ]
 }
