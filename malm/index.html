@@ -475,13 +475,16 @@ async function tSend(btn) {
   if (!inp||!inp.value.trim()) return;
   var text = inp.value.trim();
   inp.value='';
-  // Load FRESH DB from server before saving to avoid overwriting other chats
-  var fr = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
-  var serverDB = await fr.json();
+  // Load FRESH DB with SHA in one call
   var fm = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
     {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var fmj = await fm.json(); dbSha = fmj.sha;
+  var fmj = await fm.json();
+  dbSha = fmj.sha;
+  var b64 = fmj.content.replace(/\n/g,'');
+  var bin = atob(b64);
+  var bytes = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  var serverDB = JSON.parse(new TextDecoder('utf-8').decode(bytes));
   // Add message to the specific ticket in SERVER data
   var t = (serverDB.tickets||[]).find(function(x){ return x.id===id; });
   if (!t) return;
