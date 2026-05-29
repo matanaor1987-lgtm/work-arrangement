@@ -560,14 +560,21 @@ async function delUser(username) {
 
 function switchTab(i) {
   currentTab = i;
-  document.querySelectorAll('.tab').forEach(function(t,j){ t.classList.toggle('active', j===i); });
-  document.querySelectorAll('.pane').forEach(function(p,j){ p.classList.toggle('active', j===i); });
+  document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+  // Use getElementById for reliable pane selection
+  ['pane0','pane1','pane2'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  var target = document.getElementById('pane'+i);
+  if (target) target.classList.add('active');
   var ba = document.getElementById('btnAdd');
   if (ba) {
-    ba.style.display = 'block';
-    ba.textContent = (i===0) ? '+ משימה חדשה (מלמ)' : (i===1) ? '+ משימה חדשה (רבקה)' : '';
-    if (i===2) { ba.style.display='none'; renderUsers(); }
+    ba.style.display = (i===2) ? 'none' : 'block';
+    if (i===0) ba.textContent = '+ משימה חדשה (מלמ)';
+    if (i===1) ba.textContent = '+ משימה חדשה (רבקה)';
   }
+  if (i===2) renderUsers();
 }
 
 
