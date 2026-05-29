@@ -216,10 +216,7 @@ tr:hover td{background:#fffbf0}
     </div>
     <!-- Chat -->
     <div class="chat-section" id="chatSection" style="display:none">
-      <div class="chat-tabs">
-        <div class="chat-tab active" onclick="switchChatTab('malm')">💬 הערות מלמ</div>
-        <div class="chat-tab" onclick="switchChatTab('dhl')">💬 הערות DHL</div>
-      </div>
+      <div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0">💬 הערות</div>
       <div class="chat-messages" id="chatMessages"></div>
       <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
         📎 גרור קובץ לכאן או לחץ לבחירה (.msg, .pdf, .docx, .xlsx, תמונות)
@@ -470,9 +467,7 @@ function openEdit(sheet,idx){
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
-  chatTab = isAdmin() ? 'malm' : 'dhl';
   pendingFiles=[];
-  document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active', isAdmin()?i===0:i===1));
   setTimeout(function(){ var lbl=document.getElementById('chatSenderLabel'); if(lbl&&CU) lbl.textContent=CU.name; },50);
   renderChat();
   renderAttachments();
@@ -714,11 +709,15 @@ function switchChatTab(tab){
 function renderChat(){
   if(editIdx===-1)return;
   const rec=DB[editSheet][editIdx];
-  const msgs=(rec.chat||{})[chatTab]||[];
+  const chat=rec.chat||{};
+  const all=[
+    ...(chat.malm||[]).map(m=>({...m,side:'malm'})),
+    ...(chat.dhl||[]).map(m=>({...m,side:'dhl'}))
+  ].sort((a,b)=>a.time.localeCompare(b.time));
   const el=document.getElementById('chatMessages');
-  if(!msgs.length){el.innerHTML='<div class="no-msgs">אין הערות עדיין</div>';return}
-  el.innerHTML=msgs.map(m=>`
-    <div class="msg msg-${m.side==='מלמ'?'malm':'dhl'}">
+  if(!all.length){el.innerHTML='<div class="no-msgs">אין הערות עדיין</div>';return}
+  el.innerHTML=all.map(m=>`
+    <div class="msg msg-${m.side==='malm'?'malm':'dhl'}">
       <div class="msg-sender">${m.sender}</div>
       <div>${m.text}</div>
       ${(m.files||[]).map(f=>`<div style="margin-top:4px"><a href="${f.url}" target="_blank" style="font-size:11px;color:#1565c0">📎 ${f.name} <span style="color:#999">${f.size}</span></a></div>`).join('')}
@@ -740,6 +739,7 @@ function sendMsg(){
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   const files=[...pendingFiles];
   rec.chat[side].push({sender,side,text:text||'📎 צרף קבצים',time,files});
+  chatTab=side;
   document.getElementById('chatInput').value='';
   pendingFiles=[];
   renderAttachments();
