@@ -155,8 +155,8 @@ tr:hover td{background:#fffbf0}
 </div>
 
 <div class="tabs" id="mainTabs" style="display:none">
-  <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
-  <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
+  <div class="tab active" id="tab0" onclick="switchTab(0)">משימות מלמ כולל</div>
+  <div class="tab" id="tab1" onclick="switchTab(1)">משימות לרבקה</div>
   <div class="tab" id="tabUsers" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
 </div>
 
@@ -260,7 +260,7 @@ async function loadDB(){
     const jj=await meta.json();
     dbSha=jj.sha;
     // Session restore
-    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('btnAdd').style.display='block';document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0){document.getElementById('tabUsers').style.display='block';}if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
+    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0){document.getElementById('tabUsers').style.display='block';document.getElementById('btnAdd').style.display='block';}else{document.getElementById('tab0').style.display='none';document.getElementById('btnAdd').style.display='block';}if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
     if(!CU){document.getElementById('lgOverlay').style.display='flex';}
     initFilters();r1();r2();
   }catch(e){
@@ -503,10 +503,19 @@ function showApp() {
   document.getElementById('lgOverlay').style.display = 'none';
   document.getElementById('uBadge').style.display = 'flex';
   document.getElementById('uName').textContent = 'שלום, ' + CU.name;
-  document.getElementById('btnAdd').style.display = 'block';
   document.getElementById('mainTabs').style.display = 'flex';
-  if (isAdmin()) document.getElementById('tabUsers').style.display = 'block';
-  initFilters(); r1(); r2();
+  if (isAdmin()) {
+    document.getElementById('tabUsers').style.display = 'block';
+    document.getElementById('btnAdd').style.display = 'block';
+    document.getElementById('tab0').style.display = 'block';
+    initFilters(); r1(); r2();
+  } else {
+    // Non-admin: hide malm tab, show only rivka
+    document.getElementById('tab0').style.display = 'none';
+    document.getElementById('btnAdd').style.display = 'block';
+    switchTab(1);
+    r2();
+  }
 }
 
 // ── Users tab ──────────────────────────
