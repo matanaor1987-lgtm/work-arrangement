@@ -422,7 +422,7 @@ function r2(){
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
     ?f.map(r=>{const idx=DB.rivka.indexOf(r);return`<tr>
-      <td><button class="act-btn" onclick="openEdit('rivka',${idx})" title="עריכה">✏️</button></td>
+      <td>${(!CU||isAdmin()||r.מב===CU.name)?`<button class="act-btn" onclick="openEdit('rivka',${idx})" title="עריכה">✏️</button>`:''}</td>
       <td>${m(r.נ)}</td><td>${m(r.מב)}</td>
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.כ?`<strong>${r.כ}</strong><br>`:''} ${r.ב||''}</td>
