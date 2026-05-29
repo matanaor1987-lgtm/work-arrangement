@@ -469,7 +469,7 @@ document.addEventListener('mouseout',function(e){
 // ═══════════════════════════════════════
 
 var CU = null; // current user
-var ADMIN_ROLES = ['admin', 'malam'];
+var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
 
 // ── Login ──────────────────────────────
 async function lgLogin() {
@@ -489,7 +489,7 @@ function lgLogout() {
 }
 
 function isAdmin() {
-  return CU && ADMIN_ROLES.indexOf(CU.role) >= 0;
+  return CU && CU.role !== 'manager';
 }
 
 function canEdit(row) {
