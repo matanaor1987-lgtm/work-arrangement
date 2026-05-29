@@ -1,4 +1,165 @@
-<!DOCTY
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דוח משימות מלמ פוקוס</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
+.header{background:#FECC02;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #D40511}
+.logo{font-size:20px;font-weight:700;color:#D40511;letter-spacing:1px}
+.subtitle{font-size:13px;color:#333;flex:1}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial}
+.btn-add{background:#D40511;color:#fff}
+.btn-add:hover{background:#b0040e}
+.btn-save{background:#2e7d32;color:#fff}
+.btn-cancel{background:#757575;color:#fff}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #FECC02;padding:0 20px}
+.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:#1a1a2e;background:#fffbf0}
+.tab.active{color:#D40511;border-bottom-color:#D40511}
+.pane{display:none;padding:14px 20px}
+.pane.active{display:block}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:80px}
+.stat .n{font-size:20px;font-weight:700}
+.stat .l{font-size:11px;color:#777}
+.n-open{color:#D40511}.n-done{color:#2e7d32}.n-frozen{color:#e65100}.n-cancel{color:#999}.n-wait{color:#3949ab}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filters input,.filters select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
+.filters input{min-width:200px}
+.count{font-size:12px;color:#888;margin-bottom:8px}
+.tbl-wrap{overflow-x:auto;background:#fff;border-radius:8px;border:1px solid #e8e8e8}
+table{width:100%;border-collapse:collapse}
+th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap;font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:12px}
+tr:hover td{background:#fffbf0}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.s-פתוח{background:#fde8e8;color:#c62828}
+.s-בבדיקה{background:#e3f2fd;color:#1565c0}
+.s-מוקפא{background:#fff3e0;color:#e65100}
+.s-הושהה{background:#f3e5f5;color:#6a1b9a}
+.s-בוצע{background:#e8f5e9;color:#2e7d32}
+.s-טופל{background:#e8f5e9;color:#1b5e20}
+.s-בוטל{background:#f5f5f5;color:#9e9e9e}
+.s-ממתין-לבדיקה{background:#e8eaf6;color:#3949ab}
+.muted{color:#ccc}
+.nores{text-align:center;padding:30px;color:#aaa}
+.act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
+.act-btn:hover{background:#f0f0f0}
+.saving{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #FECC02;padding-bottom:8px}
+.form-row{margin-bottom:11px}
+.form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
+.form-row textarea{height:75px;resize:vertical}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
+.dtag{font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:2px}
+.loading{text-align:center;padding:40px;color:#999;font-size:14px}
+
+
+/* Chat tooltip */
+.chat-preview{position:relative;cursor:pointer;font-size:11px;line-height:1.6}
+.chat-last{color:#555}
+.chat-last span.ml{color:#1565c0;font-weight:600}
+.chat-last span.dh{color:#e65100;font-weight:600}
+.chat-tooltip{display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:14px;width:320px;max-height:360px;overflow-y:auto;font-size:12px}
+.tt-msg{padding:6px 10px;border-radius:8px;margin-bottom:6px;line-height:1.5}
+.tt-msg.malm{background:#e3f2fd;text-align:right}
+.tt-msg.dhl{background:#fff3e0;text-align:left}
+.tt-sender{font-size:10px;font-weight:700;margin-bottom:2px}
+.tt-sender.malm{color:#1565c0}
+.tt-sender.dhl{color:#e65100}
+.tt-time{font-size:9px;color:#999;margin-top:2px}
+.tt-divider{font-size:10px;color:#aaa;text-align:center;margin:8px 0;border-top:1px solid #f0f0f0;padding-top:6px}
+.no-chat{color:#ccc;font-size:11px}
+
+/* File upload */
+.drop-zone{border:2px dashed #ddd;border-radius:8px;padding:10px 14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;transition:all .2s;margin-bottom:8px}
+.drop-zone.drag-over{border-color:#D40511;background:#fff5f5;color:#D40511}
+.drop-zone:hover{border-color:#bbb;color:#888}
+.attachments{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.att-item{display:flex;align-items:center;gap:6px;background:#f0f7ff;border:1px solid #b3d4f5;border-radius:6px;padding:4px 10px;font-size:11px}
+.att-item a{color:#1565c0;text-decoration:none;font-weight:600}
+.att-item a:hover{text-decoration:underline}
+.att-size{color:#999;font-size:10px}
+.uploading{color:#e65100;font-size:11px;padding:4px 0}
+/* Chat */
+.chat-section{margin-top:20px;border-top:2px solid #FECC02;padding-top:16px}
+.chat-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #e0e0e0}
+.chat-tab{padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;color:#666;border-bottom:2px solid transparent}
+.chat-tab.active{color:#D40511;border-bottom-color:#D40511}
+.chat-messages{height:200px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:75%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.msg-malm{background:#e3f2fd;color:#1a1a2e;align-self:flex-end;border-bottom-left-radius:2px}
+.msg-dhl{background:#fff3e0;color:#1a1a2e;align-self:flex-start;border-bottom-right-radius:2px}
+.msg-time{font-size:10px;color:#999;margin-top:3px}
+.msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
+.msg-malm .msg-sender{color:#1565c0}
+.msg-dhl .msg-sender{color:#e65100}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:60px}
+.chat-send-col{display:flex;flex-direction:column;gap:6px}
+.chat-sender-sel{padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial}
+.btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap}
+.btn-send:hover{background:#b0040e}
+.no-msgs{color:#bbb;font-size:12px;text-align:center;padding:20px}
+
+.lg-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
+.lg-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
+.lg-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
+.lg-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
+.lg-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
+.lg-inp:focus{border-color:#D40511;outline:none}
+.lg-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
+.lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
+.u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
+.btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
+</style>
+</head>
+<body>
+
+<div class="lg-overlay" id="lgOverlay">
+  <div class="lg-box">
+    <div class="lg-logo">DHL Express</div>
+    <h3>כניסה למערכת</h3>
+    <input type="text" id="lgUser" class="lg-inp" placeholder="שם משתמש...">
+    <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
+    <button class="lg-btn" id="lgBtn">כניסה</button>
+    <div class="lg-err" id="lgErr"></div>
+  </div>
+</div>
+<div class="pane" id="pane2" style="padding:14px 20px">
+  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
+  <div id="usersList"></div>
+  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e">הוסף משתמש חדש</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
+    </div>
+    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+<div class="header">
+  <div class="logo">DHL Express</div>
+  <div class="subtitle" style="flex:1">דוח משימות מלמ פוקוס</div>
+  <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
+  <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
+</div>
+
+<div class="tabs" id="mainTabs" style="display:none">
+  <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
+  <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
+  <div class="tab" id="tabUsers" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
+</div>
+
 <div class="pane active" id="pane0">
   <div class="stats" id="s1"></div>
   <div class="filters">
@@ -99,7 +260,7 @@ async function loadDB(){
     const jj=await meta.json();
     dbSha=jj.sha;
     // Session restore
-    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('btnAdd').style.display='block';document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
+    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('btnAdd').style.display='block';document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0){document.getElementById('tabUsers').style.display='block';}if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
     if(!CU){document.getElementById('lgOverlay').style.display='flex';}
     initFilters();r1();r2();
   }catch(e){
@@ -400,20 +561,11 @@ async function delUser(username) {
 function switchTab(i) {
   currentTab = i;
   document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){ t.classList.toggle('active', j===i); });
-  // Use getElementById for reliable pane selection
-  ['pane0','pane1','pane2'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('active');
-  });
-  var target = document.getElementById('pane'+i);
-  if (target) target.classList.add('active');
-  var ba = document.getElementById('btnAdd');
-  if (ba) {
-    ba.style.display = (i===2) ? 'none' : 'block';
-    if (i===0) ba.textContent = '+ משימה חדשה (מלמ)';
-    if (i===1) ba.textContent = '+ משימה חדשה (רבקה)';
-  }
-  if (i===2) renderUsers();
+  ['pane0','pane1','pane2'].forEach(function(id){ var el=document.getElementById(id); if(el)el.classList.remove('active'); });
+  var target=document.getElementById('pane'+i); if(target)target.classList.add('active');
+  var ba=document.getElementById('btnAdd');
+  if(ba){ ba.style.display=(i===2)?'none':'block'; if(i===0)ba.textContent='+ משימה חדשה (מלמ)'; if(i===1)ba.textContent='+ משימה חדשה (רבקה)'; }
+  if(i===2)renderUsers();
 }
 
 
@@ -583,187 +735,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-</html>PE html>
-<html lang="he" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>דוח משימות מלמ פוקוס</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
-.header{background:#FECC02;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #D40511}
-.logo{font-size:20px;font-weight:700;color:#D40511;letter-spacing:1px}
-.subtitle{font-size:13px;color:#333;flex:1}
-.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial}
-.btn-add{background:#D40511;color:#fff}
-.btn-add:hover{background:#b0040e}
-.btn-save{background:#2e7d32;color:#fff}
-.btn-cancel{background:#757575;color:#fff}
-.tabs{display:flex;background:#fff;border-bottom:2px solid #FECC02;padding:0 20px}
-.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
-.tab:hover{color:#1a1a2e;background:#fffbf0}
-.tab.active{color:#D40511;border-bottom-color:#D40511}
-.pane{display:none;padding:14px 20px}
-.pane.active{display:block}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:80px}
-.stat .n{font-size:20px;font-weight:700}
-.stat .l{font-size:11px;color:#777}
-.n-open{color:#D40511}.n-done{color:#2e7d32}.n-frozen{color:#e65100}.n-cancel{color:#999}.n-wait{color:#3949ab}
-.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.filters input,.filters select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
-.filters input{min-width:200px}
-.count{font-size:12px;color:#888;margin-bottom:8px}
-.tbl-wrap{overflow-x:auto;background:#fff;border-radius:8px;border:1px solid #e8e8e8}
-table{width:100%;border-collapse:collapse}
-th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap;font-weight:600}
-td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:12px}
-tr:hover td{background:#fffbf0}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
-.s-פתוח{background:#fde8e8;color:#c62828}
-.s-בבדיקה{background:#e3f2fd;color:#1565c0}
-.s-מוקפא{background:#fff3e0;color:#e65100}
-.s-הושהה{background:#f3e5f5;color:#6a1b9a}
-.s-בוצע{background:#e8f5e9;color:#2e7d32}
-.s-טופל{background:#e8f5e9;color:#1b5e20}
-.s-בוטל{background:#f5f5f5;color:#9e9e9e}
-.s-ממתין-לבדיקה{background:#e8eaf6;color:#3949ab}
-.muted{color:#ccc}
-.nores{text-align:center;padding:30px;color:#aaa}
-.act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
-.act-btn:hover{background:#f0f0f0}
-.saving{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:15px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #FECC02;padding-bottom:8px}
-.form-row{margin-bottom:11px}
-.form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
-.form-row textarea{height:75px;resize:vertical}
-.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
-.dtag{font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:2px}
-.loading{text-align:center;padding:40px;color:#999;font-size:14px}
-
-
-/* Chat tooltip */
-.chat-preview{position:relative;cursor:pointer;font-size:11px;line-height:1.6}
-.chat-last{color:#555}
-.chat-last span.ml{color:#1565c0;font-weight:600}
-.chat-last span.dh{color:#e65100;font-weight:600}
-.chat-tooltip{display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:14px;width:320px;max-height:360px;overflow-y:auto;font-size:12px}
-.tt-msg{padding:6px 10px;border-radius:8px;margin-bottom:6px;line-height:1.5}
-.tt-msg.malm{background:#e3f2fd;text-align:right}
-.tt-msg.dhl{background:#fff3e0;text-align:left}
-.tt-sender{font-size:10px;font-weight:700;margin-bottom:2px}
-.tt-sender.malm{color:#1565c0}
-.tt-sender.dhl{color:#e65100}
-.tt-time{font-size:9px;color:#999;margin-top:2px}
-.tt-divider{font-size:10px;color:#aaa;text-align:center;margin:8px 0;border-top:1px solid #f0f0f0;padding-top:6px}
-.no-chat{color:#ccc;font-size:11px}
-
-/* File upload */
-.drop-zone{border:2px dashed #ddd;border-radius:8px;padding:10px 14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;transition:all .2s;margin-bottom:8px}
-.drop-zone.drag-over{border-color:#D40511;background:#fff5f5;color:#D40511}
-.drop-zone:hover{border-color:#bbb;color:#888}
-.attachments{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.att-item{display:flex;align-items:center;gap:6px;background:#f0f7ff;border:1px solid #b3d4f5;border-radius:6px;padding:4px 10px;font-size:11px}
-.att-item a{color:#1565c0;text-decoration:none;font-weight:600}
-.att-item a:hover{text-decoration:underline}
-.att-size{color:#999;font-size:10px}
-.uploading{color:#e65100;font-size:11px;padding:4px 0}
-/* Chat */
-.chat-section{margin-top:20px;border-top:2px solid #FECC02;padding-top:16px}
-.chat-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #e0e0e0}
-.chat-tab{padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;color:#666;border-bottom:2px solid transparent}
-.chat-tab.active{color:#D40511;border-bottom-color:#D40511}
-.chat-messages{height:200px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:75%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
-.msg-malm{background:#e3f2fd;color:#1a1a2e;align-self:flex-end;border-bottom-left-radius:2px}
-.msg-dhl{background:#fff3e0;color:#1a1a2e;align-self:flex-start;border-bottom-right-radius:2px}
-.msg-time{font-size:10px;color:#999;margin-top:3px}
-.msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
-.msg-malm .msg-sender{color:#1565c0}
-.msg-dhl .msg-sender{color:#e65100}
-.chat-input-row{display:flex;gap:8px;align-items:flex-end}
-.chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:60px}
-.chat-send-col{display:flex;flex-direction:column;gap:6px}
-.chat-sender-sel{padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial}
-.btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap}
-.btn-send:hover{background:#b0040e}
-.no-msgs{color:#bbb;font-size:12px;text-align:center;padding:20px}
-
-.lg-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
-.lg-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
-.lg-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
-.lg-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
-.lg-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
-.lg-inp:focus{border-color:#D40511;outline:none}
-.lg-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
-.lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
-.u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
-.btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
-</style>
-</head>
-<body>
-
-<div class="lg-overlay" id="lgOverlay">
-  <div class="lg-box">
-    <div class="lg-logo">DHL Express</div>
-    <h3>כניסה למערכת</h3>
-    <input type="text" id="lgUser" class="lg-inp" placeholder="שם משתמש...">
-    <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
-    <button class="lg-btn" id="lgBtn">כניסה</button>
-    <div class="lg-err" id="lgErr"></div>
-  </div>
-</div>
-
-<div class="pane" id="pane2" style="padding:14px 20px">
-  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
-  <div id="usersList"></div>
-  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e">הוסף משתמש חדש</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
-      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
-    </div>
-    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
-  </div>
-</div>
-<div class="header">
-  <div class="logo">DHL Express</div>
-  <div class="subtitle" style="flex:1">דוח משימות מלמ פוקוס</div>
-  <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
-  <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
-</div>
-
-<div class="tabs" id="mainTabs" style="display:none">
-  <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
-  <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
-  <div class="tab" id="tabUsers" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
-</div>
-
-<div class="pane active" id="pane0">
-  <div class="stats" id="s1"></div>
-  <div class="filters">
-    <input type="text" id="q1" placeholder="חיפוש חופשי..." oninput="r1()">
-    <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option></select>
-    <select id="dm1" onchange="r1()"><option value="">כל התחומים</option></select>
-    <select id="pr1" onchange="r1()">
-      <option value="">כל העדיפויות</option>
-      <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-      <option value="4">4</option><option value="5">5</option>
-    </select>
-  </div>
-  <div class="count" id="c1"></div>
-  <div class="tbl-wrap">
-    <table><thead><tr>
-      <th style="width:30px"></th><th style="width:88px">תאריך</th><th>תחום / משימה</th>
-      <th style="width:36px">עד'</th><th style="width:90px">סטטוס</th>
-      <th style="width:70px">DHL</th><th style="width:70px">אחראי</th><th>💬 הערות</th>
-    </tr></thead><tbody id="b1"><tr><td colspan="8" class="loading">טוען נתונים...</td></tr></tbody></table>
-  </div>
-</div>
+</html>
