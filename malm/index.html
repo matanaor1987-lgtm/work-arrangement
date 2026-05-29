@@ -109,97 +109,56 @@ tr:hover td{background:#fffbf0}
 .btn-send:hover{background:#b0040e}
 .no-msgs{color:#bbb;font-size:12px;text-align:center;padding:20px}
 
-.login-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
-.login-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
-.login-box .dhl{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
-.login-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
-.login-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
-.login-inp:focus{border-color:#D40511;outline:none}
-.login-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
-.login-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
-.ubadge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
+.lg-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
+.lg-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
+.lg-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
+.lg-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
+.lg-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
+.lg-inp:focus{border-color:#D40511;outline:none}
+.lg-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
+.lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
+.u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
 .btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
-.mgr-wrap{padding:16px 20px}
-.mgr-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.mgr-hdr h2{font-size:16px;font-weight:700;color:#1a1a2e}
-.btn-newt{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial}
-.tform{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:16px;display:none}
-.tform.open{display:block}
-.tform h3{font-size:14px;color:#1a1a2e;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FECC02}
-.tf-row{margin-bottom:10px}
-.tf-row label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:3px}
-.tf-row input,.tf-row select,.tf-row textarea{width:100%;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl}
-.tf-row textarea{height:75px;resize:vertical}
-.tf-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.btn-tf-cancel{background:#757575;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.tkt{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
-.tkt-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
-.tkt-ttl{font-size:14px;font-weight:700;color:#1a1a2e}
-.tkt-meta{font-size:11px;color:#888;margin-top:2px}
-.tkt-desc{font-size:12px;color:#555;line-height:1.6;margin-bottom:10px}
-.tkt-none{text-align:center;padding:30px;color:#aaa;font-size:14px}
-.bs-new{background:#fff3e0;color:#e65100}
-.bs-ip{background:#e3f2fd;color:#1565c0}
-.bs-done{background:#e8f5e9;color:#2e7d32}
-.bs-rej{background:#f5f5f5;color:#757575}
-.tkt-acts{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.btn-app{background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
-.btn-rej{background:#D40511;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial}
 </style>
 </head>
 <body>
 
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div class="dhl">DHL Express</div>
+<div class="lg-overlay" id="lgOverlay">
+  <div class="lg-box">
+    <div class="lg-logo">DHL Express</div>
     <h3>כניסה למערכת</h3>
-    <input type="text" id="lgUser" class="login-inp" placeholder="שם משתמש...">
-    <input type="password" id="lgPass" class="login-inp" placeholder="סיסמה...">
-    <button class="login-btn" id="lgBtn">כניסה</button>
-    <div class="login-err" id="lgErr"></div>
+    <input type="text" id="lgUser" class="lg-inp" placeholder="שם משתמש...">
+    <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
+    <button class="lg-btn" id="lgBtn">כניסה</button>
+    <div class="lg-err" id="lgErr"></div>
   </div>
 </div>
-<div class="pane" id="pane2" style="padding:0">
-  <div class="mgr-wrap">
-    <div class="mgr-hdr"><h2>הבקשות שלי</h2><button class="btn-newt" id="btnNewT">+ בקשה חדשה</button></div>
-    <div class="tform" id="tForm">
-      <h3>פתיחת בקשה חדשה</h3>
-      <div class="tf-row"><label>סוג</label><select id="tfType"><option value="תקלה">🔴 תקלה</option><option value="בקשת שיפור">💡 בקשת שיפור</option><option value="שאלה">❓ שאלה</option></select></div>
-      <div class="tf-row"><label>עדיפות</label><select id="tfPri"><option value="3">רגיל</option><option value="1">דחוף מאוד</option><option value="2">גבוה</option><option value="4">נמוך</option></select></div>
-      <div class="tf-row"><label>כותרת *</label><input id="tfTitle" type="text" placeholder="תיאור קצר..."></div>
-      <div class="tf-row"><label>תיאור *</label><textarea id="tfDesc" placeholder="פרט את הבקשה..."></textarea></div>
-      <div class="tf-actions">
-        <button class="btn-tf-cancel" id="btnTfCancel">ביטול</button>
-        <button class="login-btn" style="width:auto;padding:8px 18px" id="btnTfSubmit">📨 שלח</button>
-      </div>
-      <div class="saving" id="tfMsg"></div>
+<div class="pane" id="pane2" style="padding:14px 20px">
+  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
+  <div id="usersList"></div>
+  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e">הוסף משתמש חדש</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
     </div>
-    <div id="myTktList"></div>
+    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
   </div>
 </div>
-<div class="pane" id="pane3" style="padding:14px 20px">
-  <select id="adminTFilter" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;margin-bottom:12px">
-    <option value="">כל הסטטוסים</option>
-    <option value="חדש">חדש</option><option value="בטיפול">בטיפול</option>
-    <option value="הושלם">הושלם</option><option value="נדחה">נדחה</option>
-  </select>
-  <div id="adminTktList"></div>
-</div>
-
 <div class="header">
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות מלמ פוקוס</div>
-  <div class="ubadge" id="ubadge" style="display:none"><span id="uname"></span><button class="btn-out" id="btnOut">יציאה</button></div>
+  <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
   <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
-<div class="tabs" id="adminTabs" style="display:none">
+<div class="tabs" id="mainTabs" style="display:none">
   <div class="tab active" onclick="switchTab(0)">משימות מלמ כולל</div>
   <div class="tab" onclick="switchTab(1)">משימות לרבקה</div>
-  <div class="tab" onclick="switchTab(3)">📥 בקשות<span id="reqBadge" style="display:none;background:#D40511;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-right:4px"></span></div>
-  <div class="tab" onclick="switchTab(4)">👥 משתמשים</div>
+  <div class="tab" id="tabUsers" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
 </div>
-<div class="tabs" id="mgrTabs" style="display:none"><div class="tab active">הבקשות שלי</div></div>
 
 <div class="pane active" id="pane0">
   <div class="stats" id="s1"></div>
@@ -283,422 +242,26 @@ tr:hover td{background:#fffbf0}
 
 <div class="saving" id="savingMsg">⏳ שומר ב-GitHub...</div>
 
-
-
-
-
-
-
-<div class="pane" id="pane4" style="padding:14px 20px">
-  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
-  <div id="usersList"></div>
-  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px">הוסף משתמש חדש</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
-      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap">+ הוסף</button>
-    </div>
-    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
-  </div>
-</div>
-
 <script src="config.js"></script>
-<script>let DB={malm:[],rivka:[]},dbSha='',ticketsSha='',currentTab=0,editIdx=-1,editSheet='';
-var CU = null;
-
+<script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
+let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בוצע'];
 
-
-
-
-
-
-// ═══════════════════════════════════════
-// AUTH SYSTEM
-// ═══════════════════════════════════════
-
-async function lgLogin() {
-  var u = document.getElementById('lgUser').value.trim();
-  var p = document.getElementById('lgPass').value.trim();
-  var found = null;
-  (DB.users||[]).forEach(function(x){ if(x.username===u && x.password===p) found=x; });
-  if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
-  CU = found;
-  try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
-  await showForUser();
-}
-
-function lgLogout() {
-  CU = null;
-  try { sessionStorage.removeItem('mu'); } catch(e){}
-  location.reload();
-}
-
-async function showForUser() {
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('ubadge').style.display = 'flex';
-  document.getElementById('uname').textContent = 'שלום, ' + CU.name;
-  await loadTickets();
-  if (CU.role === 'admin') {
-    document.getElementById('adminTabs').style.display = 'flex';
-    document.getElementById('btnAdd').style.display = 'block';
-    var p = (DB.tickets||[]).filter(function(t){ return t.status==='חדש'; }).length;
-    var b = document.getElementById('reqBadge');
-    if (b) { if(p){ b.textContent=p; b.style.display='inline'; } else { b.style.display='none'; b.textContent=''; } }
-    // Make sure only pane0 is active
-    document.querySelectorAll('.pane').forEach(function(el){ el.classList.remove('active'); });
-    document.getElementById('pane0').classList.add('active');
-    document.querySelectorAll('#adminTabs .tab').forEach(function(t,i){ t.classList.toggle('active',i===0); });
-    initFilters(); r1(); r2();
-  } else {
-    document.getElementById('mgrTabs').style.display = 'flex';
-    document.querySelectorAll('.pane').forEach(function(el){ el.classList.remove('active'); });
-    document.getElementById('pane2').classList.add('active');
-    renderMyTkts();
-  }
-}
-
-// ── Ticket helpers ──────────────────────
-function tBadge(s) {
-  if (s==='חדש') return 'bs-new';
-  if (s==='בטיפול') return 'bs-ip';
-  if (s==='הושלם') return 'bs-done';
-  return 'bs-rej';
-}
-
-function tChat(chat, me) {
-  if (!chat||!chat.length) return '<div class="no-msgs">אין הודעות</div>';
-  return chat.map(function(m) {
-    var mine = (me===m.side);
-    return '<div class="msg '+(mine?'msg-malm':'msg-dhl')+'">'
-      +'<div class="msg-sender">'+m.sender+'</div>'
-      +'<div>'+m.text+'</div>'
-      +'<div class="msg-time">'+m.time+'</div>'
-      +'</div>';
-  }).join('');
-}
-
-function nowStr() {
-  var n=new Date();
-  return n.toLocaleDateString('he-IL')+' '+n.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-}
-
-
-async function loadTickets() {
-  try {
-    // Get SHA
-    var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
-      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    var mj = await m.json();
-    ticketsSha = mj.sha;
-    // Get raw content (no base64, proper Hebrew)
-    var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',
-      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
-    var data = await r.json();
-    DB.tickets = data.tickets||[];
-    DB.users = data.users||DB.users||[];
-  } catch(e) {
-    console.warn('loadTickets failed:', e.message);
-    if(!DB.tickets)DB.tickets=[];
-  }
-}
-
-async function saveTickets(retries) {
-  retries = retries||0;
-  var content=btoa(unescape(encodeURIComponent(JSON.stringify({tickets:DB.tickets,users:DB.users},null,2))));
-  var r=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/tickets.json',{
-    method:'PUT',
-    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-    body:JSON.stringify({message:'Update tickets',content:content,sha:ticketsSha})
-  });
-  if(r.status===422 && retries<3){
-    // SHA conflict - reload and retry
-    await new Promise(function(res){setTimeout(res,500);});
-    await loadTickets();
-    return await saveTickets(retries+1);
-  }
-  if(!r.ok)throw new Error('Save failed: '+r.status);
-  var rj=await r.json(); ticketsSha=rj.content.sha;
-}
-
-async function freshDB() {
-  // Only update SHA - don't overwrite in-memory DB
-  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await m.json();
-  dbSha = mj.sha;
-}
-
-async function reloadDB() {
-  // Use GitHub API raw - no cache, no base64, proper Hebrew
-  var r = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
-  DB = await r.json();
-  if(!DB.users)DB.users=[];
-  if(!DB.tickets)DB.tickets=[];
-  // Get SHA for saving
-  var m = await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-    {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-  var mj = await m.json(); dbSha = mj.sha;
-}
-
-// ── Manager view ──────────────────────
-function renderMyTkts() {
-  var mine = (DB.tickets||[]).filter(function(t){ return t.username===CU.username; }).slice().reverse();
-  var el = document.getElementById('myTktList');
-  if (!mine.length) { el.innerHTML='<div class="tkt-none">אין בקשות עדיין</div>'; return; }
-  var html = '';
-  mine.forEach(function(t) {
-    html += '<div class="tkt">'
-      +'<div class="tkt-top"><div><div class="tkt-ttl">'+t.title+'</div>'
-      +'<div class="tkt-meta">'+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
-      +'<span class="badge '+tBadge(t.status)+'">'+t.status+'</span></div>'
-      +'<div class="tkt-desc">'+t.desc+'</div>'
-      +'<div class="chat-section">'
-      +'<div class="chat-messages" style="max-height:160px" id="tc-'+t.id+'">'
-      +tChat(t.chat,'manager')+'</div>'
-      +'<div class="chat-input-row">'
-      +'<textarea id="ti-'+t.id+'" placeholder="כתוב הודעה..."></textarea>'
-      +'<button class="btn-send" data-tid="'+t.id+'" data-side="manager" onclick="tSend(this)">שלח</button>'
-      +'</div></div></div>';
-  });
-  el.innerHTML = html;
-}
-
-// ── Admin view ──────────────────────
-async function renderAdminTkts(reload) {
-  if (reload) await reloadDB();
-  var sf = document.getElementById('adminTFilter').value;
-  var all = (DB.tickets||[]).slice().reverse();
-  if (sf) all = all.filter(function(t){ return t.status===sf; });
-  var el = document.getElementById('adminTktList');
-  if (!all.length) { el.innerHTML='<div class="tkt-none">אין בקשות</div>'; return; }
-  var html = '';
-  all.forEach(function(t) {
-    var acts = '';
-    if (t.status==='חדש'||t.status==='בטיפול') {
-      acts = '<button class="btn-app" data-tid="'+t.id+'" onclick="tApprove(this)">✅ אשר → רבקה</button>'
-           + '<button class="btn-rej" data-tid="'+t.id+'" onclick="tReject(this)">❌ דחה</button>';
-    }
-    var opts = ['חדש','בטיפול','הושלם','נדחה'].map(function(s){
-      return '<option'+(t.status===s?' selected':'')+'>'+s+'</option>';
-    }).join('');
-    html += '<div class="tkt">'
-      +'<div class="tkt-top"><div><div class="tkt-ttl">'+t.title+'</div>'
-      +'<div class="tkt-meta">'+t.name+' · '+t.type+' · עדיפות '+t.pri+' · '+t.date+'</div></div>'
-      +'<div style="display:flex;gap:8px;align-items:center">'
-      +'<select data-tid="'+t.id+'" onchange="tStatus(this)" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial">'+opts+'</select>'
-      +'<span class="badge '+tBadge(t.status)+'">'+t.status+'</span>'
-      +'</div></div>'
-      +'<div class="tkt-desc">'+t.desc+'</div>'
-      +'<div class="tkt-acts">'+acts+'</div>'
-      +'<div class="chat-section">'
-      +'<div class="chat-messages" style="max-height:160px" id="tc-'+t.id+'">'
-      +tChat(t.chat,'admin')+'</div>'
-      +'<div class="chat-input-row">'
-      +'<textarea id="ti-'+t.id+'" placeholder="כתוב הודעה למנהל..."></textarea>'
-      +'<button class="btn-send" data-tid="'+t.id+'" data-side="admin" onclick="tSend(this)">שלח</button>'
-      +'</div></div></div>';
-  });
-  el.innerHTML = html;
-}
-
-async function tSend(btn) {
-  var id = btn.getAttribute('data-tid');
-  var side = btn.getAttribute('data-side');
-  var inp = document.getElementById('ti-'+id);
-  if (!inp||!inp.value.trim()) return;
-  var text = inp.value.trim();
-  inp.value='';
-  // Load fresh tickets from separate file (small, fast, no conflict with main DB)
-  await loadTickets();
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
-  if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
-  await saveTickets();
-  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
-}
-
-async function tApprove(btn) {
-  var id = btn.getAttribute('data-tid');
-  if (!confirm('לאשר ולהעביר לרבקה?')) return;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status='הושלם';
-  t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
-  if(!DB.rivka)DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await loadTickets(); DB.tickets=(DB.tickets||[]).filter(function(x){return x.id!==id;}); await saveTickets();
-  renderAdminTkts(false); initFilters(); r2();
-}
-
-async function tReject(btn) {
-  var id = btn.getAttribute('data-tid');
-  var reason = prompt('סיבת הדחייה:');
-  if (reason===null) return;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
-  renderAdminTkts(false);
-  await saveTickets();
-}
-
-async function tStatus(sel) {
-  var id = sel.getAttribute('data-tid');
-  await freshDB();
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; await saveTickets(); }
-  renderAdminTkts(false);
-}
-
-async function tSubmit() {
-  var title = document.getElementById('tfTitle').value.trim();
-  var desc = document.getElementById('tfDesc').value.trim();
-  if (!title||!desc) { alert('נא למלא כותרת ותיאור'); return; }
-  var msg = document.getElementById('tfMsg');
-  msg.textContent='⏳ שולח...';
-  try {
-    await loadTickets();
-    if (!DB.tickets) DB.tickets=[];
-    DB.tickets.push({
-      id:'TKT-'+Date.now(), username:CU.username, name:CU.name,
-      type:document.getElementById('tfType').value,
-      pri:document.getElementById('tfPri').value,
-      title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
-    });
-    await saveTickets();
-    document.getElementById('tfTitle').value='';
-    document.getElementById('tfDesc').value='';
-    document.getElementById('tForm').classList.remove('open');
-    msg.textContent='✅ נשלח!';
-    setTimeout(function(){ msg.textContent=''; },3000);
-    renderMyTkts();
-  } catch(e) { msg.textContent='❌ '+e.message; }
-}
-async function tSend(btn) {
-  var id = btn.getAttribute('data-tid');
-  var side = btn.getAttribute('data-side');
-  var inp = document.getElementById('ti-'+id);
-  if (!inp||!inp.value.trim()) return;
-  var text = inp.value.trim();
-  await reloadDB();
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.chat.push({sender:CU.name, side:side, text:text, time:nowStr()});
-  if (side==='admin'&&t.status==='חדש') t.status='בטיפול';
-  inp.value='';
-  await saveDB('Chat');
-  if (side==='manager') renderMyTkts(); else renderAdminTkts(false);
-}
-
-async function tApprove(btn) {
-  var id = btn.getAttribute('data-tid');
-  if (!confirm('לאשר ולהעביר לרבקה?')) return;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status='הושלם';
-  t.chat.push({sender:CU.name,side:'admin',text:'✅ הבקשה אושרה והועברה לרבקה.',time:nowStr()});
-  if(!DB.rivka)DB.rivka=[];
-  DB.rivka.unshift({נ:t.name,מב:t.name,ת:new Date().toLocaleDateString('he-IL'),כ:t.title,ב:t.desc,מט:'',ע:t.pri,ס:'פתוח',ה:'',chat:{malm:[],dhl:[]}});
-  await loadTickets(); DB.tickets=(DB.tickets||[]).filter(function(x){return x.id!==id;}); await saveTickets();
-  renderAdminTkts(false); initFilters(); r2();
-}
-
-async function tReject(btn) {
-  var id = btn.getAttribute('data-tid');
-  var reason = prompt('סיבת הדחייה:');
-  if (reason===null) return;
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (!t) return;
-  DB.tickets = DB.tickets.filter(function(x){ return x.id!==id; });
-  renderAdminTkts(false);
-  await saveTickets();
-}
-
-async function tStatus(sel) {
-  var id = sel.getAttribute('data-tid');
-  await freshDB();
-  var t = (DB.tickets||[]).find(function(x){ return x.id===id; });
-  if (t) { t.status=sel.value; await saveTickets(); }
-  renderAdminTkts(false);
-}
-
-async function tSubmit() {
-  var title = document.getElementById('tfTitle').value.trim();
-  var desc = document.getElementById('tfDesc').value.trim();
-  if (!title||!desc) { alert('נא למלא כותרת ותיאור'); return; }
-  var msg = document.getElementById('tfMsg');
-  msg.textContent='⏳ שולח...';
-  try {
-    await freshDB();
-    if (!DB.tickets) DB.tickets=[];
-    DB.tickets.push({
-      id:'TKT-'+Date.now(), username:CU.username, name:CU.name,
-      type:document.getElementById('tfType').value,
-      pri:document.getElementById('tfPri').value,
-      title:title, desc:desc, date:nowStr(), status:'חדש', chat:[]
-    });
-    await saveTickets();
-    document.getElementById('tfTitle').value='';
-    document.getElementById('tfDesc').value='';
-    document.getElementById('tForm').classList.remove('open');
-    msg.textContent='✅ נשלח!';
-    setTimeout(function(){ msg.textContent=''; },3000);
-    renderMyTkts();
-  } catch(e) { msg.textContent='❌ '+e.message; }
-}
-
-function switchTab(i) {
-  currentTab=i;
-  // Update tab highlights
-  document.querySelectorAll('#adminTabs .tab').forEach(function(t,j){ t.classList.toggle('active',j===i||(j===2&&i===3)); });
-  // Show only the correct pane
-  var paneId = 'pane'+i;
-  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
-  var target = document.getElementById(paneId);
-  if(target) target.classList.add('active');
-  // Button
-  var ba=document.getElementById('btnAdd');
-  if(ba){ ba.style.display=(i===3)?'none':'block'; ba.textContent=(i===0)?'+ משימה חדשה (מלמ)':'+ משימה חדשה (רבקה)'; }
-  if(i===3) renderAdminTkts(true);
-  if(i===4) renderUsers();
-}
-
-// Init events
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('lgBtn').addEventListener('click', lgLogin);
-  document.getElementById('lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') lgLogin(); });
-  document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
-  document.getElementById('btnOut').addEventListener('click', lgLogout);
-  document.getElementById('btnNewT').addEventListener('click', function(){ document.getElementById('tForm').classList.toggle('open'); });
-  document.getElementById('btnTfCancel').addEventListener('click', function(){ document.getElementById('tForm').classList.remove('open'); });
-  document.getElementById('btnTfSubmit').addEventListener('click', tSubmit);
-  document.getElementById('adminTFilter').addEventListener('change', renderAdminTkts);
-});
-
-
-
 async function loadDB(){
   try{
-    const rawR=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',
-      {headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.raw'}});
-    if(!rawR.ok)throw new Error('api fetch failed: '+rawR.status);
-    DB=await rawR.json();
-    if(!DB.users)DB.users=[];
-    if(!DB.tickets)DB.tickets=[];
-    // Check saved session
-    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;await showForUser();return;}}}catch(e){}
-    document.getElementById('loginOverlay').style.display='flex';
-    return;
-    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json';
+    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
+    const raw=await fetch(rawUrl);
+    if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
+    DB=await raw.json();
+    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
     const jj=await meta.json();
     dbSha=jj.sha;
+    // Session restore
+    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('btnAdd').style.display='block';document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
+    if(!CU){document.getElementById('lgOverlay').style.display='flex';}
     initFilters();r1();r2();
   }catch(e){
     document.getElementById('b1').innerHTML='<tr><td colspan="8" style="color:red;padding:20px">שגיאה בטעינה: '+e.message+'</td></tr>';
@@ -712,7 +275,7 @@ async function saveDB(){
   el.textContent='⏳ שומר...';
   try{
     const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB,null,2))));
-    const r=await fetch('https://api.github.com/repos/matanaor1987-lgtm/work-arrangement/contents/malm/db.json',{
+    const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
       method:'PUT',
       headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
       body:JSON.stringify({message:'Update tasks',content,sha:dbSha})
@@ -828,6 +391,7 @@ function rivkaFields(r={}){
 }
 
 function openAdd(){
+  if(!CU){return;}
   editIdx=-1;editSheet=currentTab===0?'malm':'rivka';
   document.getElementById('modalTitle').textContent=currentTab===0?'✏️ משימה חדשה — מלמ כולל':'✏️ משימה חדשה — רבקה';
   document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields();
@@ -900,7 +464,123 @@ document.addEventListener('mouseout',function(e){
   const tt=preview.querySelector('.chat-tooltip');
   if(tt)tt.style.display='none';
 });
+// ═══════════════════════════════════════
+// AUTH SYSTEM - Clean version
+// ═══════════════════════════════════════
+
+var CU = null; // current user
+var ADMIN_ROLES = ['admin', 'malam'];
+
+// ── Login ──────────────────────────────
+async function lgLogin() {
+  var u = document.getElementById('lgUser').value.trim();
+  var p = document.getElementById('lgPass').value.trim();
+  var found = (DB.users||[]).find(function(x){ return x.username===u && x.password===p; });
+  if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
+  CU = found;
+  try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
+  showApp();
+}
+
+function lgLogout() {
+  CU = null;
+  try { sessionStorage.removeItem('mu'); } catch(e){}
+  location.reload();
+}
+
+function isAdmin() {
+  return CU && ADMIN_ROLES.indexOf(CU.role) >= 0;
+}
+
+function canEdit(row) {
+  if (!CU) return false;
+  if (isAdmin()) return true;
+  // Non-admin can edit only rows they opened
+  return row && (row.מב === CU.name || row.openedBy === CU.username);
+}
+
+function showApp() {
+  document.getElementById('lgOverlay').style.display = 'none';
+  document.getElementById('uBadge').style.display = 'flex';
+  document.getElementById('uName').textContent = 'שלום, ' + CU.name;
+  // Show/hide add button based on role - all can add
+  document.getElementById('btnAdd').style.display = 'block';
+  initFilters(); r1(); r2();
+}
+
+// ── Users tab ──────────────────────────
+function renderUsers() {
+  var el = document.getElementById('usersList');
+  if (!el) return;
+  var users = (DB.users||[]).filter(function(u){ return u.role !== 'admin' && u.role !== 'malam'; });
+  if (!users.length) { el.innerHTML = '<p style="color:#aaa;padding:10px">אין משתמשים עדיין</p>'; return; }
+  el.innerHTML = '';
+  users.forEach(function(u) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px';
+    var name = document.createElement('b'); name.style.flex='1'; name.textContent = u.name;
+    var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent = u.username;
+    var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent = u.password;
+    var btn = document.createElement('button');
+    btn.textContent = 'מחק';
+    btn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
+    btn.addEventListener('click', (function(un){ return function(){ delUser(un); }; })(u.username));
+    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(btn);
+    el.appendChild(row);
+  });
+}
+
+async function addUser() {
+  var n = document.getElementById('nu_name').value.trim();
+  var u = document.getElementById('nu_user').value.trim();
+  var p = document.getElementById('nu_pass').value.trim();
+  if (!n||!u||!p) { alert('נא למלא הכל'); return; }
+  if ((DB.users||[]).find(function(x){ return x.username===u; })) { alert('שם משתמש קיים'); return; }
+  var msg = document.getElementById('addUserMsg');
+  msg.textContent = 'שומר...';
+  try {
+    DB.users.push({name:n, username:u, password:p, role:'manager'});
+    await saveDB();
+    document.getElementById('nu_name').value='';
+    document.getElementById('nu_user').value='';
+    document.getElementById('nu_pass').value='';
+    msg.textContent = '✅ נוסף!';
+    setTimeout(function(){ msg.textContent=''; }, 2000);
+    renderUsers();
+  } catch(e) { msg.textContent = '❌ '+e.message; }
+}
+
+async function delUser(username) {
+  if (!confirm('למחוק?')) return;
+  DB.users = DB.users.filter(function(u){ return u.username !== username; });
+  await saveDB();
+  renderUsers();
+}
+
+function switchTab(i) {
+  currentTab = i;
+  document.querySelectorAll('.tab').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+  document.querySelectorAll('.pane').forEach(function(p,j){ p.classList.toggle('active', j===i); });
+  var ba = document.getElementById('btnAdd');
+  if (ba) {
+    ba.style.display = 'block';
+    ba.textContent = (i===0) ? '+ משימה חדשה (מלמ)' : (i===1) ? '+ משימה חדשה (רבקה)' : '';
+    if (i===2) { ba.style.display='none'; renderUsers(); }
+  }
+}
+
+
+// Auth events
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('lgBtn').addEventListener('click', lgLogin);
+  document.getElementById('lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') lgLogin(); });
+  document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
+  document.getElementById('btnOut').addEventListener('click', lgLogout);
+  document.getElementById('mainTabs').style.display='none';
+});
+
 loadDB();
+
 
 
 function chatPreviewHtml(r){
@@ -1054,62 +734,6 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();sendMsg();
   }
 });
-
-function renderUsers() {
-  var users = (DB.users||[]).filter(function(u){ return u.role!=='admin'; });
-  var el = document.getElementById('usersList');
-  if (!el) return;
-  el.innerHTML = '';
-  if (!users.length) {
-    var p = document.createElement('p');
-    p.style.cssText = 'color:#aaa;padding:10px;font-size:13px';
-    p.textContent = 'אין משתמשים עדיין';
-    el.appendChild(p);
-    return;
-  }
-  users.forEach(function(u) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px';
-    var name = document.createElement('b'); name.style.flex='1'; name.textContent=u.name;
-    var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent=u.username;
-    var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent=u.password;
-    var btn = document.createElement('button');
-    btn.textContent = 'מחק';
-    btn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
-    btn.addEventListener('click', (function(uname){ return function(){ delUser(uname); }; })(u.username));
-    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(btn);
-    el.appendChild(row);
-  });
-}
-async function addUser() {
-  var n=document.getElementById('nu_name').value.trim();
-  var u=document.getElementById('nu_user').value.trim();
-  var p=document.getElementById('nu_pass').value.trim();
-  if(!n||!u||!p){alert('נא למלא הכל');return;}
-  if((DB.users||[]).find(function(x){return x.username===u;})){alert('שם משתמש קיים');return;}
-  var msg=document.getElementById('addUserMsg');
-  msg.textContent='שומר...';
-  try{
-    await freshDB();
-    if(!DB.users)DB.users=[];
-    DB.users.push({name:n,username:u,password:p,role:'manager'});
-    await saveDB('Add user');
-    document.getElementById('nu_name').value='';
-    document.getElementById('nu_user').value='';
-    document.getElementById('nu_pass').value='';
-    msg.textContent='נוסף!';
-    setTimeout(function(){msg.textContent='';},2000);
-    renderUsers();
-  }catch(e){msg.textContent='שגיאה: '+e.message;}
-}
-async function delUser(username) {
-  if(!confirm('למחוק?'))return;
-  await loadTickets();
-  DB.users=DB.users.filter(function(u){return u.username!==username;});
-  await saveTickets();
-  renderUsers();
-}
-
 </script>
 </body>
 </html>
