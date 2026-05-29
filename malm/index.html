@@ -513,7 +513,14 @@ function showApp() {
     // Non-admin: hide malm tab, show only rivka
     document.getElementById('tab0').style.display = 'none';
     document.getElementById('btnAdd').style.display = 'block';
-    switchTab(1);
+    // Explicitly switch panes
+    var p0 = document.getElementById('pane0');
+    var p1 = document.getElementById('pane1');
+    if(p0) p0.classList.remove('active');
+    if(p1) p1.classList.add('active');
+    // Update tab highlight
+    document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){ t.classList.toggle('active', j===1); });
+    currentTab = 1;
     r2();
   }
 }
