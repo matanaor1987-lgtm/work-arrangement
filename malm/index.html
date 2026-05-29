@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -449,23 +448,21 @@ function malmFields(r={}){
     <div class="form-row"><label>אחראי מלמ</label><input id="f_א" value="${(r.א||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>`;
 }
 
-function rivkaFields(r={}){
+function rivkaFields(r={}, isEdit=false){
   return`
     <div class="form-row"><label>נושא</label><input id="f_נ" value="${(r.נ||'').replace(/"/g,'&quot;')}" placeholder="נושא..."></div>
-    <div class="form-row"><label>מבקש</label><input id="f_מב" value="${(r.מב||'').replace(/"/g,'&quot;')}" placeholder="שם מבקש..."></div>
     <div class="form-row"><label>תאריך</label><input id="f_ת" type="date" value="${r.ת||new Date().toISOString().slice(0,10)}"></div>
     <div class="form-row"><label>כותרת</label><input id="f_כ" value="${(r.כ||'').replace(/"/g,'&quot;')}" placeholder="כותרת..."></div>
     <div class="form-row"><label>בקשה</label><textarea id="f_ב">${r.ב||''}</textarea></div>
-    <div class="form-row"><label>מטפל</label><input id="f_מט" value="${(r.מט||'').replace(/"/g,'&quot;')}" placeholder="שם מטפל..."></div>
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+    ${isEdit?`<div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>`:''}`;
 }
 
 function openAdd(){
   if(!CU){return;}
   editIdx=-1;editSheet=currentTab===0?'malm':'rivka';
   document.getElementById('modalTitle').textContent=currentTab===0?'✏️ משימה חדשה — מלמ כולל':'✏️ משימה חדשה — רבקה';
-  document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields();
+  document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields({}, false);
   document.getElementById('chatSection').style.display='none';
   document.getElementById('modalBg').classList.add('open');
 }
@@ -474,7 +471,7 @@ function openEdit(sheet,idx){
   editIdx=idx;editSheet=sheet;
   const r=DB[sheet][idx];
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
-  document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r);
+  document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
   chatTab='malm';
   pendingFiles=[];
@@ -502,9 +499,9 @@ function saveModal(){
     };
   }else{
     rec={
-      נ:g('f_נ'), מב:g('f_מב'), ת:g('f_ת'), כ:g('f_כ'), ב:g('f_ב'),
-      מט:g('f_מט'), ע:g('f_ע'),
-      ס:g('f_ס')||(r?r.ס:'פתוח'),
+      נ:g('f_נ'), מב:r?r.מב:(CU?CU.name:''), ת:g('f_ת'), כ:g('f_כ'), ב:g('f_ב'),
+      ע:g('f_ע'),
+      ס:r?(g('f_ס')||r.ס):'פתוח',
       ה:r?r.ה||'':'',
       chat:r?r.chat||{}:{}
     };
