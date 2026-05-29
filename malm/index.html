@@ -503,8 +503,9 @@ function showApp() {
   document.getElementById('lgOverlay').style.display = 'none';
   document.getElementById('uBadge').style.display = 'flex';
   document.getElementById('uName').textContent = 'שלום, ' + CU.name;
-  // Show/hide add button based on role - all can add
   document.getElementById('btnAdd').style.display = 'block';
+  document.getElementById('mainTabs').style.display = 'flex';
+  if (isAdmin()) document.getElementById('tabUsers').style.display = 'block';
   initFilters(); r1(); r2();
 }
 
