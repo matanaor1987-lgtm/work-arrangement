@@ -270,6 +270,12 @@ function isAdmin() {
   return CU && CU.role !== 'manager';
 }
 
+function canEditRow(r) {
+  if (!CU) return false;
+  if (isAdmin()) return true;
+  return r && r.מב === CU.name;
+}
+
 function showApp() {
   document.getElementById('lgOverlay').style.display = 'none';
   document.getElementById('uBadge').style.display = 'flex';
@@ -421,8 +427,8 @@ function r2(){
   });
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
-    ?f.map(r=>{const idx=DB.rivka.indexOf(r);return`<tr>
-      <td>${(!CU||isAdmin()||r.מב===CU.name)?`<button class="act-btn" onclick="openEdit('rivka',${idx})" title="עריכה">✏️</button>`:''}</td>
+    ?f.map(r=>{const idx=DB.rivka.indexOf(r);const eb=canEditRow(r)?'<button class="act-btn" onclick="openEdit(\'rivka\','+idx+')" title="עריכה">✏️</button>':'';return`<tr>
+      <td>${eb}</td>
       <td>${m(r.נ)}</td><td>${m(r.מב)}</td>
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.כ?`<strong>${r.כ}</strong><br>`:''} ${r.ב||''}</td>
@@ -462,8 +468,9 @@ function openAdd(){
 }
 
 function openEdit(sheet,idx){
-  editIdx=idx;editSheet=sheet;
   const r=DB[sheet][idx];
+  if(sheet==='rivka' && !isAdmin() && (!r || r.מב !== (CU?CU.name:''))) return;
+  editIdx=idx;editSheet=sheet;
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
