@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -60,7 +61,6 @@ tr:hover td{background:#fffbf0}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
 .dtag{font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:2px}
 .loading{text-align:center;padding:40px;color:#999;font-size:14px}
-
 
 /* Chat tooltip */
 .chat-preview{position:relative;cursor:pointer;font-size:11px;line-height:1.6}
@@ -133,6 +133,7 @@ tr:hover td{background:#fffbf0}
     <div class="lg-err" id="lgErr"></div>
   </div>
 </div>
+
 <div class="pane" id="pane2" style="padding:14px 20px">
   <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
   <div id="usersList"></div>
@@ -147,6 +148,7 @@ tr:hover td{background:#fffbf0}
     <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
   </div>
 </div>
+
 <div class="header">
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות מלמ פוקוס</div>
@@ -249,6 +251,63 @@ let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
 const SM=['פתוח','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בוצע'];
 
+// ═══════════════════════════════════════
+// AUTH SYSTEM
+// ═══════════════════════════════════════
+var CU = null;
+var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
+
+async function lgLogin() {
+  var u = document.getElementById('lgUser').value.trim();
+  var p = document.getElementById('lgPass').value.trim();
+  var found = (DB.users||[]).find(function(x){ return x.username===u && x.password===p; });
+  if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
+  CU = found;
+  try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
+  showApp();
+}
+
+function lgLogout() {
+  CU = null;
+  try { sessionStorage.removeItem('mu'); } catch(e){}
+  location.reload();
+}
+
+function isAdmin() {
+  return CU && CU.role !== 'manager';
+}
+
+function showApp() {
+  document.getElementById('lgOverlay').style.display = 'none';
+  document.getElementById('uBadge').style.display = 'flex';
+  document.getElementById('uName').textContent = 'שלום, ' + CU.name;
+  document.getElementById('mainTabs').style.display = 'flex';
+
+  if (isAdmin()) {
+    document.getElementById('tabUsers').style.display = 'block';
+    document.getElementById('btnAdd').style.display = 'block';
+    document.getElementById('tab0').style.display = 'block';
+    initFilters(); r1(); r2();
+  } else {
+    // manager — רואה רק רבקה
+    document.getElementById('tab0').style.display = 'none';
+    document.getElementById('tabUsers').style.display = 'none';
+    document.getElementById('btnAdd').style.display = 'block';
+    // הסתר pane0, הצג pane1
+    var p0 = document.getElementById('pane0');
+    var p1 = document.getElementById('pane1');
+    if(p0) { p0.classList.remove('active'); }
+    if(p1) { p1.classList.add('active'); }
+    // עדכן טאב פעיל ל-1
+    document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){
+      t.classList.toggle('active', j===1);
+    });
+    currentTab = 1;
+    initFilters();
+    r2();
+  }
+}
+
 async function loadDB(){
   try{
     const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
@@ -259,10 +318,24 @@ async function loadDB(){
     const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
     const jj=await meta.json();
     dbSha=jj.sha;
-    // Session restore
-    try{var sv=sessionStorage.getItem('mu');if(sv){var u=JSON.parse(sv);var f=(DB.users||[]).find(function(x){return x.username===u.username&&x.password===u.password;});if(f){CU=f;document.getElementById('lgOverlay').style.display='none';document.getElementById('uBadge').style.display='flex';document.getElementById('uName').textContent='שלום, '+CU.name;document.getElementById('mainTabs').style.display='flex';if(ADMIN_ROLES.indexOf(CU.role)>=0){document.getElementById('tabUsers').style.display='block';document.getElementById('btnAdd').style.display='block';}else{document.getElementById('tab0').style.display='none';document.getElementById('btnAdd').style.display='block';}if(ADMIN_ROLES.indexOf(CU.role)>=0)document.getElementById('tabUsers').style.display='block';}}}catch(e2){}
-    if(!CU){document.getElementById('lgOverlay').style.display='flex';}
-    initFilters();r1();r2();
+
+    // ── Session restore ────────────────────────────────────────────
+    // FIX: call showApp() instead of inline DOM manipulation
+    try {
+      var sv = sessionStorage.getItem('mu');
+      if (sv) {
+        var u = JSON.parse(sv);
+        var f = (DB.users||[]).find(function(x){ return x.username===u.username && x.password===u.password; });
+        if (f) {
+          CU = f;
+          showApp();
+          return; // showApp handles initFilters/r1/r2
+        }
+      }
+    } catch(e2) {}
+
+    document.getElementById('lgOverlay').style.display='flex';
+    initFilters(); r1(); r2();
   }catch(e){
     document.getElementById('b1').innerHTML='<tr><td colspan="8" style="color:red;padding:20px">שגיאה בטעינה: '+e.message+'</td></tr>';
   }
@@ -291,8 +364,6 @@ async function saveDB(){
     setTimeout(()=>{el.style.display='none';el.style.background='#1a1a2e';},3000);
   }
 }
-
-
 
 function sc(s){const k=(s||'פתוח').replace(/ /g,'-');return`<span class="badge s-${k}">${s||'פתוח'}</span>`}
 function pc(p){if(!p)return'<span class="muted">—</span>';let n=Number(p);let bg=n<=1?'#fde8e8':n<=3?'#fff3e0':n<=5?'#fff9c4':'#e8f5e9';let co=n<=1?'#c62828':n<=3?'#e65100':n<=5?'#f57f17':'#2e7d32';return`<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;background:${bg};color:${co}">${p}</span>`}
@@ -373,7 +444,7 @@ function malmFields(r={}){
     <div class="form-row"><label>תחום</label><input id="f_ד" value="${(r.ד||'').replace(/"/g,'&quot;')}" placeholder="תחום..."></div>
     <div class="form-row"><label>משימה</label><textarea id="f_מ">${r.מ||''}</textarea></div>
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
-    
+    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SM.map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="form-row"><label>DHL</label><input id="f_dhl" value="${(r.dhl||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>
     <div class="form-row"><label>אחראי מלמ</label><input id="f_א" value="${(r.א||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>`;
 }
@@ -385,9 +456,9 @@ function rivkaFields(r={}){
     <div class="form-row"><label>תאריך</label><input id="f_ת" type="date" value="${r.ת||new Date().toISOString().slice(0,10)}"></div>
     <div class="form-row"><label>כותרת</label><input id="f_כ" value="${(r.כ||'').replace(/"/g,'&quot;')}" placeholder="כותרת..."></div>
     <div class="form-row"><label>בקשה</label><textarea id="f_ב">${r.ב||''}</textarea></div>
-    
+    <div class="form-row"><label>מטפל</label><input id="f_מט" value="${(r.מט||'').replace(/"/g,'&quot;')}" placeholder="שם מטפל..."></div>
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
 }
 
 function openAdd(){
@@ -415,15 +486,28 @@ function openEdit(sheet,idx){
 }
 
 function closeModal(){document.getElementById('modalBg').classList.remove('open')}
-
 function g(id){const el=document.getElementById(id);return el?el.value.trim():''}
 
 function saveModal(){
+  // FIX: define r to preserve status and chat on edit
+  const r = editIdx >= 0 ? DB[editSheet][editIdx] : null;
   let rec;
   if(editSheet==='malm'){
-    rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
+    rec={
+      ת:g('f_ת'), ד:g('f_ד'), מ:g('f_מ'), ע:g('f_ע'),
+      ס:g('f_ס')||(r?r.ס:'פתוח'),
+      dhl:g('f_dhl'), א:g('f_א'),
+      ה:r?r.ה||'':'',
+      chat:r?r.chat||{}:{}
+    };
   }else{
-    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:'פתוח',ה:r&&r.ה||''};
+    rec={
+      נ:g('f_נ'), מב:g('f_מב'), ת:g('f_ת'), כ:g('f_כ'), ב:g('f_ב'),
+      מט:g('f_מט'), ע:g('f_ע'),
+      ס:g('f_ס')||(r?r.ס:'פתוח'),
+      ה:r?r.ה||'':'',
+      chat:r?r.chat||{}:{}
+    };
   }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
@@ -433,8 +517,7 @@ function saveModal(){
   saveDB();
 }
 
-
-// Smart tooltip positioning - always stay in viewport
+// Smart tooltip positioning
 document.addEventListener('mouseover',function(e){
   const preview=e.target.closest('.chat-preview');
   if(!preview)return;
@@ -444,11 +527,9 @@ document.addEventListener('mouseover',function(e){
   const rect=preview.getBoundingClientRect();
   const ttW=320, ttH=Math.min(tt.scrollHeight,360);
   const vw=window.innerWidth, vh=window.innerHeight;
-  // Horizontal: prefer right-aligned, flip if needed
   let left=rect.right-ttW;
   if(left<8)left=8;
   if(left+ttW>vw-8)left=vw-ttW-8;
-  // Vertical: prefer below, flip above if not enough room
   let top=rect.bottom+5;
   if(top+ttH>vh-8)top=rect.top-ttH-5;
   if(top<8)top=8;
@@ -464,66 +545,6 @@ document.addEventListener('mouseout',function(e){
   const tt=preview.querySelector('.chat-tooltip');
   if(tt)tt.style.display='none';
 });
-// ═══════════════════════════════════════
-// AUTH SYSTEM - Clean version
-// ═══════════════════════════════════════
-
-var CU = null; // current user
-var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
-
-// ── Login ──────────────────────────────
-async function lgLogin() {
-  var u = document.getElementById('lgUser').value.trim();
-  var p = document.getElementById('lgPass').value.trim();
-  var found = (DB.users||[]).find(function(x){ return x.username===u && x.password===p; });
-  if (!found) { document.getElementById('lgErr').textContent='שם משתמש או סיסמה שגויים'; return; }
-  CU = found;
-  try { sessionStorage.setItem('mu', JSON.stringify(found)); } catch(e){}
-  showApp();
-}
-
-function lgLogout() {
-  CU = null;
-  try { sessionStorage.removeItem('mu'); } catch(e){}
-  location.reload();
-}
-
-function isAdmin() {
-  return CU && CU.role !== 'manager';
-}
-
-function canEdit(row) {
-  if (!CU) return false;
-  if (isAdmin()) return true;
-  // Non-admin can edit only rows they opened
-  return row && (row.מב === CU.name || row.openedBy === CU.username);
-}
-
-function showApp() {
-  document.getElementById('lgOverlay').style.display = 'none';
-  document.getElementById('uBadge').style.display = 'flex';
-  document.getElementById('uName').textContent = 'שלום, ' + CU.name;
-  document.getElementById('mainTabs').style.display = 'flex';
-  if (isAdmin()) {
-    document.getElementById('tabUsers').style.display = 'block';
-    document.getElementById('btnAdd').style.display = 'block';
-    document.getElementById('tab0').style.display = 'block';
-    initFilters(); r1(); r2();
-  } else {
-    // Non-admin: hide malm tab, show only rivka
-    document.getElementById('tab0').style.display = 'none';
-    document.getElementById('btnAdd').style.display = 'block';
-    // Explicitly switch panes
-    var p0 = document.getElementById('pane0');
-    var p1 = document.getElementById('pane1');
-    if(p0) p0.classList.remove('active');
-    if(p1) p1.classList.add('active');
-    // Update tab highlight
-    document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){ t.classList.toggle('active', j===1); });
-    currentTab = 1;
-    r2();
-  }
-}
 
 // ── Users tab ──────────────────────────
 function renderUsers() {
@@ -584,7 +605,6 @@ function switchTab(i) {
   if(i===2)renderUsers();
 }
 
-
 // Auth events
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('lgBtn').addEventListener('click', lgLogin);
@@ -596,42 +616,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
 loadDB();
 
-
-
 function chatPreviewHtml(r){
   const chat=r.chat||{};
   const malm=chat.malm||[];
   const dhl=chat.dhl||[];
   if(!malm.length&&!dhl.length) return '<span class="no-chat">—</span>';
-  
-  // Last message from each
   const lastM=malm[malm.length-1];
   const lastD=dhl[dhl.length-1];
-  
-  // Full thread for tooltip
   const all=[
     ...malm.map(m=>({...m,side:'malm'})),
     ...dhl.map(m=>({...m,side:'dhl'}))
   ].sort((a,b)=>a.time.localeCompare(b.time));
-  
   const tooltip=all.map(m=>`
     <div class="tt-msg ${m.side}">
       <div class="tt-sender ${m.side}">${m.sender}</div>
       <div>${m.text}</div>
       <div class="tt-time">${m.time}</div>
     </div>`).join('');
-  
   const preview=[
     lastM?`<div><span class="ml">מלמ</span> <span style="color:#888">${lastM.time.split(' ')[0]}</span>: ${lastM.text.slice(0,40)}${lastM.text.length>40?'...':''}</div>`:'',
     lastD?`<div><span class="dh">DHL</span> <span style="color:#888">${lastD.time.split(' ')[0]}</span>: ${lastD.text.slice(0,40)}${lastD.text.length>40?'...':''}</div>`:''
   ].filter(Boolean).join('');
-  
   return `<div class="chat-preview">
     <div class="chat-last">${preview}</div>
     <div class="chat-tooltip">${tooltip||'<span class="no-chat">אין הערות</span>'}</div>
   </div>`;
 }
-
 
 // File upload
 let pendingFiles=[];
@@ -698,7 +708,6 @@ function renderAttachments(){
     </div>`).join('');
 }
 
-// Chat
 let chatTab='malm';
 
 function switchChatTab(tab){
@@ -743,7 +752,6 @@ function sendMsg(){
   saveDB();
 }
 
-// Allow Enter to send (Shift+Enter for newline)
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement.id==='chatInput'){
     e.preventDefault();sendMsg();
