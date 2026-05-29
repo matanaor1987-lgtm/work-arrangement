@@ -373,7 +373,7 @@ function malmFields(r={}){
     <div class="form-row"><label>תחום</label><input id="f_ד" value="${(r.ד||'').replace(/"/g,'&quot;')}" placeholder="תחום..."></div>
     <div class="form-row"><label>משימה</label><textarea id="f_מ">${r.מ||''}</textarea></div>
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="form-row"><label>סטטוס</label><select id="f_ס">${SM.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    
     <div class="form-row"><label>DHL</label><input id="f_dhl" value="${(r.dhl||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>
     <div class="form-row"><label>אחראי מלמ</label><input id="f_א" value="${(r.א||'').replace(/"/g,'&quot;')}" placeholder="שם..."></div>`;
 }
@@ -385,7 +385,7 @@ function rivkaFields(r={}){
     <div class="form-row"><label>תאריך</label><input id="f_ת" type="date" value="${r.ת||new Date().toISOString().slice(0,10)}"></div>
     <div class="form-row"><label>כותרת</label><input id="f_כ" value="${(r.כ||'').replace(/"/g,'&quot;')}" placeholder="כותרת..."></div>
     <div class="form-row"><label>בקשה</label><textarea id="f_ב">${r.ב||''}</textarea></div>
-    <div class="form-row"><label>מטפל</label><input id="f_מט" value="${(r.מט||'').replace(/"/g,'&quot;')}" placeholder="שם מטפל..."></div>
+    
     <div class="form-row"><label>עדיפות</label><select id="f_ע"><option value="">—</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${r.ס===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
 }
@@ -421,9 +421,9 @@ function g(id){const el=document.getElementById(id);return el?el.value.trim():''
 function saveModal(){
   let rec;
   if(editSheet==='malm'){
-    rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
+    rec={ת:g('f_ת'),ד:g('f_ד'),מ:g('f_מ'),ע:g('f_ע'),ס:'פתוח',dhl:g('f_dhl'),א:g('f_א'),ה:r&&r.ה||''};
   }else{
-    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:g('f_ס')||'פתוח',ה:r&&r.ה||''};
+    rec={נ:g('f_נ'),מב:g('f_מב'),ת:g('f_ת'),כ:g('f_כ'),ב:g('f_ב'),מט:g('f_מט'),ע:g('f_ע'),ס:'פתוח',ה:r&&r.ה||''};
   }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
