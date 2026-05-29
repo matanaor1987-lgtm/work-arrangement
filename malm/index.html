@@ -624,8 +624,8 @@ function chatPreviewHtml(r){
       <div class="tt-time">${m.time}</div>
     </div>`).join('');
   const preview=[
-    lastM?`<div><span class="ml">מלמ</span> <span style="color:#888">${lastM.time.split(' ')[0]}</span>: ${lastM.text.slice(0,40)}${lastM.text.length>40?'...':''}</div>`:'',
-    lastD?`<div><span class="dh">DHL</span> <span style="color:#888">${lastD.time.split(' ')[0]}</span>: ${lastD.text.slice(0,40)}${lastD.text.length>40?'...':''}</div>`:''
+    lastM?`<div><span class="ml">${lastM.sender}</span> <span style="color:#888">${lastM.time.split(' ')[0]}</span>: ${lastM.text.slice(0,40)}${lastM.text.length>40?'...':''}</div>`:'',
+    lastD?`<div><span class="dh">${lastD.sender}</span> <span style="color:#888">${lastD.time.split(' ')[0]}</span>: ${lastD.text.slice(0,40)}${lastD.text.length>40?'...':''}</div>`:''
   ].filter(Boolean).join('');
   return `<div class="chat-preview">
     <div class="chat-last">${preview}</div>
