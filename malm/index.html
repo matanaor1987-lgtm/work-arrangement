@@ -230,10 +230,7 @@ tr:hover td{background:#fffbf0}
       <div class="chat-input-row">
         <textarea id="chatInput" placeholder="כתוב הערה..."></textarea>
         <div class="chat-send-col">
-          <select class="chat-sender-sel" id="chatSender">
-            <option value="מלמ">מלמ</option>
-            <option value="DHL">DHL</option>
-          </select>
+          <div id="chatSenderLabel" style="font-size:11px;color:#555;text-align:center;padding:2px 6px;background:#f0f0f0;border-radius:5px;white-space:nowrap"></div>
           <button class="btn-send" onclick="sendMsg()">שלח ↵</button>
         </div>
       </div>
@@ -473,9 +470,10 @@ function openEdit(sheet,idx){
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
-  chatTab='malm';
+  chatTab = isAdmin() ? 'malm' : 'dhl';
   pendingFiles=[];
-  document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.chat-tab').forEach((t,i)=>t.classList.toggle('active', isAdmin()?i===0:i===1));
+  setTimeout(function(){ var lbl=document.getElementById('chatSenderLabel'); if(lbl&&CU) lbl.textContent=CU.name; },50);
   renderChat();
   renderAttachments();
   setTimeout(initDropZone,100);
@@ -731,16 +729,17 @@ function renderChat(){
 
 function sendMsg(){
   const text=document.getElementById('chatInput').value.trim();
-  const sender=document.getElementById('chatSender').value;
+  const sender=CU?CU.name:'';
   if(!text&&!pendingFiles.length)return;
   if(editIdx===-1)return;
   const rec=DB[editSheet][editIdx];
   if(!rec.chat)rec.chat={malm:[],dhl:[]};
-  if(!rec.chat[chatTab])rec.chat[chatTab]=[];
+  const side=isAdmin()?'malm':'dhl';
+  if(!rec.chat[side])rec.chat[side]=[];
   const now=new Date();
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   const files=[...pendingFiles];
-  rec.chat[chatTab].push({sender,side:sender,text:text||'📎 צרף קבצים',time,files});
+  rec.chat[side].push({sender,side,text:text||'📎 צרף קבצים',time,files});
   document.getElementById('chatInput').value='';
   pendingFiles=[];
   renderAttachments();
