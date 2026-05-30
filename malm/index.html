@@ -259,7 +259,7 @@ function sendEmailNotification(toEmail, toName, subject, message, taskTitle, sta
   if (typeof emailjs === 'undefined') { console.warn('EmailJS not loaded'); return; }
   const now = new Date();
   const time = now.toLocaleDateString('he-IL') + ' ' + now.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
-  emailjs.send('service_q2ekmcf', 'template_5uajgjh', {
+  emailjs.send('service_q2ekmcf', 'template_jylk5i7', {
     to_email: toEmail,
     to_name: toName || '',
     subject: subject,
