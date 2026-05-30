@@ -442,8 +442,10 @@ function r2(){
   const q=document.getElementById('q2').value.toLowerCase();
   const st=document.getElementById('st2').value;
   const pr=document.getElementById('pr2').value;
-  buildStats(DB.rivka,document.getElementById('s2'));
+  const rivkaOwn = isAdmin() ? DB.rivka : DB.rivka.filter(r=>r.מב===(CU?CU.name:''));
+  buildStats(rivkaOwn,document.getElementById('s2'));
   let f=DB.rivka.filter(r=>{
+    if(!isAdmin() && r.מב !== (CU?CU.name:'')) return false;
     if(st&&r.ס!==st)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
