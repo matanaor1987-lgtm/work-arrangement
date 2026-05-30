@@ -252,11 +252,11 @@ const SR=['פתוח','בוצע'];
 var CU = null;
 var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
 
-// EmailJS
-emailjs.init('KSlu6K4gQJlBuxuLg');
+// EmailJS init happens in DOMContentLoaded
 
 function sendEmailNotification(toEmail, toName, subject, message, taskTitle, status) {
   if (!toEmail) return;
+  if (typeof emailjs === 'undefined') { console.warn('EmailJS not loaded'); return; }
   const now = new Date();
   const time = now.toLocaleDateString('he-IL') + ' ' + now.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
   emailjs.send('service_q2ekmcf', 'template_5uajgjh', {
@@ -674,6 +674,7 @@ function switchTab(i) {
 
 // Auth events
 document.addEventListener('DOMContentLoaded', function() {
+  if (typeof emailjs !== 'undefined') emailjs.init('KSlu6K4gQJlBuxuLg');
   document.getElementById('lgBtn').addEventListener('click', lgLogin);
   document.getElementById('lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') lgLogin(); });
   document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
