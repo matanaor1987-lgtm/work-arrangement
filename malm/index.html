@@ -119,6 +119,7 @@ tr:hover td{background:#fffbf0}
 .u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
 .btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -142,6 +143,7 @@ tr:hover td{background:#fffbf0}
       <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
       <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
       <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <input id="nu_email" placeholder="אימייל..." style="flex:1;min-width:150px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
       <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
     </div>
     <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
@@ -249,6 +251,28 @@ const SR=['פתוח','בוצע'];
 // ═══════════════════════════════════════
 var CU = null;
 var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
+
+// EmailJS
+emailjs.init('KSlu6K4gQJlBuxuLg');
+
+function sendEmailNotification(toEmail, toName, subject, message, taskTitle, status) {
+  if (!toEmail) return;
+  const now = new Date();
+  const time = now.toLocaleDateString('he-IL') + ' ' + now.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
+  emailjs.send('service_q2ekmcf', 'template_5uajgjh', {
+    to_email: toEmail,
+    to_name: toName || '',
+    subject: subject,
+    message: message,
+    task_title: taskTitle || '',
+    status: status || '',
+    time: time
+  }).then(function() {
+    console.log('מייל נשלח ל-' + toEmail);
+  }, function(err) {
+    console.warn('שגיאת מייל:', err);
+  });
+}
 
 async function lgLogin() {
   var u = document.getElementById('lgUser').value.trim();
@@ -506,8 +530,17 @@ function saveModal(){
       chat:r?r.chat||{}:{}
     };
   }
+  const wasStatus = r ? r.ס : null;
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
+  // Email on status change to בוצע
+  if (editSheet==='rivka' && rec.ס==='בוצע' && wasStatus!=='בוצע') {
+    var ownerName2 = rec.מב || '';
+    var ownerUser2 = (DB.users||[]).find(function(u){ return u.name===ownerName2; });
+    if (ownerUser2 && ownerUser2.email) {
+      sendEmailNotification(ownerUser2.email, ownerUser2.name, 'הבקשה שלך טופלה', 'הבקשה שלך סומנה כבוצע', rec.כ||rec.נ||'', 'בוצע');
+    }
+  }
   closeModal();
   initFilters();
   if(editSheet==='malm')r1();else r2();
@@ -556,11 +589,12 @@ function renderUsers() {
     var name = document.createElement('b'); name.style.flex='1'; name.textContent = u.name;
     var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent = u.username;
     var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent = u.password;
+    var eml = document.createElement('span'); eml.style.cssText='color:#1565c0;font-size:12px;min-width:140px'; eml.textContent = u.email||'—';
     var btn = document.createElement('button');
     btn.textContent = 'מחק';
     btn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
     btn.addEventListener('click', (function(un){ return function(){ delUser(un); }; })(u.username));
-    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(btn);
+    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(eml); row.appendChild(btn);
     el.appendChild(row);
   });
 }
@@ -574,7 +608,8 @@ async function addUser() {
   var msg = document.getElementById('addUserMsg');
   msg.textContent = 'שומר...';
   try {
-    DB.users.push({name:n, username:u, password:p, role:'manager'});
+    var em = document.getElementById('nu_email').value.trim();
+    DB.users.push({name:n, username:u, password:p, role:'manager', email:em});
     await saveDB();
     document.getElementById('nu_name').value='';
     document.getElementById('nu_user').value='';
@@ -747,6 +782,15 @@ function sendMsg(){
   const files=[...pendingFiles];
   rec.chat[side].push({sender,side,text:text||'📎 צרף קבצים',time,files});
   chatTab=side;
+  // Email notification
+  if (isAdmin() && editSheet==='rivka') {
+    // notify the manager who opened this request
+    var ownerName = rec.מב || '';
+    var ownerUser = (DB.users||[]).find(function(u){ return u.name===ownerName; });
+    if (ownerUser && ownerUser.email) {
+      sendEmailNotification(ownerUser.email, ownerUser.name, 'הודעה חדשה בבקשה שלך', 'התקבלה הודעה חדשה: ' + (text||''), rec.כ||rec.נ||'', rec.ס||'');
+    }
+  }
   document.getElementById('chatInput').value='';
   pendingFiles=[];
   renderAttachments();
