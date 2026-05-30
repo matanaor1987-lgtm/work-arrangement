@@ -585,16 +585,51 @@ function renderUsers() {
   el.innerHTML = '';
   users.forEach(function(u) {
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px';
+    row.style.cssText = 'background:#fff;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;font-size:13px;overflow:hidden';
+    // Display row
+    var display = document.createElement('div');
+    display.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px';
     var name = document.createElement('b'); name.style.flex='1'; name.textContent = u.name;
     var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent = u.username;
     var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent = u.password;
     var eml = document.createElement('span'); eml.style.cssText='color:#1565c0;font-size:12px;min-width:140px'; eml.textContent = u.email||'—';
-    var btn = document.createElement('button');
-    btn.textContent = 'מחק';
-    btn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
-    btn.addEventListener('click', (function(un){ return function(){ delUser(un); }; })(u.username));
-    row.appendChild(name); row.appendChild(uname); row.appendChild(pwd); row.appendChild(eml); row.appendChild(btn);
+    var editBtn = document.createElement('button');
+    editBtn.textContent = '✏️ ערוך';
+    editBtn.style.cssText = 'border:1px solid #1565c0;color:#1565c0;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;margin-left:4px';
+    var delBtn = document.createElement('button');
+    delBtn.textContent = 'מחק';
+    delBtn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
+    display.appendChild(name); display.appendChild(uname); display.appendChild(pwd); display.appendChild(eml); display.appendChild(editBtn); display.appendChild(delBtn);
+    // Edit form (hidden)
+    var editForm = document.createElement('div');
+    editForm.style.cssText = 'display:none;padding:10px 14px;background:#f9f9f9;border-top:1px solid #eee;gap:8px;flex-wrap:wrap;align-items:center';
+    editForm.innerHTML = '<input class="eu_name" placeholder="שם מלא..." value="'+u.name+'" style="flex:1;min-width:100px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">'
+      +'<input class="eu_user" placeholder="שם משתמש..." value="'+u.username+'" style="flex:1;min-width:100px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
+      +'<input class="eu_pass" placeholder="סיסמה..." value="'+u.password+'" style="flex:1;min-width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
+      +'<input class="eu_email" placeholder="אימייל..." value="'+(u.email||'')+'" style="flex:1;min-width:150px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
+      +'<button class="eu_save" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">💾 שמור</button>'
+      +'<button class="eu_cancel" style="background:#757575;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-family:Arial">ביטול</button>';
+    editForm.style.display = 'none';
+    // Toggle edit
+    editBtn.addEventListener('click', function() {
+      editForm.style.display = editForm.style.display==='none' ? 'flex' : 'none';
+    });
+    editForm.querySelector('.eu_cancel').addEventListener('click', function() {
+      editForm.style.display = 'none';
+    });
+    editForm.querySelector('.eu_save').addEventListener('click', (function(un) { return async function() {
+      var idx = DB.users.findIndex(function(x){ return x.username===un; });
+      if (idx < 0) return;
+      DB.users[idx].name = editForm.querySelector('.eu_name').value.trim();
+      DB.users[idx].username = editForm.querySelector('.eu_user').value.trim();
+      DB.users[idx].password = editForm.querySelector('.eu_pass').value.trim();
+      DB.users[idx].email = editForm.querySelector('.eu_email').value.trim();
+      await saveDB();
+      renderUsers();
+    }; })(u.username));
+    delBtn.addEventListener('click', (function(un){ return function(){ delUser(un); }; })(u.username));
+    row.appendChild(display);
+    row.appendChild(editForm);
     el.appendChild(row);
   });
 }
