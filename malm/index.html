@@ -536,7 +536,7 @@ function saveModal(){
   // Email on status change to בוצע
   if (editSheet==='rivka' && rec.ס==='בוצע' && wasStatus!=='בוצע') {
     var ownerName2 = rec.מב || '';
-    var ownerUser2 = (DB.users||[]).find(function(u){ return u.name===ownerName2; });
+    var ownerUser2 = (DB.users||[]).find(function(u){ return u.name===ownerName2 || u.username===ownerName2; });
     if (ownerUser2 && ownerUser2.email) {
       sendEmailNotification(ownerUser2.email, ownerUser2.name, 'הבקשה שלך טופלה', 'הבקשה שלך סומנה כבוצע', rec.כ||rec.נ||'', 'בוצע');
     }
@@ -821,7 +821,7 @@ function sendMsg(){
   if (isAdmin() && editSheet==='rivka') {
     // notify the manager who opened this request
     var ownerName = rec.מב || '';
-    var ownerUser = (DB.users||[]).find(function(u){ return u.name===ownerName; });
+    var ownerUser = (DB.users||[]).find(function(u){ return u.name===ownerName || u.username===ownerName; });
     if (ownerUser && ownerUser.email) {
       sendEmailNotification(ownerUser.email, ownerUser.name, 'הודעה חדשה בבקשה שלך', 'התקבלה הודעה חדשה: ' + (text||''), rec.כ||rec.נ||'', rec.ס||'');
     }
