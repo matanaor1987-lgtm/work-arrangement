@@ -297,7 +297,8 @@ function isAdmin() {
 function canEditRow(r) {
   if (!CU) return false;
   if (isAdmin()) return true;
-  return r && r.מב === CU.name;
+  // Non-admin: they only see their own rows, always allow edit
+  return true;
 }
 
 function showApp() {
@@ -495,7 +496,7 @@ function openAdd(){
 
 function openEdit(sheet,idx){
   const r=DB[sheet][idx];
-  if(sheet==='rivka' && !isAdmin() && (!r || r.מב !== (CU?CU.name:''))) return;
+  if(sheet==='rivka' && !isAdmin() && (!r || (r.מב !== (CU?CU.name:'') && r.מב !== (CU?CU.username:'')))) return;
   editIdx=idx;editSheet=sheet;
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
