@@ -540,11 +540,13 @@ function saveModal(){
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
   // Email on status change to בוצע
-  if (editSheet==='rivka' && rec.ס==='בוצע' && wasStatus!=='בוצע') {
+  const notifyStatuses = ['בוצע', 'בטיפול'];
+  if (editSheet==='rivka' && notifyStatuses.includes(rec.ס) && wasStatus!==rec.ס) {
     var ownerName2 = rec.מב || '';
     var ownerUser2 = (DB.users||[]).find(function(u){ return u.name===ownerName2 || u.username===ownerName2; });
     if (ownerUser2 && ownerUser2.email) {
-      sendEmailNotification(ownerUser2.email, ownerUser2.name, 'הבקשה שלך טופלה', 'הבקשה שלך סומנה כבוצע', rec.כ||rec.נ||'', 'בוצע');
+      var msgText = rec.ס==='בוצע' ? 'הבקשה שלך טופלה במלואה ✓' : 'הבקשה שלך נמצאת כעת בטיפול אצל הצוות';
+      sendEmailNotification(ownerUser2.email, ownerUser2.name, 'עדכון סטטוס בקשה', msgText, rec.כ||rec.נ||'', rec.ס);
     }
   }
   closeModal();
