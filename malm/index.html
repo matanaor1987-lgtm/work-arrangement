@@ -139,6 +139,7 @@ tr:hover td{background:#fffbf0}
     <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
     <button class="lg-btn" id="lgBtn">כניסה</button>
     <div class="lg-err" id="lgErr"></div>
+    <button id="lgInstallBtn" onclick="triggerInstall()" style="display:none;width:100%;margin-top:10px;background:#2e7d32;color:#fff;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial">📲 הוסף לשולחן העבודה</button>
   </div>
 </div>
 
@@ -162,8 +163,7 @@ tr:hover td{background:#fffbf0}
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
-  <button class="btn-install" id="btnInstall">📲 הוסף לשולחן העבודה</button>
-<button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
+  <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
 <div class="tabs" id="mainTabs" style="display:none">
@@ -706,27 +706,22 @@ let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredPrompt = e;
-  var btn = document.getElementById('btnInstall');
-  if (btn) btn.style.display = 'flex';
+  var btn = document.getElementById('lgInstallBtn');
+  if (btn) btn.style.display = 'block';
 });
-document.addEventListener('DOMContentLoaded', function() {
-  var btn = document.getElementById('btnInstall');
-  if (btn) {
-    btn.addEventListener('click', function() {
-      if (!deferredPrompt) {
-        alert('כדי להוסיף לשולחן העבודה:\nChrome: לחץ על תפריט ⋮ → "התקן אפליקציה"\nSafari: לחץ על שתף → "הוסף למסך הבית"');
-        return;
-      }
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function(result) {
-        if (result.outcome === 'accepted') {
-          btn.style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-    });
+
+function triggerInstall() {
+  if (!deferredPrompt) {
+    alert('כדי להוסיף לשולחן העבודה:\nChrome: לחץ על תפריט ⋮ → "התקן אפליקציה"\nSafari: לחץ על שתף → "הוסף למסך הבית"');
+    return;
   }
-});
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(result) {
+    var btn = document.getElementById('lgInstallBtn');
+    if (result.outcome === 'accepted' && btn) btn.style.display = 'none';
+    deferredPrompt = null;
+  });
+}
 
 loadDB();
 
