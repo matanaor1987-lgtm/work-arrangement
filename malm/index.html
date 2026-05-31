@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FECC02">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="בקשות מלמ">
 <title>דוח משימות בקשות מלמ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -119,6 +124,8 @@ tr:hover td{background:#fffbf0}
 .lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
 .u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
 .btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
+.btn-install{background:#2e7d32;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;display:none;gap:4px;align-items:center}
+.btn-install:hover{background:#1b5e20}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -155,7 +162,8 @@ tr:hover td{background:#fffbf0}
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
-  <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
+  <button class="btn-install" id="btnInstall">📲 הוסף לשולחן העבודה</button>
+<button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
 <div class="tabs" id="mainTabs" style="display:none">
@@ -691,6 +699,33 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
   document.getElementById('btnOut').addEventListener('click', lgLogout);
   document.getElementById('mainTabs').style.display='none';
+});
+
+// PWA Install
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  var btn = document.getElementById('btnInstall');
+  if (btn) btn.style.display = 'flex';
+});
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('btnInstall');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      if (!deferredPrompt) {
+        alert('כדי להוסיף לשולחן העבודה:\nChrome: לחץ על תפריט ⋮ → "התקן אפליקציה"\nSafari: לחץ על שתף → "הוסף למסך הבית"');
+        return;
+      }
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') {
+          btn.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+    });
+  }
 });
 
 loadDB();
