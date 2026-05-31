@@ -400,11 +400,7 @@ function buildStats(data,el){
   const cnt={};data.forEach(r=>{cnt[r.ס]=(cnt[r.ס]||0)+1});
   el.innerHTML=`
     <div class="stat"><div class="n n-open">${cnt['פתוח']||0}</div><div class="l">פתוחות</div></div>
-    <div class="stat"><div class="n n-wait">${cnt['ממתין']||0}</div><div class="l">ממתין</div></div>
-    <div class="stat"><div class="n n-done">${(cnt['בוצע']||0)+(cnt['טופל']||0)}</div><div class="l">הושלמו</div></div>
-    <div class="stat"><div class="n n-frozen">${(cnt['מוקפא']||0)+(cnt['הושהה']||0)}</div><div class="l">מוקפא</div></div>
-    <div class="stat"><div class="n n-cancel">${cnt['בוטל']||0}</div><div class="l">בוטל</div></div>
-    <div class="stat"><div class="n">${data.length}</div><div class="l">סה"כ</div></div>`;
+    <div class="stat"><div class="n n-wait">${cnt['ממתין']||0}</div><div class="l">ממתין</div></div>`;
 }
 
 function populateSel(id,vals){
