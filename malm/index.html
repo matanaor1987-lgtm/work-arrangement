@@ -714,16 +714,16 @@ window.addEventListener('beforeinstallprompt', function(e) {
 });
 
 function triggerInstall() {
-  if (!deferredPrompt) {
-    alert('כדי להוסיף לשולחן העבודה:\nChrome: לחץ על תפריט ⋮ → "התקן אפליקציה"\nSafari: לחץ על שתף → "הוסף למסך הבית"');
-    return;
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result) {
+      var btn = document.getElementById('lgInstallBtn');
+      if (result.outcome === 'accepted' && btn) btn.style.display = 'none';
+      deferredPrompt = null;
+    });
+  } else {
+    alert('להוספת קיצור דרך לשולחן העבודה:\n\n1. לחץ על שלוש הנקודות ⋮ בפינה הימנית העליונה של Chrome\n2. לחץ על "כלים נוספים"\n3. לחץ על "צור קיצור דרך..."\n4. לחץ "צור"\n\nזהו! האייקון יופיע בשולחן העבודה שלך.');
   }
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(result) {
-    var btn = document.getElementById('lgInstallBtn');
-    if (result.outcome === 'accepted' && btn) btn.style.display = 'none';
-    deferredPrompt = null;
-  });
 }
 
 loadDB();
