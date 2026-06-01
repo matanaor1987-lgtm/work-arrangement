@@ -408,7 +408,7 @@ function buildStats(data,el){
   const cnt={};data.forEach(r=>{cnt[r.ס]=(cnt[r.ס]||0)+1});
   el.innerHTML=`
     <div class="stat"><div class="n n-open">${cnt['פתוח']||0}</div><div class="l">פתוחות</div></div>
-    <div class="stat"><div class="n n-wait">${cnt['ממתין']||0}</div><div class="l">ממתין</div></div>`;
+    <div class="stat"><div class="n n-wait">${cnt['בטיפול']||0}</div><div class="l">בטיפול</div></div>`;
 }
 
 function populateSel(id,vals){
