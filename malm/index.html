@@ -163,7 +163,8 @@ tr:hover td{background:#fffbf0}
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
-  <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
+  <button onclick="refreshDB()" style="background:none;border:1px solid #1a1a2e;color:#1a1a2e;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="רענן נתונים">🔄</button>
+<button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
 <div class="tabs" id="mainTabs" style="display:none">
@@ -750,6 +751,24 @@ function triggerInstall() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
+  }
+}
+
+async function refreshDB(){
+  const btn = document.querySelector('[onclick="refreshDB()"]');
+  if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  try {
+    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
+    const raw=await fetch(rawUrl);
+    DB=await raw.json();
+    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
+    const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
+    const jj=await meta.json();
+    dbSha=jj.sha;
+    initFilters(); r1(); r2();
+    if(btn){ btn.textContent='✅'; setTimeout(()=>{ btn.textContent='🔄'; btn.disabled=false; },1500); }
+  } catch(e) {
+    if(btn){ btn.textContent='❌'; setTimeout(()=>{ btn.textContent='🔄'; btn.disabled=false; },2000); }
   }
 }
 
