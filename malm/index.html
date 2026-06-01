@@ -176,7 +176,7 @@ tr:hover td{background:#fffbf0}
   <div class="stats" id="s1"></div>
   <div class="filters">
     <input type="text" id="q1" placeholder="חיפוש חופשי..." oninput="r1()">
-    <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + ממתין</option></select>
+    <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
     <select id="dm1" onchange="r1()"><option value="">כל התחומים</option></select>
     <select id="pr1" onchange="r1()">
       <option value="">כל העדיפויות</option>
@@ -198,7 +198,7 @@ tr:hover td{background:#fffbf0}
   <div class="stats" id="s2"></div>
   <div class="filters">
     <input type="text" id="q2" placeholder="חיפוש חופשי..." oninput="r2()">
-    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + ממתין</option></select>
+    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
     <select id="pr2" onchange="r2()">
       <option value="">כל העדיפויות</option>
       <option value="1">1</option><option value="2">2</option><option value="3">3</option>
@@ -434,7 +434,7 @@ function r1(){
   const pr=document.getElementById('pr1').value;
   buildStats(DB.malm,document.getElementById('s1'));
   let f=DB.malm.filter(r=>{
-    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='ממתין')return false;
+    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='בטיפול')return false;
     if(st&&st!=='פתוח+ממתין'&&r.ס!==st)return false;
     if(dm&&r.ד!==dm)return false;
     if(pr&&String(r.ע)!==pr)return false;
@@ -460,7 +460,7 @@ function r2(){
   buildStats(rivkaOwn,document.getElementById('s2'));
   let f=DB.rivka.filter(r=>{
     if(!isAdmin() && r.מב !== (CU?CU.name:'')) return false;
-    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='ממתין')return false;
+    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='בטיפול')return false;
     if(st&&st!=='פתוח+ממתין'&&r.ס!==st)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
