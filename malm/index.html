@@ -58,7 +58,7 @@ tr:hover td{background:#fffbf0}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:15px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #FECC02;padding-bottom:8px}
+.modal h3{font-size:15px;margin-bottom:0;color:#1a1a2e}
 .form-row{margin-bottom:11px}
 .form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
 .form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
@@ -220,7 +220,10 @@ tr:hover td{background:#fffbf0}
 <!-- Modal -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
-    <h3 id="modalTitle">משימה חדשה</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #FECC02;padding-bottom:8px;margin-bottom:16px">
+      <h3 id="modalTitle" style="border:none;padding:0;margin:0">משימה חדשה</h3>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1;padding:0 4px">&times;</button>
+    </div>
     <div id="modalFields"></div>
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal()">ביטול</button>
