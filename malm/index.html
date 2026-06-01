@@ -445,7 +445,10 @@ function r1(){
   document.getElementById('c1').textContent=`מציג ${f.length} מתוך ${DB.malm.length}`;
   document.getElementById('b1').innerHTML=f.length
     ?f.map(r=>{const idx=DB.malm.indexOf(r);return`<tr>
-      <td><button class="act-btn" onclick="openEdit('malm',${idx})" title="עריכה">✏️</button></td>
+      <td style="white-space:nowrap">
+        <button class="act-btn" onclick="openEdit('malm',${idx})" title="עריכה">✏️</button>
+        ${isAdmin()?`<button class="act-btn" onclick="deleteRec('malm',${idx})" title="מחק" style="color:#D40511">🗑️</button>`:''}
+      </td>
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.ד?`<div class="dtag">${r.ד}</div><br>`:''} ${r.מ||''}</td>
       <td>${pc(r.ע)}</td><td>${sc(r.ס)}</td><td>${m(r.dhl)}</td><td>${m(r.א)}</td>
@@ -698,6 +701,17 @@ async function delUser(username) {
   DB.users = DB.users.filter(function(u){ return u.username !== username; });
   await saveDB();
   renderUsers();
+}
+
+function deleteRec(sheet, idx) {
+  if (!isAdmin()) return;
+  var rec = DB[sheet][idx];
+  var name = rec.נ || rec.מ || 'משימה זו';
+  if (!confirm('למחוק את "' + name + '"?')) return;
+  DB[sheet].splice(idx, 1);
+  initFilters();
+  if(sheet==='malm') r1(); else r2();
+  saveDB();
 }
 
 function switchTab(i) {
