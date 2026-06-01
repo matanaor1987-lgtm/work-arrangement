@@ -472,8 +472,10 @@ function r2(){
   });
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
-    ?f.map(r=>{const idx=DB.rivka.indexOf(r);const eb=canEditRow(r)?'<button class="act-btn" onclick="openEdit(\'rivka\','+idx+')" title="עריכה">✏️</button>':'';return`<tr>
-      <td>${eb}</td>
+    ?f.map(r=>{const idx=DB.rivka.indexOf(r);const eb=canEditRow(r)?'<button class="act-btn" onclick="openEdit(\'rivka\','+idx+')" title="עריכה">✏️</button>':'';
+        const db2=isAdmin()?'<button class="act-btn" onclick="deleteRec(\'rivka\','+idx+')" title="מחק" style="color:#D40511">🗑️</button>':'';
+        return`<tr>
+      <td style="white-space:nowrap">${eb}${db2}</td>
       <td>${m(r.נ)}</td><td>${m(r.מב)}</td>
       <td style="color:#888;font-size:11px">${r.ת||''}</td>
       <td>${r.כ?`<strong>${r.כ}</strong><br>`:''} ${r.ב||''}</td>
