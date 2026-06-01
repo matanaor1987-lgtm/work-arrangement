@@ -504,7 +504,15 @@ function openAdd(){
   editIdx=-1;editSheet=currentTab===0?'malm':'rivka';
   document.getElementById('modalTitle').textContent=currentTab===0?'✏️ משימה חדשה — מלמ כולל':'✏️ משימה חדשה — רבקה';
   document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields({}, false);
-  document.getElementById('chatSection').style.display='none';
+  // Show file upload for new requests too
+  var cs = document.getElementById('chatSection');
+  cs.style.display = 'block';
+  // Hide chat messages and input, show only file upload
+  document.getElementById('chatMessages').style.display = 'none';
+  document.querySelectorAll('.chat-tabs, .chat-input-row').forEach(function(el){ el.style.display='none'; });
+  pendingFiles = [];
+  renderAttachments();
+  setTimeout(initDropZone, 100);
   document.getElementById('modalBg').classList.add('open');
 }
 
@@ -515,6 +523,8 @@ function openEdit(sheet,idx){
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
+  document.getElementById('chatMessages').style.display = 'flex';
+  document.querySelectorAll('.chat-tabs, .chat-input-row').forEach(function(el){ el.style.display=''; });
   pendingFiles=[];
   setTimeout(function(){ var lbl=document.getElementById('chatSenderLabel'); if(lbl&&CU) lbl.textContent=CU.name; },50);
   renderChat();
@@ -548,6 +558,14 @@ function saveModal(){
     };
   }
   const wasStatus = r ? r.ס : null;
+  // Attach pending files to new record
+  if(pendingFiles.length && editIdx===-1){
+    if(!rec.chat)rec.chat={malm:[],dhl:[]};
+    const now=new Date();
+    const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    rec.chat['malm']=[{sender:CU?CU.name:'',side:'malm',text:'📎 קבצים מצורפים',time,files:[...pendingFiles]}];
+    pendingFiles=[];
+  }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
   // Email on status change to בוצע
