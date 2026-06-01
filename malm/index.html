@@ -139,7 +139,7 @@ tr:hover td{background:#fffbf0}
     <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
     <button class="lg-btn" id="lgBtn">כניסה</button>
     <div class="lg-err" id="lgErr"></div>
-    <button id="lgInstallBtn" onclick="triggerInstall()" style="display:none;width:100%;margin-top:10px;background:#2e7d32;color:#fff;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial">📲 הוסף לשולחן העבודה</button>
+    <button id="lgInstallBtn" onclick="triggerInstall()" style="display:block;width:100%;margin-top:10px;background:#2e7d32;color:#fff;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial">📲 הוסף לשולחן העבודה</button>
   </div>
 </div>
 
@@ -711,8 +711,6 @@ let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredPrompt = e;
-  var btn = document.getElementById('lgInstallBtn');
-  if (btn) btn.style.display = 'block';
 });
 
 function triggerInstall() {
