@@ -694,6 +694,11 @@ function switchTab(i) {
 // Auth events
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof emailjs !== 'undefined') emailjs.init('KSlu6K4gQJlBuxuLg');
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/work-arrangement/malm/sw.js');
+}
   document.getElementById('lgBtn').addEventListener('click', lgLogin);
   document.getElementById('lgPass').addEventListener('keydown', function(e){ if(e.key==='Enter') lgLogin(); });
   document.getElementById('lgUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('lgPass').focus(); });
