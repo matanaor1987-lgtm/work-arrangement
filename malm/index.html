@@ -723,11 +723,11 @@ function triggerInstall() {
     });
   } else {
     // Download a .url shortcut file
-    var content = '[InternetShortcut]\nURL=https://matanaor1987-lgtm.github.io/work-arrangement/malm/index.html\nIconIndex=0\n';
-    var blob = new Blob([content], {type: 'text/plain'});
+    var content = '<html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=https://matanaor1987-lgtm.github.io/work-arrangement/malm/index.html"></head><body></body></html>';
+    var blob = new Blob([content], {type: 'text/html'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'בקשות מלמ.url';
+    a.download = 'בקשות מלמ.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
