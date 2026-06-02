@@ -569,6 +569,14 @@ function saveModal(){
     rec.chat['malm']=[{sender:CU?CU.name:'',side:'malm',text:'📎 קבצים מצורפים',time,files:[...pendingFiles]}];
     pendingFiles=[];
   }
+  // Send confirmation email to manager when new request is opened
+  if(editIdx===-1 && editSheet==='rivka'){
+    var ownerName3 = rec.מב || '';
+    var ownerUser3 = (DB.users||[]).find(function(u){ return u.name===ownerName3 || u.username===ownerName3; });
+    if(ownerUser3 && ownerUser3.email){
+      sendEmailNotification(ownerUser3.email, ownerUser3.name, 'הבקשה שלך נפתחה בהצלחה', 'בקשתך התקבלה ונמצאת בטיפול', rec.כ||rec.נ||'', 'פתוח');
+    }
+  }
   if(editIdx===-1){DB[editSheet].unshift(rec);}
   else{DB[editSheet][editIdx]=rec;}
   // Email on status change to בוצע
