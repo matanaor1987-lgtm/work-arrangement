@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Migrate to Firebase</title></head>
+<body style="font-family:Arial;padding:30px;background:#1a1a2e;color:white;direction:rtl">
+<h2 style="color:#FECC02">העברת נתונים ל-Firebase</h2>
+<div id="status" style="font-size:14px;line-height:2"></div>
+<script>
+async function migrate() {
+  const log = (msg) => { document.getElementById('status').innerHTML += msg + '<br>'; };
+  
+  log('⏳ טוען נתונים מ-GitHub...');
+  
+  const ghUrl = 'https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t=' + Date.now();
+  const res = await fetch(ghUrl);
+  const db = await res.json();
+  
+  log(`✅ נטען: ${db.rivka.length} רשומות רבקה, ${db.malm.length} מלמ, ${db.users.length} משתמשים`);
+  log('⏳ מעביר ל-Firebase...');
+  
+  const fbUrl = 'https://malm-focus-default-rtdb.firebaseio.com/db.json';
+  const fbRes = await fetch(fbUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(db)
+  });
+  
+  if (fbRes.ok) {
+    log('✅ הועבר בהצלחה!');
+    log('✅ <strong style="color:#FECC02">המעבר הושלם — ניתן לסגור את הדף</strong>');
+  } else {
+    log('❌ שגיאה: ' + fbRes.status);
+  }
+}
+migrate();
+</script>
+</body>
+</html>
