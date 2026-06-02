@@ -572,7 +572,6 @@ function saveModal(){
   // Send CRITICAL alert to matan + rivka if priority 0
   if(editSheet==='rivka' && String(rec.ע)==='0'){
     sendEmailNotification('matan.naor@dhl.com', 'מתן', '🚨 בקשה קריטית נפתחה', 'בקשה בעדיפות קריטית מחכה לטיפול מיידי', rec.כ||rec.נ||'', '🚨 קריטי');
-    sendEmailNotification('rivka@dhl.com', 'רבקה', '🚨 בקשה קריטית נפתחה', 'בקשה בעדיפות קריטית מחכה לטיפול מיידי', rec.כ||rec.נ||'', '🚨 קריטי');
   }
   // Send confirmation email to manager when new request is opened
   if(editIdx===-1 && editSheet==='rivka'){
