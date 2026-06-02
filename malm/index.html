@@ -255,7 +255,7 @@ tr:hover td{background:#fffbf0}
 <script src="config.js"></script>
 <script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-let DB={malm:[],rivka:[]},dbSha='',currentTab=0,editIdx=-1,editSheet='';
+let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='';
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
 
@@ -349,14 +349,10 @@ function showApp() {
 
 async function loadDB(){
   try{
-    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
-    const raw=await fetch(rawUrl);
-    if(!raw.ok)throw new Error('raw fetch failed: '+raw.status);
+    const fbUrl='https://malm-focus-default-rtdb.firebaseio.com/db.json?t='+Date.now();
+    const raw=await fetch(fbUrl);
+    if(!raw.ok)throw new Error('firebase fetch failed: '+raw.status);
     DB=await raw.json();
-    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
-    const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    const jj=await meta.json();
-    dbSha=jj.sha;
 
     // ── Session restore ────────────────────────────────────────────
     // FIX: call showApp() instead of inline DOM manipulation
@@ -386,15 +382,12 @@ async function saveDB(){
   el.style.background='#1a1a2e';
   el.textContent='⏳ שומר...';
   try{
-    const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB,null,2))));
-    const r=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/db.json`,{
+    const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db.json',{
       method:'PUT',
-      headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:'Update tasks',content,sha:dbSha})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(DB)
     });
-    if(!r.ok){const err=await r.json();throw new Error(err.message||r.status);}
-    const j=await r.json();
-    dbSha=j.content.sha;
+    if(!r.ok)throw new Error('Firebase error: '+r.status);
     el.textContent='✓ נשמר!';
     setTimeout(()=>{el.style.display='none';},1500);
   }catch(e){
@@ -778,13 +771,8 @@ async function refreshDB(){
   const btn = document.querySelector('[onclick="refreshDB()"]');
   if(btn){ btn.textContent='⏳'; btn.disabled=true; }
   try {
-    const rawUrl='https://raw.githubusercontent.com/matanaor1987-lgtm/malm-focus-tasks/main/db.json?t='+Date.now();
-    const raw=await fetch(rawUrl);
+    const raw=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db.json?t='+Date.now());
     DB=await raw.json();
-    const apiUrl='https://api.github.com/repos/matanaor1987-lgtm/malm-focus-tasks/contents/db.json';
-    const meta=await fetch(apiUrl,{headers:{Authorization:'token '+TOKEN,Accept:'application/vnd.github.v3+json'}});
-    const jj=await meta.json();
-    dbSha=jj.sha;
     initFilters(); r1(); r2();
     if(btn){ btn.textContent='✅'; setTimeout(()=>{ btn.textContent='🔄'; btn.disabled=false; },1500); }
   } catch(e) {
