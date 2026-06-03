@@ -269,6 +269,15 @@ var ADMIN_ROLES = ['admin', 'malam', 'Admin', 'Malam'];
 
 function sendEmailNotification(toEmail, toName, subject, message, taskTitle, status) {
   if (!toEmail) return;
+  // CC ido.efrati on all admin notifications (critical + status changes to matan)
+  if (toEmail === 'matan.naor@dhl.com') {
+    if (typeof emailjs !== 'undefined') {
+      emailjs.send('service_q2ekmcf','template_jylk5i7',{
+        to_email:'ido.efrati@dhl.com', to_name:'עידו',
+        subject:subject, message:message, task_name:taskTitle, status:status
+      });
+    }
+  }
   if (typeof emailjs === 'undefined') { console.warn('EmailJS not loaded'); return; }
   const now = new Date();
   const time = now.toLocaleDateString('he-IL') + ' ' + now.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
