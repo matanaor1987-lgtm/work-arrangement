@@ -164,6 +164,7 @@ tr:hover td{background:#fffbf0}
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
   <button onclick="refreshDB()" style="background:none;border:1px solid #1a1a2e;color:#1a1a2e;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="רענן נתונים">🔄</button>
+${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>`:''}
 <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
@@ -796,6 +797,22 @@ function triggerInstall() {
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
   }
+}
+
+function backupDB() {
+  const now = new Date();
+  const date = now.toLocaleDateString('he-IL').replace(/\//g,'-');
+  const time = now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}).replace(':','-');
+  const filename = 'backup_malm_' + date + '_' + time + '.json';
+  const content = JSON.stringify(DB, null, 2);
+  const blob = new Blob([content], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 async function refreshDB(){
