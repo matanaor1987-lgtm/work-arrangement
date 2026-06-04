@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>סידור עבודה DHL</title>
+<title>סידור עבודה — מכס יצוא DHL</title>
 <meta name="theme-color" content="#D40511">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DHL סידור">
+<meta name="apple-mobile-web-app-title" content="מכס יצוא">
 <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2lkdXIgQXZvZGEgREhMIiwic2hvcnRfbmFtZSI6IkRITCDXqdeT🥇ZFIiwiZGVzY3JpcHRpb24iOiLXqdeT🥇ZFIHNjaGVkdWxlIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNENDA1MTEiLCJ0aGVtZV9jb2xvciI6IiNENDA1MTEifQ==">
 <script>
 // Generate DHL icon as canvas and set as apple-touch-icon
@@ -32,7 +32,7 @@ window.addEventListener('load',function(){
     // "סידור" text
     ctx.fillStyle='#FFCC00';
     ctx.font='bold 28px Arial';
-    ctx.fillText('סידור עבודה',96,160);
+    ctx.fillText('מכס יצוא',96,160);
     // Set as icon
     const link=document.createElement('link');
     link.rel='apple-touch-icon';
@@ -376,16 +376,16 @@ import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}fro
 import{getDatabase,ref,set,update,onValue,get,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const EMPLOYEES=[
-  {role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},
-  {role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},
-  {role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},
-  {role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},
-  {role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},
-  {role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},
-  {role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},
-  {role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}
+  {role:"מכס יצוא",name:"זהבית מאיה לוי",phone:"052-2971414",empId:"13071",birthday:"26/06"},
+  {role:"מכס יצוא",name:"זיו צטרון",phone:"050-6396151",empId:"13223",birthday:"28/05"},
+  {role:"מכס יצוא",name:"אלי תקה",phone:"053-2289050",empId:"12856",birthday:"29/04"},
+  {role:"מכס יצוא",name:"אילן ליכטנשטיין",phone:"050-8718142",empId:"10995",birthday:"30/08"},
+  {role:"מכס יצוא",name:"אילנה רביקון",phone:"054-5892206",empId:"13216",birthday:"04/01"},
+  {role:"מכס יצוא",name:"שגיב קב",phone:"054-7414038",empId:"13850",birthday:"16/12"},
+  {role:"מכס יצוא",name:"יגאל גולדר",phone:"054-2097768",empId:"10377",birthday:"02/08"},
+  {role:"מכס יצוא",name:"טלי רוזנברג",phone:"050-9301808",empId:"13530",birthday:"18/08"}
 ];
-const ROLE_COLORS={"מסווג":"#D40511","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
+const ROLE_COLORS={"מכס יצוא":"#D40511"};
 const SHIFTS=[
   {key:"A",label:"08-17",cls:"sh-a"},
   {key:"B",label:"07-16",cls:"sh-b"},
@@ -413,7 +413,7 @@ const DAY_NAMES_FULL=["ראשון","שני","שלישי","רביעי","חמיש�
 const ADMIN_PASSWORD='DHL123';
 let firebaseConfig=null;
 let app,auth,db;
-let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
+let EMPLOYEES_DEFAULT=[{role:"מכס יצוא",name:"זהבית מאיה לוי",phone:"052-2971414",empId:"13071",birthday:"26/06"},{role:"מכס יצוא",name:"זיו צטרון",phone:"050-6396151",empId:"13223",birthday:"28/05"},{role:"מכס יצוא",name:"אלי תקה",phone:"053-2289050",empId:"12856",birthday:"29/04"},{role:"מכס יצוא",name:"אילן ליכטנשטיין",phone:"050-8718142",empId:"10995",birthday:"30/08"},{role:"מכס יצוא",name:"אילנה רביקון",phone:"054-5892206",empId:"13216",birthday:"04/01"},{role:"מכס יצוא",name:"שגיב קב",phone:"054-7414038",empId:"13850",birthday:"16/12"},{role:"מכס יצוא",name:"יגאל גולדר",phone:"054-2097768",empId:"10377",birthday:"02/08"},{role:"מכס יצוא",name:"טלי רוזנברג",phone:"050-9301808",empId:"13530",birthday:"18/08"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
 let state={mode:"view",year:2026,month:4,schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week'};
 
@@ -703,8 +703,8 @@ function buildApp(){
       <span class="dhl-logo-text">DHL</span>
     </div>
     <div>
-      <div class="topbar-title">סידור עבודה</div>
-      <div class="topbar-sub">${MONTHS[state.month]} ${state.year}</div>
+      <div class="topbar-title">מכס יצוא</div>
+      <div class="topbar-sub">מכס יצוא — ${MONTHS[state.month]} ${state.year}</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -970,7 +970,7 @@ window.saveEmps=function(){
 
 function buildEmpMgr(){
   const roles=[...new Set(employees.map(e=>e.role))];
-  const ROLE_COLORS_LOCAL={"מסווג":"#D40511","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
+  const ROLE_COLORS_LOCAL={"מכס יצוא":"#D40511"};
   return `<div class="emp-mgr" onclick="if(event.target===this)closeEmpMgr()">
     <div class="emp-mgr-box">
       <h2>👥 ניהול עובדים</h2>
@@ -1820,13 +1820,13 @@ window.installPWA=function(){
 
 // Config מובנה — הצוות לא צריך להגדיר כלום
 const BUILTIN_CONFIG={
-  apiKey:"AIzaSyBhWIKfKGvJU_fOcD2Yhw-v2KfNWMnXnHo",
-  authDomain:"seder-avoda.firebaseapp.com",
-  databaseURL:"https://seder-avoda-default-rtdb.firebaseio.com",
-  projectId:"seder-avoda",
-  storageBucket:"seder-avoda.firebasestorage.app",
-  messagingSenderId:"283925271099",
-  appId:"1:283925271099:web:942c2024ff9dfe2723021e"
+  apiKey:"AIzaSyDBzV2DN23g7cUMTGND9d9cnmEiOvdKcJ4",
+  authDomain:"export-schedule-65c4a.firebaseapp.com",
+  databaseURL:"https://export-schedule-65c4a-default-rtdb.firebaseio.com",
+  projectId:"export-schedule-65c4a",
+  storageBucket:"export-schedule-65c4a.firebasestorage.app",
+  messagingSenderId:"1036937110107",
+  appId:"1:1036937110107:web:1d4383ec65221fd87dd57e"
 };
 
 
@@ -1876,7 +1876,7 @@ window.backupNow = function(){
   const body=encodeURIComponent(`שלום מתן,\n\nמצורף גיבוי סידור עבודה לחודש ${monthName} ${state.year}.\nתאריך גיבוי: ${dateStr} בשעה ${timeStr}\n\nשלבים:\n1. שמור את ה-PDF שנפתח כעת\n2. צרף אותו למייל זה ושלח\n\nבברכה,\nמערכת סידור עבודה DHL`);
   window.exportToPDF();
   setTimeout(()=>{
-    window.location.href=`mailto:matan.naor@dhl.com?subject=${subject}&body=${body}`;
+    window.location.href=`mailto:maor.hajaj@dhl.com?subject=${subject}&body=${body}`;
     showToast('📧 שמור את ה-PDF וצרף אותו למייל שנפתח');
   },800);
 };
@@ -1938,7 +1938,7 @@ window.exportToPDF = function(){
   const monthName=MONTHS_HE[state.month];
   const days=getDays();
   const roles=[...new Set(employees.map(e=>e.role))];
-  const ROLE_COLORS_PDF={"מסווג":"#D40511","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
+  const ROLE_COLORS_PDF={"מכס יצוא":"#D40511"};
 
   // Build shift color map
   const shiftBgMap={A:'#fff6cc',B:'#e6f4ea',C:'#fce8dc',D:'#fff9c4',E:'#dcedc8',F:'#ffe0b2',G:'#e0f7fa',SAB:'#fce4ec',MOTZ:'#e8eaf6',AUDIT:'#fce4ec',OFF:'#f0e8fc',MIL:'#daeaf8',SICK:'#ffe0b2',HV:'#e8eaf6',LOW:'#e0f2f1',FLIGHT:'#e1f5fe',REPORT:'#f3e5f5'};
