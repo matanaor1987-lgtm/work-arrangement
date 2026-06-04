@@ -124,6 +124,10 @@ tr:hover td{background:#fffbf0}
 .lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
 .u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
 .btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
+.th-sort{cursor:pointer;user-select:none;white-space:nowrap}
+.th-sort:hover{background:#2a2a3e}
+.th-sort.asc::after{content:' ↑';font-size:10px;color:#FECC02}
+.th-sort.desc::after{content:' ↓';font-size:10px;color:#FECC02}
 .btn-install{background:#2e7d32;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;display:none;gap:4px;align-items:center}
 .btn-install:hover{background:#1b5e20}
 </style>
@@ -210,10 +214,15 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
   <div class="count" id="c2"></div>
   <div class="tbl-wrap">
     <table><thead><tr>
-      <th style="width:30px"></th><th>נושא</th><th style="width:80px">מבקש</th>
-      <th style="width:88px">תאריך</th><th>בקשה / כותרת</th>
-      <th style="width:70px">מטפל</th><th style="width:36px">עד'</th>
-      <th style="width:90px">סטטוס</th><th>💬 הערות</th>
+      <th style="width:30px"></th>
+      <th class="th-sort" onclick="sortTable2('נ')" id="th2-נ">נושא</th>
+      <th class="th-sort" style="width:80px" onclick="sortTable2('מב')" id="th2-מב">מבקש</th>
+      <th class="th-sort" style="width:88px" onclick="sortTable2('ת')" id="th2-ת">תאריך</th>
+      <th>בקשה / כותרת</th>
+      <th style="width:70px">מטפל</th>
+      <th class="th-sort" style="width:36px" onclick="sortTable2('ע')" id="th2-ע">עד'</th>
+      <th class="th-sort" style="width:90px" onclick="sortTable2('ס')" id="th2-ס">סטטוס</th>
+      <th>💬 הערות</th>
     </tr></thead><tbody id="b2"><tr><td colspan="9" class="loading">טוען נתונים...</td></tr></tbody></table>
   </div>
 </div>
@@ -256,7 +265,7 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
 <script src="config.js"></script>
 <script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='';
+let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
 
@@ -476,6 +485,7 @@ function r2(){
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
     return true;
   });
+  if(sortCol2){data.sort((a,b)=>{let av=a[sortCol2]||'',bv=b[sortCol2]||'';if(sortCol2==='ת'){return sortDir2*(av<bv?-1:av>bv?1:0);}if(sortCol2==='ע'){return sortDir2*(Number(av)||99)-(Number(bv)||99);}return sortDir2*(String(av).localeCompare(String(bv),'he'));});}
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
     ?f.map(r=>{const idx=DB.rivka.indexOf(r);const eb=canEditRow(r)?'<button class="act-btn" onclick="openEdit(\'rivka\','+idx+')" title="עריכה">✏️</button>':'';
@@ -797,6 +807,23 @@ function triggerInstall() {
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
   }
+}
+
+function sortTable2(col) {
+  if (sortCol2 === col) { sortDir2 *= -1; } else { sortCol2 = col; sortDir2 = 1; }
+  // Update header classes
+  document.querySelectorAll('[id^="th2-"]').forEach(el => { el.classList.remove('asc','desc'); });
+  const th = document.getElementById('th2-' + col);
+  if (th) th.classList.add(sortDir2 === 1 ? 'asc' : 'desc');
+  r2();
+}
+
+function sortTable1(col) {
+  if (sortCol1 === col) { sortDir1 *= -1; } else { sortCol1 = col; sortDir1 = 1; }
+  document.querySelectorAll('[id^="th1-"]').forEach(el => { el.classList.remove('asc','desc'); });
+  const th = document.getElementById('th1-' + col);
+  if (th) th.classList.add(sortDir1 === 1 ? 'asc' : 'desc');
+  r1();
 }
 
 function backupDB() {
