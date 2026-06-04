@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סידור עבודה — מכס יצוא DHL</title>
+<meta name="theme-color" content="#D40511">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="מכס יצוא">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2lkdXIgQXZvZGEgLSBNYWthcyBZYXRzYSIsInNob3J0X25hbWUiOiLXnNebINieLdek15oiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI0Q0MDUxMSIsInRoZW1lX2NvbG9yIjoiI0Q0MDUxMSJ9">
+<script>
+window.addEventListener('load',function(){
+  try{
+    const c=document.createElement('canvas');
+    c.width=192;c.height=192;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#D40511';ctx.fillRect(0,0,192,192);
+    ctx.fillStyle='#FFCC00';ctx.beginPath();ctx.roundRect(16,30,160,80,12);ctx.fill();
+    ctx.fillStyle='#D40511';ctx.font='bold 62px Arial Black,Arial';ctx.textAlign='center';ctx.fillText('DHL',96,98);
+    ctx.fillStyle='#FFCC00';ctx.font='bold 22px Arial';ctx.fillText('מכס יצוא',96,145);
+    const link=document.createElement('link');link.rel='apple-touch-icon';link.href=c.toDataURL();document.head.appendChild(link);
+    const link2=document.createElement('link');link2.rel='icon';link2.href=c.toDataURL();document.head.appendChild(link2);
+  }catch(e){}
+});
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap');
+:root{
+  --dhl-red:#D40511;--dhl-yellow:#FFCC00;--dhl-dark:#1a1a1a;
+  --dhl-gray:#f5f5f5;--dhl-border:#e8e8e8;--dhl-text:#1a1a1a;--dhl-muted:#888;
+  --radius:8px;--shadow:0 2px 12px rgba(0,0,0,0.08);--shadow-md:0 4px 24px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;direction:rtl;background:#f2f2f2;color:var(--dhl-text);min-height:100vh;-webkit-tap-highlight-color:transparent}
+.topbar{background:var(--dhl-red);color:#fff;padding:0 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;height:56px;box-shadow:0 2px 12px rgba(212,5,17,0.35)}
+.dhl-logo{background:var(--dhl-yellow);padding:5px 11px;border-radius:4px;display:flex;align-items:center;margin-left:10px;flex-shrink:0}
+.dhl-logo-text{font-family:'Heebo',sans-serif;font-weight:900;font-size:22px;color:var(--dhl-red);letter-spacing:-1.5px;line-height:1}
+.topbar-title{font-size:14px;font-weight:800;letter-spacing:0.2px}
+.topbar-sub{font-size:10px;opacity:0.75;margin-top:1px;font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden}
+.dhl-yellow-stripe{height:3px;background:var(--dhl-yellow)}
+.mode-btn{padding:5px 12px;font-size:11px;border:1.5px solid rgba(255,255,255,0.45);border-radius:4px;cursor:pointer;background:transparent;color:#fff;font-family:inherit;font-weight:700;transition:all 0.18s;white-space:nowrap}
+.mode-btn.active{background:#fff;color:var(--dhl-red);border-color:#fff}
+.sign-btn{padding:5px 10px;font-size:11px;border:1.5px solid rgba(255,255,255,0.4);border-radius:4px;cursor:pointer;background:rgba(255,255,255,0.1);color:#fff;font-family:inherit;font-weight:700;transition:all 0.18s;white-space:nowrap}
+.sign-btn:hover{background:rgba(255,255,255,0.22)}
+.sign-btn:active{transform:scale(0.96)}
+.user-pill{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.18);border-radius:4px;padding:4px 9px;font-size:11px;font-weight:600;white-space:nowrap}
+.week-nav{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--dhl-border);box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.week-nav button{border:1.5px solid var(--dhl-border);background:#fff;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:14px;color:var(--dhl-red);font-weight:800;transition:all 0.18s;min-height:34px;min-width:34px}
+.week-nav button:hover{background:var(--dhl-yellow);border-color:var(--dhl-yellow);color:#000}
+.week-label{font-size:16px;font-weight:800;color:var(--dhl-dark);flex:1;text-align:center}
+.schedule-wrap{overflow-x:auto;background:#fff;margin:12px;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--dhl-border)}
+table.sched{border-collapse:collapse;width:100%;font-size:12px}
+table.sched th{background:#f5f5f5;padding:8px 4px;text-align:center;border:1px solid #e0e0e0;font-weight:700;color:#555;min-width:130px;white-space:nowrap;position:sticky;top:0;z-index:10}
+table.sched th.row-col{min-width:36px;max-width:36px;position:sticky;right:0;z-index:20;background:#ebebeb}
+table.sched td{padding:3px 4px;text-align:center;border:1px solid #ebebeb}
+table.sched td.row-col{text-align:center;font-weight:700;font-size:11px;color:#aaa;position:sticky;right:0;background:#fafafa;z-index:5}
+table.sched th.today-col{background:#FFF3CC;color:var(--dhl-red)}
+table.sched td.today-col{background:#FFFDE7}
+table.sched tr:hover td:not(.row-col){background:#fffde7}
+.cell-wrap{min-height:54px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:4px 6px;gap:2px;cursor:pointer;border-radius:4px;transition:background 0.12s}
+.cell-wrap:hover{background:rgba(212,5,17,0.07)}
+.cell-task{font-size:11px;font-weight:700;color:#222;line-height:1.3}
+.cell-rep{font-size:11px;color:#0057a8;font-weight:600}
+.cell-hour{font-size:10px;color:#888}
+.cell-empty{color:#d0d0d0;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:54px}
+.cell-empty:hover{color:var(--dhl-red)}
+.cell-vacation{background:#e8f5e9;border-radius:4px;padding:4px 6px;min-height:54px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cell-vacation-label{font-size:11px;font-weight:700;color:#2e7d32}
+.cell-off{background:#f3e5f5;border-radius:4px;padding:4px 6px;min-height:54px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cell-off-label{font-size:11px;font-weight:700;color:#7b1fa2}
+
+.note-bar{display:flex;gap:8px;align-items:center;padding:8px 14px;background:#fffbea;border-bottom:1px solid #f0e8b0;flex-wrap:wrap;font-size:13px;color:#7a5c00}
+.note-bar input{padding:5px 10px;font-size:12px;border:1px solid #d0c080;border-radius:4px;background:#fff;color:#333;font-family:inherit;flex:1;min-width:160px}
+.note-bar button{padding:5px 12px;font-size:12px;border:1px solid #c0a020;border-radius:4px;cursor:pointer;background:#fff8dc;color:#7a5c00;font-family:inherit;font-weight:600}
+
+.summary-section{margin:0 12px 20px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--dhl-border)}
+.summary-section h2{font-size:14px;font-weight:800;padding:12px 16px;border-bottom:3px solid var(--dhl-yellow);color:var(--dhl-red);background:#fafafa}
+.sum-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:12px 14px}
+.sum-card{background:#f8f8f8;border-radius:var(--radius);padding:12px;text-align:center;border:1px solid var(--dhl-border)}
+.sum-card .val{font-size:26px;font-weight:900;color:var(--dhl-red)}
+.sum-card .lbl{font-size:10px;color:var(--dhl-muted);margin-top:2px;font-weight:600}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:998;backdrop-filter:blur(2px)}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:20px;z-index:999;width:min(380px,94vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.22);border-top:4px solid var(--dhl-red)}
+.popup h3{font-size:14px;font-weight:800;margin-bottom:14px;color:var(--dhl-dark)}
+.popup-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.popup-actions button{padding:8px 18px;font-size:13px;border:1.5px solid var(--dhl-border);border-radius:6px;cursor:pointer;background:#fff;color:#333;font-family:inherit;font-weight:700}
+.btn-save{background:var(--dhl-red) !important;color:#fff !important;border-color:var(--dhl-red) !important}
+.btn-del{background:#fff0f0 !important;color:#c00 !important;border-color:#ffb0b0 !important}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px}
+.form-row input,.form-row select{width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--dhl-border);border-radius:6px;font-family:inherit;direction:rtl}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--dhl-red)}
+.task-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.task-chip{padding:3px 8px;border:1px solid #d0d7e8;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;background:#fafbff;color:#333;transition:all 0.12s;font-weight:600}
+.task-chip:hover{background:var(--dhl-red);color:#fff;border-color:var(--dhl-red)}
+
+.emp-mgr{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;display:flex;align-items:center;justify-content:center}
+.emp-mgr-box{background:#fff;border-radius:12px;padding:22px;width:min(640px,95vw);max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md);border-top:4px solid var(--dhl-red)}
+.emp-mgr-box h2{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--dhl-red)}
+.emp-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 28px;gap:5px;margin-bottom:5px;align-items:center}
+.emp-row input{padding:6px 8px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:4px;font-family:inherit;font-weight:500}
+.emp-mgr-del{background:#fff0f0;border:1.5px solid #ffb0b0;border-radius:4px;cursor:pointer;font-size:13px;color:#c00;padding:4px;min-height:32px}
+.emp-mgr-add{padding:7px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:800}
+.emp-mgr-save{padding:8px 18px;font-size:13px;background:var(--dhl-red);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700}
+.emp-mgr-cancel{padding:8px 13px;font-size:13px;background:#fff;color:#333;border:1.5px solid var(--dhl-border);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600}
+
+.req-btn{position:fixed;bottom:22px;left:22px;z-index:500;background:var(--dhl-red);color:#fff;border:none;border-radius:6px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(212,5,17,0.4)}
+.bell-btn{position:relative;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border:1.5px solid rgba(255,255,255,0.45);border-radius:4px;cursor:pointer;background:transparent;color:#fff;font-family:inherit;font-weight:700}
+.bell-badge{position:absolute;top:-6px;right:-6px;background:var(--dhl-yellow);color:var(--dhl-red);border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.req-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:600px){.req-modal{align-items:center}}
+.req-box{background:#fff;border-radius:16px 16px 0 0;padding:22px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 -4px 40px rgba(0,0,0,0.2);border-top:4px solid var(--dhl-red)}
+@media(min-width:600px){.req-box{border-radius:12px;width:500px;max-height:85vh}}
+.req-box h2{font-size:16px;font-weight:800;margin-bottom:14px;color:var(--dhl-red)}
+.req-form label{font-size:12px;color:#555;display:block;margin-bottom:3px;margin-top:10px;font-weight:600}
+.req-form select,.req-form input,.req-form textarea{width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--dhl-border);border-radius:6px;font-family:inherit}
+.req-form textarea{resize:vertical;min-height:70px}
+.req-card{border:1.5px solid var(--dhl-border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fafafa}
+.req-card .req-meta{font-size:11px;color:#888;margin-bottom:4px;font-weight:500}
+.req-card .req-name{font-size:13px;font-weight:700;color:var(--dhl-dark);margin-bottom:2px}
+.req-card .req-type{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;background:var(--dhl-yellow);color:var(--dhl-red);margin-bottom:6px}
+.req-card .req-note{font-size:12px;color:#555;margin-top:4px}
+.status-pending{color:#f57c00;font-weight:700;font-size:11px}
+.status-approved{color:#2e7d32;font-weight:700;font-size:11px}
+.status-rejected{color:#c62828;font-weight:700;font-size:11px}
+.req-actions{display:flex;gap:6px;margin-top:10px}
+.btn-approve{padding:6px 14px;font-size:12px;background:#2e7d32;color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700}
+.btn-reject{padding:6px 14px;font-size:12px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700}
+.admin-note-inp{width:100%;padding:6px 8px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:4px;margin-top:6px;font-family:inherit}
+.emp-req-card{border:1.5px solid var(--dhl-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fafafa}
+.personal-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:600px){.personal-modal{align-items:center}}
+.personal-box{background:#fff;border-radius:16px 16px 0 0;padding:22px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 -4px 40px rgba(0,0,0,0.2);border-top:4px solid var(--dhl-red)}
+@media(min-width:600px){.personal-box{border-radius:12px;width:480px;max-height:85vh}}
+.personal-box h2{font-size:16px;font-weight:800;margin-bottom:14px;color:var(--dhl-red)}
+.shift-day-card{border:1.5px solid var(--dhl-border);border-radius:6px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.team-msg-banner{background:var(--dhl-red);color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px}
+.msg-editor{display:flex;gap:6px;align-items:center;padding:8px 14px;background:#fff3cd;border-bottom:1px solid #ffe08a;flex-wrap:wrap}
+.msg-editor input{flex:1;padding:6px 10px;font-size:12px;border:1px solid #f0c040;border-radius:4px;background:#fff;font-family:inherit;min-width:200px}
+.msg-editor button{padding:6px 12px;font-size:12px;background:var(--dhl-red);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700}
+
+.emp-view-screen{background:#fff;min-height:100vh}
+.emp-view-topbar{background:var(--dhl-red);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.emp-view-topbar h2{font-size:15px;font-weight:800}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 22px;border-radius:6px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.25s;font-weight:600;border-right:4px solid var(--dhl-yellow);max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.notif-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 22px;border-radius:6px;font-size:13px;font-weight:700;z-index:2000;box-shadow:var(--shadow-md);border-right:4px solid var(--dhl-yellow)}
+
+#pwa-install-btn{display:none;align-items:center;gap:5px;padding:5px 10px;font-size:11px;border:1.5px solid rgba(255,255,255,0.4);border-radius:4px;cursor:pointer;background:rgba(255,255,255,0.1);color:#fff;font-family:inherit;font-weight:700}
+
+@media(max-width:640px){
+  .topbar{padding:0 10px;height:52px}
+  .dhl-logo-text{font-size:18px}
+  .dhl-logo{padding:4px 9px;margin-left:6px}
+  .topbar-right{gap:4px}
+  .sign-btn{padding:4px 7px;font-size:10px}
+  .bell-btn{padding:4px 8px;font-size:10px}
+  .schedule-wrap,.summary-section{margin:8px}
+  .emp-row{grid-template-columns:1fr 1fr 28px}
+  .emp-row input:nth-child(3),.emp-row input:nth-child(4){display:none}
+}
+@media(max-width:480px){.admin-extra-btn{display:none}}
+</style>
+</head>
+<body>
+<div id="app"><div style="text-align:center;padding:60px;color:#888">טוען...</div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getDatabase,ref,set,onValue,get,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ===== FIREBASE CONFIG — מכס יצוא =====
+const BUILTIN_CONFIG={
+  apiKey:"AIzaSyDBzV2DN23g7cUMTGND9d9cnmEiOvdKcJ4",
+  authDomain:"export-schedule-65c4a.firebaseapp.com",
+  databaseURL:"https://export-schedule-65c4a-default-rtdb.firebaseio.com",
+  projectId:"export-schedule-65c4a",
+  storageBucket:"export-schedule-65c4a.firebasestorage.app",
+  messagingSenderId:"1036937110107",
+  appId:"1:1036937110107:web:1d4383ec65221fd87dd57e"
+};
+
+const ADMIN_PASSWORD='DHL123';
+const DAY_NAMES=['א','ב','ג','ד','ה','ו','ש'];
+const DAY_NAMES_FULL=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const MONTHS=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
+// Default task presets
+const DEFAULT_TASKS=['HMS','תביעות','שירות','שטעונים','DCVS','הקלדות','תורן מכס','תיקונים','מיילים','סגירות טיסה','סבב','בית','חופש','WFH'];
+const HOURS=['8','9','10','11','12'];
+
+let app,auth,db;
+const EMPLOYEES_DEFAULT=[
+  {name:"מאור הג'ג'",phone:"054-7868537",empId:"11170",birthday:"22/10"},
+  {name:"לירון ארדיטי",phone:"052-5676473",empId:"13811",birthday:"03/10"},
+  {name:"זהבית מאיה לוי",phone:"052-2971414",empId:"13071",birthday:"26/06"},
+  {name:"זיו צטרון",phone:"050-6396151",empId:"13223",birthday:"28/05"},
+  {name:"אלי תקה",phone:"053-2289050",empId:"12856",birthday:"29/04"},
+  {name:"אילן ליכטנשטיין",phone:"050-8718142",empId:"10995",birthday:"30/08"},
+  {name:"אילנה רביקון",phone:"054-5892206",empId:"13216",birthday:"04/01"},
+  {name:"שגיב קב",phone:"054-7414038",empId:"13850",birthday:"16/12"},
+  {name:"יגאל גולדר",phone:"054-2097768",empId:"10377",birthday:"02/08"},
+  {name:"טלי רוזנברג",phone:"050-9301808",empId:"13530",birthday:"18/08"}
+];
+let employees=[...EMPLOYEES_DEFAULT]; // {name, phone, empId, birthday}
+let taskPresets=[...DEFAULT_TASKS];
+let state={
+  mode:'view', // 'admin' | 'view' | 'emp'
+  adminUid:null, user:null, configured:false,
+  weekOffset:0, // offset from current week
+  scheduleData:{}, // { weekKey: { rowIdx: { dayIdx: {task,rep,hour,type} } } }
+  numRows:12,
+  popup:null, // {row,day,weekKey}
+  showEmpMgr:false, showTaskMgr:false,
+  teamMsg:'', waNotif:false,
+  empView:false, personalEmp:'', personalEmpRole:'',
+  teamMsg:'',
+  showPwdForm:false,
+  _afterLoginGoToRequests:false
+};
+let reqState={show:false,mode:'',viewEmp:'',viewRole:''};
+
+// ===== WEEK UTILS =====
+function getMondayOfWeek(offset=0){
+  const d=new Date();
+  const day=d.getDay(); // 0=Sun
+  const diff=day===0?-6:1-day;
+  d.setDate(d.getDate()+diff+offset*7);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getWeekDays(offset=0){
+  const mon=getMondayOfWeek(offset);
+  return Array.from({length:6},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+}
+function weekKey(offset=0){
+  const mon=getMondayOfWeek(offset);
+  return `w${mon.getFullYear()}${String(mon.getMonth()+1).padStart(2,'0')}${String(mon.getDate()).padStart(2,'0')}`;
+}
+function fmtDate(d){return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;}
+function isToday(d){const t=new Date();return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();}
+function isTodayInWeek(offset=0){return getWeekDays(offset).some(d=>isToday(d));}
+
+// ===== FIREBASE INIT =====
+function initFirebase(cfg){
+  try{
+    app=initializeApp(cfg);
+    auth=getAuth(app);
+    db=getDatabase(app);
+    state.configured=true;
+    onAuthStateChanged(auth,user=>{
+      state.user=user;
+      listenToData();
+      render();
+    });
+  }catch(e){alert('שגיאה בחיבור Firebase');state.configured=false;render();}
+}
+
+function listenToData(){
+  if(!db)return;
+  onValue(ref(db,'employees'),snap=>{
+    const d=snap.val();
+    employees=Array.isArray(d)&&d.length>0?d:[];
+    render();
+  });
+  onValue(ref(db,'tasks'),snap=>{
+    const d=snap.val();
+    taskPresets=Array.isArray(d)&&d.length>0?d:[...DEFAULT_TASKS];
+    render();
+  });
+  onValue(ref(db,'numRows'),snap=>{if(snap.val())state.numRows=snap.val();render();});
+  onValue(ref(db,'teamMsg'),snap=>{state.teamMsg=snap.val()||'';render();});
+  onValue(ref(db,'scheduleData'),snap=>{state.scheduleData=snap.val()||{};render();});
+  listenToRequests();
+}
+
+function saveCell(wk,row,day,data){set(ref(db,`scheduleData/${wk}/${row}/${day}`),data);}
+function clearCellDB(wk,row,day){remove(ref(db,`scheduleData/${wk}/${row}/${day}`));}
+function saveEmployees(){set(ref(db,'employees'),employees);showToast('✓ עובדים נשמרו');}
+function saveTasks(){set(ref(db,'tasks'),taskPresets);}
+function saveNumRows(){set(ref(db,'numRows'),state.numRows);}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+window.showToast=showToast;
+
+function showNotifBanner(msg){
+  const b=document.createElement('div');b.className='notif-banner';b.textContent=msg;
+  document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
+}
+
+// ===== RENDER =====
+function render(){
+  const root=document.getElementById('app');
+  if(!state.configured){root.innerHTML=buildSetup();return;}
+  if(state.empView){root.innerHTML=buildEmpView();return;}
+  root.innerHTML=buildMain();
+}
+window.render=render;
+
+function buildMain(){
+  const isAdmin=state.mode==='admin';
+  const days=getWeekDays(state.weekOffset);
+  const wk=weekKey(state.weekOffset);
+  const mon=getMondayOfWeek(state.weekOffset);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+5);
+  const weekLabel=`שבוע ${fmtDate(mon)} — ${fmtDate(sun)} · ${mon.getFullYear()}`;
+
+  // Stats
+  const wkData=state.scheduleData[wk]||{};
+  let workerSet=new Set(),vacCount=0,taskCount=0;
+  Object.values(wkData).forEach(row=>Object.values(row).forEach(cell=>{
+    if(cell.rep)workerSet.add(cell.rep);
+    if(cell.type==='vacation')vacCount++;
+    if(cell.task)taskCount++;
+  }));
+
+  const pendingCount=getPendingCount();
+
+  return `
+  <div class="topbar">
+    <div style="display:flex;align-items:center">
+      <div class="dhl-logo"><span class="dhl-logo-text">DHL</span></div>
+      <div>
+        <div class="topbar-title">מכס יצוא</div>
+        <div class="topbar-sub">סידור עבודה שבועי</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      ${isAdmin?`
+        <button class="bell-btn" onclick="openAdminRequests()" title="בקשות">🔔 בקשות${pendingCount>0?`<span class="bell-badge">${pendingCount}</span>`:''}</button>
+        <button class="sign-btn admin-extra-btn" onclick="openEmpMgr()">👥 עובדים</button>
+        <button class="sign-btn admin-extra-btn" onclick="openTaskMgr()">📝 משימות</button>
+        <button class="sign-btn admin-extra-btn" onclick="toggleWaNotif()" style="${state.waNotif?'background:#25d366;border-color:#25d366':''}">📱 WA ${state.waNotif?'פעיל':'כבוי'}</button>
+        <button id="pwa-install-btn" onclick="installPWA()">📲 התקן</button>
+        <button class="sign-btn" onclick="doSignOut()">יציאה</button>
+      `:`
+        <button class="mode-btn" onclick="openEmpViewLogin()">👤 כניסת עובד</button>
+        ${state.showPwdForm?`
+          <input id="admin-pwd-inp" type="password" placeholder="סיסמת מנהל" style="padding:4px 8px;font-size:11px;border:1px solid rgba(255,255,255,0.4);border-radius:4px;background:rgba(0,0,0,0.2);color:#fff;font-family:inherit;width:110px" onkeydown="if(event.key==='Enter')doPasswordLogin()">
+          <button class="sign-btn" onclick="doPasswordLogin()">כנס</button>
+          <button class="sign-btn" onclick="togglePwdForm()">✕</button>
+        `:`<button class="sign-btn" onclick="togglePwdForm()">🔑 מנהל</button>`}
+        <button id="pwa-install-btn" onclick="installPWA()">📲 התקן</button>
+      `}
+    </div>
+  </div>
+  <div class="dhl-yellow-stripe"></div>
+
+  ${state.teamMsg?`<div class="team-msg-banner">📢 ${state.teamMsg}<button onclick="dismissMsg()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;margin-right:8px">✕</button></div>`:''}
+
+  ${isAdmin?`<div class="msg-editor">
+    📢 <input id="team-msg-inp" placeholder="הודעה לכל הצוות..." value="${state.teamMsg||''}">
+    <button onclick="saveTeamMsg()">שלח</button>
+    ${state.teamMsg?`<button onclick="clearTeamMsg()" style="background:#fff;color:#c00;border:1px solid #ffb0b0">נקה</button>`:''}
+    <button onclick="exportBackupJSON()" style="background:#fff;color:#555;border:1px solid #ccc" class="admin-extra-btn">💾 גיבוי JSON</button>
+    <label style="padding:6px 12px;font-size:12px;background:#fff;color:#555;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700;class=admin-extra-btn">♻️ שחזור<input type="file" accept=".json" onchange="importBackupJSON(event)" style="display:none"></label>
+    <button onclick="addRow()" style="background:var(--dhl-yellow);color:var(--dhl-red);border:1px solid #d0a000">+ שורה</button>
+  </div>`:''}
+
+  <!-- Summary cards (admin only) -->
+  ${isAdmin?`<div class="sum-cards" style="margin:10px 12px 0;background:transparent;padding:0">
+    <div class="sum-card"><div class="val">${workerSet.size}</div><div class="lbl">עובדים השבוע</div></div>
+    <div class="sum-card"><div class="val">${vacCount}</div><div class="lbl">חופשות</div></div>
+    <div class="sum-card"><div class="val">${taskCount}</div><div class="lbl">משימות</div></div>
+    <div class="sum-card"><div class="val">${pendingCount}</div><div class="lbl">בקשות ממתינות</div></div>
+  </div>`:''}
+
+  <!-- Week nav -->
+  <div class="week-nav">
+    <button onclick="shiftWeek(-1)">&#8592;</button>
+    <div class="week-label">${weekLabel}${isTodayInWeek(state.weekOffset)?` <span style="font-size:10px;background:var(--dhl-yellow);color:var(--dhl-red);padding:1px 6px;border-radius:3px;font-weight:800">היום</span>`:''}</div>
+    <button onclick="shiftWeek(1)">&#8594;</button>
+    <button onclick="goToday()" style="font-size:11px;background:var(--dhl-yellow);color:var(--dhl-red);border-color:var(--dhl-yellow);padding:4px 10px">השבוע</button>
+  </div>
+
+  <!-- Schedule table -->
+  <div class="schedule-wrap">
+    <table class="sched">
+      <thead>
+        <tr>
+          <th class="row-col">#</th>
+          ${days.map(d=>`<th${isToday(d)?' class="today-col"':''}>${DAY_NAMES_FULL[d.getDay()]}<br><span style="font-size:10px;font-weight:400;color:#888">${fmtDate(d)}</span></th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${buildTableRows(days, wk, isAdmin)}
+      </tbody>
+    </table>
+  </div>
+
+  ${state.popup?`<div class="overlay" onclick="closePopup()"></div>${buildCellPopup()}`:''}
+  ${state.showEmpMgr?buildEmpMgr():''}
+  ${state.showTaskMgr?buildTaskMgr():''}
+  ${buildReqOverlay()}
+  ${buildPersonalModal()}
+
+  <button class="req-btn" onclick="openEmpReqBtn()" style="${isAdmin?'display:none':''}">📋 בקשות</button>
+  `;
+}
+
+// ===== TABLE ROWS =====
+function buildTableRows(days, wk, isAdmin){
+  const wkData=state.scheduleData[wk]||{};
+  let rows='';
+  for(let row=0;row<state.numRows;row++){
+    const rowData=wkData[row]||{};
+    rows+=`<tr>
+      <td class="row-col">${row+1}</td>
+      ${days.map((_,day)=>{
+        const cell=rowData[day];
+        const todayCls=isToday(days[day])?' today-col':'';
+        if(!cell||(!cell.task&&!cell.rep)){
+          return `<td class="${todayCls}"><div class="cell-empty"${isAdmin?` onclick="openPopup(${row},${day})"`:''}>+</div></td>`;
+        }
+        if(cell.type==='vacation'){
+          return `<td class="${todayCls}"><div class="cell-vacation"${isAdmin?` onclick="openPopup(${row},${day})"`:''}>
+            <div><div class="cell-rep">${cell.rep||''}</div><div class="cell-vacation-label">🌴 חופש</div></div></div></td>`;
+        }
+        if(cell.type==='off'){
+          return `<td class="${todayCls}"><div class="cell-off"${isAdmin?` onclick="openPopup(${row},${day})"`:''}>
+            <div><div class="cell-rep">${cell.rep||''}</div><div class="cell-off-label">🏠 WFH</div></div></div></td>`;
+        }
+        return `<td class="${todayCls}"><div class="cell-wrap"${isAdmin?` onclick="openPopup(${row},${day})"`:''}>
+          ${cell.task?`<div class="cell-task">${cell.task}</div>`:''}
+          ${cell.rep?`<div class="cell-rep">${cell.rep}</div>`:''}
+          ${cell.hour?`<div class="cell-hour">⏰ ${cell.hour}:00</div>`:''}
+        </div></td>`;
+      }).join('')}
+    </tr>`;
+  }
+  return rows;
+}
+
+// ===== WEEK NAV =====
+window.shiftWeek=function(d){state.weekOffset+=d;render();};
+window.goToday=function(){state.weekOffset=0;render();};
+
+// ===== ADD ROW =====
+window.addRow=function(){state.numRows++;saveNumRows();render();showToast('שורה נוספה');};
+
+// ===== CELL POPUP =====
+window.openPopup=function(row,day){
+  state.popup={row,day,weekKey:weekKey(state.weekOffset)};render();
+};
+window.closePopup=function(){state.popup=null;render();};
+
+function buildCellPopup(){
+  const{row,day,weekKey:wk}=state.popup;
+  const days=getWeekDays(state.weekOffset);
+  const existing=state.scheduleData[wk]?.[row]?.[day]||{};
+  const dayName=DAY_NAMES_FULL[days[day].getDay()];
+  return `<div class="popup">
+    <h3>✏️ ${dayName} ${fmtDate(days[day])} — שורה ${row+1}</h3>
+    <div class="form-row">
+      <label>משימה</label>
+      <input id="pop-task" value="${existing.task||''}" placeholder="לדוגמה: HMS, שירות..." list="task-dl">
+      <datalist id="task-dl">${taskPresets.map(t=>`<option value="${t}">`).join('')}</datalist>
+      <div class="task-chips">${taskPresets.map(t=>`<button class="task-chip" onclick="pickTask('${t.replace(/'/g,"\\'")}')">${t}</button>`).join('')}</div>
+    </div>
+    <div class="form-row">
+      <label>נציג</label>
+      <input id="pop-rep" value="${existing.rep||''}" placeholder="שם עובד" list="emp-dl">
+      <datalist id="emp-dl">${employees.map(e=>`<option value="${e.name}">`).join('')}</datalist>
+    </div>
+    <div class="form-row">
+      <label>שעת התחלה</label>
+      <select id="pop-hour">
+        <option value="">— ללא —</option>
+        ${HOURS.map(h=>`<option value="${h}"${existing.hour===h?' selected':''}>${h}:00</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>סוג</label>
+      <select id="pop-type">
+        <option value="task"${(!existing.type||existing.type==='task')?' selected':''}>משימה רגילה</option>
+        <option value="vacation"${existing.type==='vacation'?' selected':''}>🌴 חופש</option>
+        <option value="off"${existing.type==='off'?' selected':''}>🏠 WFH</option>
+      </select>
+    </div>
+    <div class="popup-actions">
+      <button class="btn-del" onclick="doClearCell()">🗑 נקה</button>
+      <button onclick="closePopup()">ביטול</button>
+      <button class="btn-save" onclick="doSaveCell()">✓ שמור</button>
+    </div>
+  </div>`;
+}
+
+window.pickTask=function(t){const el=document.getElementById('pop-task');if(el)el.value=t;};
+
+window.doSaveCell=function(){
+  if(!state.popup)return;
+  const{row,day,weekKey:wk}=state.popup;
+  const data={
+    task:document.getElementById('pop-task').value.trim(),
+    rep:document.getElementById('pop-rep').value.trim(),
+    hour:document.getElementById('pop-hour').value,
+    type:document.getElementById('pop-type').value
+  };
+  saveCell(wk,row,day,data);
+  // WhatsApp
+  const phone=getEmpPhone(data.rep);
+  if(state.waNotif&&phone&&data.rep){
+    if(confirm(`לשלוח הודעת WhatsApp ל${data.rep} על השיבוץ?`)){
+      const days=getWeekDays(state.weekOffset);
+      const dayName=DAY_NAMES_FULL[days[day].getDay()];
+      const msg=`היי ${data.rep} 👋\nשובצת ל: ${data.task||''} ביום ${dayName} ${fmtDate(days[day])}${data.hour?' בשעה '+data.hour+':00':''}.\nבברכה, מכס יצוא 📋`;
+      sendWhatsApp(phone,msg);
+    }
+  }
+  state.popup=null;showToast('✓ נשמר');render();
+};
+
+window.doClearCell=function(){
+  if(!state.popup)return;
+  const{row,day,weekKey:wk}=state.popup;
+  clearCellDB(wk,row,day);
+  state.popup=null;showToast('🗑 נמחק');render();
+};
+
+// ===== EMPLOYEES MGR =====
+window.openEmpMgr=function(){state.showEmpMgr=true;render();};
+window.closeEmpMgr=function(){state.showEmpMgr=false;render();};
+window.delEmp=function(i){employees.splice(i,1);render();};
+window.addEmp=function(){
+  const n=document.getElementById('new-emp-name').value.trim();
+  const p=document.getElementById('new-emp-phone').value.trim();
+  const id=document.getElementById('new-emp-id').value.trim();
+  const bd=document.getElementById('new-emp-bday').value.trim();
+  if(!n){alert('הכנס שם');return;}
+  employees.push({name:n,phone:p,empId:id,birthday:bd});
+  document.getElementById('new-emp-name').value='';
+  document.getElementById('new-emp-phone').value='';
+  document.getElementById('new-emp-id').value='';
+  document.getElementById('new-emp-bday').value='';
+  render();
+};
+window.saveEmps=function(){
+  employees.forEach((_,i)=>{
+    const ni=document.getElementById('emp-n-'+i);
+    const pi=document.getElementById('emp-p-'+i);
+    const ii=document.getElementById('emp-i-'+i);
+    const bi=document.getElementById('emp-b-'+i);
+    if(ni)employees[i].name=ni.value.trim();
+    if(pi)employees[i].phone=pi.value.trim();
+    if(ii)employees[i].empId=ii.value.trim();
+    if(bi)employees[i].birthday=bi.value.trim();
+  });
+  saveEmployees();
+  state.showEmpMgr=false;render();
+};
+
+function buildEmpMgr(){
+  return `<div class="emp-mgr" onclick="if(event.target===this)closeEmpMgr()">
+    <div class="emp-mgr-box">
+      <h2>👥 ניהול עובדים — מכס יצוא</h2>
+      <div style="font-size:11px;color:#888;margin-bottom:10px">שם, טלפון, מספר עובד (סיסמה), יום הולדת (DD/MM)</div>
+      ${employees.map((e,i)=>`<div class="emp-row">
+        <input id="emp-n-${i}" value="${e.name||''}" placeholder="שם">
+        <input id="emp-p-${i}" value="${e.phone||''}" placeholder="05x-xxxxxxx">
+        <input id="emp-i-${i}" value="${e.empId||''}" placeholder="מספר עובד" style="text-align:center" maxlength="10">
+        <input id="emp-b-${i}" value="${e.birthday||''}" placeholder="DD/MM" style="text-align:center" maxlength="5">
+        <button class="emp-mgr-del" onclick="delEmp(${i})">✕</button>
+      </div>`).join('')}
+      <div style="margin-top:12px;border-top:1px solid #eee;padding-top:12px;font-size:12px;font-weight:700;margin-bottom:6px">➕ הוסף עובד</div>
+      <div class="emp-row">
+        <input id="new-emp-name" placeholder="שם העובד">
+        <input id="new-emp-phone" placeholder="05x-xxxxxxx">
+        <input id="new-emp-id" placeholder="מספר עובד" maxlength="10" style="text-align:center">
+        <input id="new-emp-bday" placeholder="DD/MM" maxlength="5" style="text-align:center">
+        <button class="emp-mgr-add" onclick="addEmp()">+</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="emp-mgr-cancel" onclick="closeEmpMgr()">ביטול</button>
+        <button class="emp-mgr-save" onclick="saveEmps()">💾 שמור</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== TASKS MGR =====
+window.openTaskMgr=function(){state.showTaskMgr=true;render();};
+window.closeTaskMgr=function(){state.showTaskMgr=false;render();};
+window.addTask=function(){
+  const t=document.getElementById('new-task-inp').value.trim();
+  if(!t)return;
+  if(!taskPresets.includes(t)){taskPresets.push(t);saveTasks();}
+  document.getElementById('new-task-inp').value='';render();
+};
+window.removeTask=function(i){taskPresets.splice(i,1);saveTasks();render();};
+
+function buildTaskMgr(){
+  return `<div class="emp-mgr" onclick="if(event.target===this)closeTaskMgr()">
+    <div class="emp-mgr-box" style="max-width:400px">
+      <h2>📝 ניהול משימות שמורות</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        ${taskPresets.map((t,i)=>`<div style="display:flex;align-items:center;gap:4px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:4px 10px">
+          <span style="font-size:13px;font-weight:600">${t}</span>
+          <button onclick="removeTask(${i})" style="background:none;border:none;color:#c00;cursor:pointer;font-size:14px">×</button>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="new-task-inp" placeholder="שם משימה חדשה" style="flex:1;padding:7px 10px;font-size:13px;border:1.5px solid #e0e0e0;border-radius:6px;font-family:inherit">
+        <button onclick="addTask()" class="emp-mgr-add">+</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="emp-mgr-cancel" onclick="closeTaskMgr()">סגור</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== TEAM MSG =====
+window.saveTeamMsg=function(){
+  const v=(document.getElementById('team-msg-inp')||{}).value?.trim()||'';
+  state.teamMsg=v;set(ref(db,'teamMsg'),v);showToast('✓ הודעה נשמרה');render();
+};
+window.clearTeamMsg=function(){state.teamMsg='';set(ref(db,'teamMsg'),'');showToast('✓ הודעה נוקתה');render();};
+window.dismissMsg=function(){const b=document.querySelector('.team-msg-banner');if(b)b.remove();};
+
+// ===== AUTH =====
+window.togglePwdForm=function(){state.showPwdForm=!state.showPwdForm;render();};
+window.doPasswordLogin=function(){
+  const el=document.getElementById('admin-pwd-inp');
+  if(el&&el.value===ADMIN_PASSWORD){
+    state.mode='admin';state.adminUid='password-admin';state.showPwdForm=false;
+    showToast('✓ נכנסת כמנהל');render();
+  } else {alert('סיסמה שגויה');}
+};
+window.doSignOut=async function(){
+  if(state.adminUid==='password-admin'){state.mode='view';state.adminUid=null;state.user=null;render();return;}
+  await signOut(auth);
+};
+
+// ===== EMP VIEW =====
+window.openEmpViewLogin=function(){state.empView=true;state.personalEmp='';render();};
+window.closeEmpView=function(){state.empView=false;state.personalEmp='';state._afterLoginGoToRequests=false;render();};
+window.selectEmpWithId=function(name){
+  const emp=employees.find(e=>e.name===name);
+  if(!emp||!emp.empId){state.personalEmp=name;if(state._afterLoginGoToRequests){goToEmpRequests();}else{render();}return;}
+  const input=prompt(`שלום ${name} 👋\nהכנס מספר העובד שלך:`);
+  if(input===null)return;
+  if(input.trim()===emp.empId){
+    state.personalEmp=name;
+    if(state._afterLoginGoToRequests){goToEmpRequests();}else{render();}
+  } else {alert('❌ מספר עובד שגוי');}
+};
+function goToEmpRequests(){
+  state._afterLoginGoToRequests=false;
+  reqState={show:true,mode:'emp-form',viewEmp:state.personalEmp,viewRole:''};render();
+}
+window.setEmpViewMode=function(m){state.empViewMode=m;render();};
+
+function buildEmpView(){
+  const allEmployees=employees;
+  if(!state.personalEmp){
+    return `<div class="emp-view-screen">
+      <div class="emp-view-topbar">
+        <h2>מכס יצוא — כניסת עובד</h2>
+        <button onclick="closeEmpView()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700">✕ חזור</button>
+      </div>
+      <div class="dhl-yellow-stripe"></div>
+      ${state.teamMsg?`<div style="background:var(--dhl-red);color:#fff;padding:10px 16px;font-size:13px;font-weight:600">📢 ${state.teamMsg}</div>`:''}
+      <div style="padding:16px">
+        <div style="font-size:13px;color:#555;margin-bottom:14px">בחר את שמך והכנס מספר עובד:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${allEmployees.map(e=>{
+            const today=new Date();
+            const bd=e.birthday||'';
+            const isBday=bd&&bd.split('/')[0]===String(today.getDate()).padStart(2,'0')&&bd.split('/')[1]===String(today.getMonth()+1).padStart(2,'0');
+            return `<button onclick="selectEmpWithId('${e.name.replace(/'/g,"\\'")}')"
+              style="padding:10px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;background:#fafbff;text-align:right">
+              <span style="font-weight:700">${e.name}${isBday?' 🎂':''}</span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Show employee's week
+  const days=getWeekDays(state.weekOffset);
+  const wk=weekKey(state.weekOffset);
+  const wkData=state.scheduleData[wk]||{};
+  const empName=state.personalEmp;
+  const mon=getMondayOfWeek(state.weekOffset);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+5);
+
+  // Find this emp's shifts this week
+  function findEmpCell(day){
+    for(const row of Object.values(wkData)){
+      const cell=row[day];
+      if(cell&&cell.rep===empName)return cell;
+    }
+    return null;
+  }
+
+  // Count stats
+  let workDays=0,vacDays=0;
+  for(let d=0;d<6;d++){const c=findEmpCell(d);if(c&&c.type!=='vacation')workDays++;if(c&&c.type==='vacation')vacDays++;}
+
+  return `<div class="emp-view-screen">
+    <div class="emp-view-topbar">
+      <h2>שלום, ${empName} 👋</h2>
+      <button onclick="closeEmpView()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700">✕ יציאה</button>
+    </div>
+    <div class="dhl-yellow-stripe"></div>
+    ${state.teamMsg?`<div style="background:var(--dhl-red);color:#fff;padding:10px 16px;font-size:13px;font-weight:600">📢 ${state.teamMsg}</div>`:''}
+
+    <!-- week nav -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #e0e0e0">
+      <button onclick="shiftWeekEmp(-1)" style="border:1.5px solid #e0e0e0;background:#fff;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:14px;color:var(--dhl-red);font-weight:800">&#8592;</button>
+      <div style="flex:1;text-align:center;font-size:14px;font-weight:800">${fmtDate(mon)} — ${fmtDate(sun)} · ${mon.getFullYear()}</div>
+      <button onclick="shiftWeekEmp(1)" style="border:1.5px solid #e0e0e0;background:#fff;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:14px;color:var(--dhl-red);font-weight:800">&#8594;</button>
+    </div>
+
+    <!-- stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px">
+      <div style="background:#fff;border-radius:6px;padding:12px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,0.07);border-top:3px solid var(--dhl-red)">
+        <div style="font-size:24px;font-weight:900;color:var(--dhl-red)">${workDays}</div>
+        <div style="font-size:11px;color:#888;font-weight:600">ימי עבודה</div>
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:12px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,0.07);border-top:3px solid #2e7d32">
+        <div style="font-size:24px;font-weight:900;color:#2e7d32">${vacDays}</div>
+        <div style="font-size:11px;color:#888;font-weight:600">ימי חופש</div>
+      </div>
+    </div>
+
+    <!-- shifts -->
+    <div style="background:#fff;margin:0 12px;border-radius:6px;border:1px solid #e0e0e0;overflow:hidden;margin-bottom:12px">
+      ${days.map((d,dayIdx)=>{
+        const cell=findEmpCell(dayIdx);
+        const tod=isToday(d);
+        const bg=tod?'#fffde7':'#fff';
+        const border=tod?'border-right:4px solid var(--dhl-yellow)':'border-right:4px solid #e0e0e0';
+        let content='<div style="color:#ccc;font-size:13px">—</div>';
+        if(cell){
+          if(cell.type==='vacation')content=`<div style="background:#e8f5e9;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700;color:#2e7d32">🌴 חופש</div>`;
+          else if(cell.type==='off')content=`<div style="background:#f3e5f5;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700;color:#7b1fa2">🏠 WFH</div>`;
+          else content=`<div style="display:flex;flex-direction:column;gap:2px">
+            ${cell.task?`<div style="font-size:13px;font-weight:700">${cell.task}</div>`:''}
+            ${cell.hour?`<div style="font-size:11px;color:#888">⏰ ${cell.hour}:00</div>`:''}
+          </div>`;
+        }
+        return `<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #f0f0f0;background:${bg};${border}">
+          <div style="min-width:80px">
+            <div style="font-size:13px;font-weight:800;color:${tod?'var(--dhl-red)':'var(--dhl-dark)'}">${DAY_NAMES_FULL[d.getDay()]}</div>
+            <div style="font-size:11px;color:#888">${fmtDate(d)}${tod?' ← היום':''}</div>
+          </div>
+          <div style="flex:1;padding:0 12px">${content}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin:0 12px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="openEmpReqFromView()" style="padding:14px;background:#fff;border:2px solid var(--dhl-red);border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;color:var(--dhl-red)">📋 הגש בקשה</button>
+    </div>
+  </div>
+
+  ${buildReqOverlay()}
+  `;
+}
+
+window.shiftWeekEmp=function(d){state.weekOffset+=d;render();};
+window.openEmpReqFromView=function(){
+  reqState={show:true,mode:'emp-form',viewEmp:state.personalEmp,viewRole:''};render();
+};
+window.openEmpReqBtn=function(){
+  if(!state.personalEmp){state.empView=true;state._afterLoginGoToRequests=true;render();return;}
+  reqState={show:true,mode:'emp-form',viewEmp:state.personalEmp,viewRole:''};render();
+};
+
+// ===== REQUEST SYSTEM =====
+function getPendingCount(){return(window._allRequests||[]).filter(r=>r.status==='pending').length;}
+function listenToRequests(){
+  if(!db)return;
+  onValue(ref(db,'requests'),snap=>{
+    const d=snap.val()||{};
+    window._allRequests=Object.entries(d).map(([id,v])=>({id,...v}));
+    render();
+  });
+}
+
+window.openAdminRequests=function(){reqState={show:true,mode:'admin'};render();};
+window.closeReqModal=function(){reqState={show:false,mode:''};render();};
+window.cancelRequest=function(id){if(!confirm('לבטל?'))return;remove(ref(db,'requests/'+id));showToast('✓ בוטלה');};
+window._onReqTypeChange=function(){
+  const t=document.getElementById('req-type').value;
+  const isRange=t==='חופשה רציפה';
+  document.getElementById('req-date-single').style.display=isRange?'none':'block';
+  document.getElementById('req-date-range').style.display=isRange?'block':'none';
+};
+window.submitRequest=function(empName,role){
+  const type=document.getElementById('req-type').value;
+  const isRange=type==='חופשה רציפה';
+  let date='',dateTo='';
+  if(isRange){
+    date=document.getElementById('req-date-from').value;
+    dateTo=document.getElementById('req-date-to').value;
+    if(!date||!dateTo){alert('בחר תאריכים');return;}
+    if(date>dateTo){alert('תאריך התחלה חייב להיות לפני סיום');return;}
+  } else {
+    date=document.getElementById('req-date').value;
+    if(!date){alert('בחר תאריך');return;}
+  }
+  const desc=document.getElementById('req-desc').value;
+  const id='req_'+Date.now();
+  set(ref(db,'requests/'+id),{empName,role,type,date,dateTo:dateTo||'',desc,status:'pending',ts:Date.now(),seen:false});
+  showToast('✓ הבקשה נשלחה!');closeReqModal();
+};
+window.handleRequest=function(id,status){
+  const noteEl=document.getElementById('note-'+id);
+  const adminNote=noteEl?noteEl.value:'';
+  set(ref(db,'requests/'+id+'/status'),status);
+  set(ref(db,'requests/'+id+'/adminNote'),adminNote);
+  set(ref(db,'requests/'+id+'/seen'),false);
+  const req=(window._allRequests||[]).find(r=>r.id===id);
+  showToast(status==='approved'?'✅ אושר':'❌ נדחה');
+  if(state.waNotif&&req){
+    const phone=getEmpPhone(req.empName);
+    if(phone&&confirm(`לשלוח WA ל${req.empName}?`)){
+      const msg=status==='approved'
+        ?`היי ${req.empName} 👋\nבקשתך "${req.type}"${req.date?' ל-'+req.date:''} ✅ אושרה!\nבברכה, מכס יצוא 📋`
+        :`היי ${req.empName} 👋\nבקשתך "${req.type}"${req.date?' ל-'+req.date:''} ❌ נדחתה.\nבברכה, מכס יצוא 📋`;
+      sendWhatsApp(phone,msg);
+    }
+  }
+  render();
+};
+
+function buildReqOverlay(){
+  if(!reqState.show)return'';
+  if(reqState.mode==='emp-select')return buildEmpSelectForReq();
+  if(reqState.mode==='emp-form')return buildEmpReqForm(reqState.viewEmp);
+  if(reqState.mode==='admin')return buildAdminReqPanel();
+  return'';
+}
+
+function buildEmpSelectForReq(){
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>📋 בקשות ואילוצים</h2>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">בחר שם והכנס מספר עובד:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        ${employees.map(e=>`<button onclick="selectEmpForReq('${e.name.replace(/'/g,"\\'")}','${e.role||''}')"
+          style="padding:10px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;background:#fafbff;text-align:right">
+          <span style="font-weight:700">${e.name}</span>
+        </button>`).join('')}
+      </div>
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">סגור</button>
+    </div>
+  </div>`;
+}
+
+window.selectEmpForReq=function(name,role){
+  const emp=employees.find(e=>e.name===name);
+  if(!emp||!emp.empId){reqState={...reqState,mode:'emp-form',viewEmp:name,viewRole:role||''};render();return;}
+  const input=prompt(`שלום ${name} 👋\nהכנס מספר עובד:`);
+  if(input===null)return;
+  if(input.trim()===emp.empId){reqState={...reqState,mode:'emp-form',viewEmp:name,viewRole:role||''};render();}
+  else{alert('❌ מספר עובד שגוי');}
+};
+
+function buildEmpReqForm(empName){
+  const myReqs=(window._allRequests||[]).filter(r=>r.empName===empName);
+  const REQ_TYPES=['חופש','חופשה רציפה','יציאה מוקדמת','איחור','שינוי שיבוץ','אחר'];
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>📋 ${empName} — בקשות</h2>
+      <div style="background:#FFF9E6;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--dhl-red)">הגש בקשה חדשה</div>
+        <div class="req-form">
+          <label>סוג בקשה</label>
+          <select id="req-type" onchange="_onReqTypeChange()">${REQ_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+          <div id="req-date-single">
+            <label>תאריך</label><input type="date" id="req-date">
+          </div>
+          <div id="req-date-range" style="display:none">
+            <label>מתאריך</label><input type="date" id="req-date-from">
+            <label>עד תאריך</label><input type="date" id="req-date-to">
+          </div>
+          <label>פירוט</label>
+          <textarea id="req-desc" placeholder="תאר את הבקשה..."></textarea>
+        </div>
+        <button onclick="submitRequest('${empName.replace(/'/g,"\\'")}','')" style="width:100%;margin-top:10px;padding:9px;background:var(--dhl-red);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">📤 שלח בקשה</button>
+      </div>
+      ${myReqs.length>0?`
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">הבקשות שלי</div>
+        ${myReqs.sort((a,b)=>b.ts-a.ts).map(r=>`
+          <div class="emp-req-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="req-type">${r.type}</span>
+              <span class="status-${r.status}">${r.status==='pending'?'⏳ ממתין':r.status==='approved'?'✅ אושר':'❌ נדחה'}</span>
+            </div>
+            <div style="font-size:12px;color:#555">${r.date||''}${r.dateTo?' — עד '+r.dateTo:''} ${r.desc?'— '+r.desc:''}</div>
+            ${r.adminNote?`<div style="font-size:12px;margin-top:4px;padding:4px 8px;background:#FFF9E6;border-radius:6px">💬 ${r.adminNote}</div>`:''}
+            ${r.status==='pending'?`<div style="margin-top:8px"><button onclick="cancelRequest('${r.id}')" style="padding:4px 12px;font-size:11px;background:#fff0f0;color:#c00;border:1px solid #ffb0b0;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700">✕ בטל</button></div>`:''}
+          </div>
+        `).join('')}
+      `:''}
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;margin-top:8px">סגור</button>
+    </div>
+  </div>`;
+}
+
+function buildAdminReqPanel(){
+  const allReqs=(window._allRequests||[]).sort((a,b)=>b.ts-a.ts);
+  const pending=allReqs.filter(r=>r.status==='pending');
+  const handled=allReqs.filter(r=>r.status!=='pending');
+  return `<div class="req-modal" onclick="if(event.target===this)closeReqModal()">
+    <div class="req-box">
+      <h2>🔔 ניהול בקשות (${pending.length} ממתינות)</h2>
+      ${pending.length===0?`<div style="text-align:center;color:#888;padding:20px">אין בקשות ממתינות ✓</div>`:''}
+      ${pending.map(r=>`
+        <div class="req-card">
+          <div class="req-meta">${new Date(r.ts).toLocaleDateString('he-IL')}</div>
+          <div class="req-name">${r.empName}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0">
+            <span class="req-type">${r.type}</span>
+            ${r.date?`<span style="font-size:12px;font-weight:700">📅 ${r.date}${r.dateTo?' → '+r.dateTo:''}</span>`:''}
+          </div>
+          ${r.desc?`<div class="req-note">${r.desc}</div>`:''}
+          <input class="admin-note-inp" id="note-${r.id}" placeholder="הוסף הערה (אופציונלי)...">
+          <div class="req-actions">
+            <button class="btn-approve" onclick="handleRequest('${r.id}','approved')">✅ אשר</button>
+            <button class="btn-reject" onclick="handleRequest('${r.id}','rejected')">❌ דחה</button>
+          </div>
+        </div>
+      `).join('')}
+      ${handled.length>0?`
+        <div style="font-size:12px;font-weight:600;color:#888;margin:12px 0 8px;border-top:1px solid #eee;padding-top:12px">טופלו</div>
+        ${handled.slice(0,5).map(r=>`
+          <div class="req-card" style="opacity:0.7">
+            <div class="req-name">${r.empName} — <span class="req-type">${r.type}</span>
+              <span class="status-${r.status}" style="margin-right:8px">${r.status==='approved'?'✅ אושר':'❌ נדחה'}</span>
+            </div>
+            ${r.date?`<div style="font-size:11px;color:#888">📅 ${r.date}${r.dateTo?' עד '+r.dateTo:''}</div>`:''}
+            ${r.adminNote?`<div style="font-size:11px;color:#555">💬 ${r.adminNote}</div>`:''}
+          </div>
+        `).join('')}
+      `:''}
+      <button onclick="closeReqModal()" style="width:100%;padding:8px;border:1px solid #d0d7e8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;margin-top:8px">סגור</button>
+    </div>
+  </div>`;
+}
+
+function buildPersonalModal(){return'';}// included in emp view
+
+// ===== WHATSAPP =====
+function getEmpPhone(name){const e=employees.find(e=>e.name===name);return e&&e.phone?e.phone.replace(/\D/g,''):'';}
+function sendWhatsApp(phone,msg){
+  if(!phone){showToast('⚠️ אין מספר טלפון');return;}
+  let intl=phone;if(intl.startsWith('0'))intl='972'+intl.slice(1);
+  window.open('https://wa.me/'+intl+'?text='+encodeURIComponent(msg),'_blank');
+}
+window.toggleWaNotif=function(){state.waNotif=!state.waNotif;showToast(state.waNotif?'📱 WA פעיל':'📱 WA כבוי');render();};
+
+// ===== BACKUP / RESTORE =====
+window.exportBackupJSON=async function(){
+  if(!db){showToast('⚠️ אין חיבור');return;}
+  showToast('⏳ מייצא...');
+  try{
+    const snap=await get(ref(db,'/'));
+    const allData=snap.val()||{};
+    const now=new Date();
+    const fname=`export-schedule-backup-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
+    const blob=new Blob([JSON.stringify({_meta:{exportedAt:now.toISOString()},...allData},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem('export_last_backup',Date.now().toString());
+    showToast('✅ גיבוי נשמר: '+fname);
+  }catch(e){showToast('❌ שגיאה: '+e.message);}
+};
+window.importBackupJSON=async function(event){
+  const file=event.target.files[0];if(!file)return;
+  if(!confirm(`שחזור מ-"${file.name}"?\nכל הנתונים ידרסו!`)){event.target.value='';return;}
+  showToast('⏳ משחזר...');
+  try{
+    const data=JSON.parse(await file.text());
+    delete data._meta;
+    for(const[key,val]of Object.entries(data)){await set(ref(db,key),val);}
+    showToast('✅ שוחזר בהצלחה!');
+    setTimeout(()=>listenToData(),1000);
+  }catch(e){showToast('❌ קובץ לא תקין');}
+  event.target.value='';
+};
+
+// Backup reminder
+(function(){
+  const last=parseInt(localStorage.getItem('export_last_backup')||'0');
+  const hoursSince=(Date.now()-last)/3600000;
+  if(hoursSince>24)setTimeout(()=>{if(state.mode==='admin')showToast('💡 לא גיבית מזה '+Math.floor(hoursSince)+' שעות');},4000);
+})();
+
+// ===== PWA =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  const btn=document.getElementById('pwa-install-btn');if(btn)btn.style.display='flex';
+});
+window.installPWA=function(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});}
+};
+
+// ===== SETUP =====
+function buildSetup(){return `<div style="max-width:400px;margin:60px auto;padding:20px;text-align:center"><div style="font-size:40px;margin-bottom:16px">⚙️</div><div style="font-size:16px;color:#888">טוען הגדרות Firebase...</div></div>`;}
+
+// ===== INIT =====
+initFirebase(BUILTIN_CONFIG);
+
+// Auto-seed employees if Firebase is empty
+async function seedEmployeesIfEmpty(){
+  if(!db)return;
+  const snap=await get(ref(db,'employees'));
+  if(!snap.val()||!Array.isArray(snap.val())||snap.val().length===0){
+    await set(ref(db,'employees'),EMPLOYEES_DEFAULT);
+  }
+}
+setTimeout(seedEmployeesIfEmpty,2000);
+
+</script>
+</body>
+</html>
