@@ -327,11 +327,12 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 
 /* ===== MOBILE OVERRIDES ===== */
 @media(max-width:640px){
-  .topbar{padding:0 10px;height:52px}
+  .topbar{padding:0 8px;height:52px;flex-wrap:wrap;height:auto;min-height:52px}
+  .topbar-right{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;max-width:calc(100vw - 130px)}
   .dhl-logo-text{font-size:18px}
   .dhl-logo{padding:4px 9px;margin-left:6px}
   .topbar-right{gap:4px}
-  .sign-btn{padding:4px 7px;font-size:10px}
+  .sign-btn{padding:3px 6px;font-size:10px;white-space:nowrap}
   .bell-btn{padding:4px 8px;font-size:10px}
   .month-nav{padding:8px 10px}
   .schedule-wrap,.summary-section,.week-view-wrap{margin:8px}
