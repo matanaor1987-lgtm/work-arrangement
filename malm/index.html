@@ -424,12 +424,8 @@ function m(v){return v||'<span class="muted">—</span>'}
 function buildStats(data,el){
   const cnt={};data.forEach(r=>{cnt[r.ס]=(cnt[r.ס]||0)+1});
   const adminExtra = isAdmin() ? `
-    <div class="stat" style="border-right:2px solid #e0e0e0;margin-right:8px;padding-right:8px">
-    </div>
     <div class="stat"><div class="n" style="color:#1a1a2e">${data.length}</div><div class="l">סה"כ</div></div>
-    <div class="stat"><div class="n" style="color:#2e7d32">${cnt['בוצע']||0}</div><div class="l">בוצע</div></div>
-    <div class="stat"><div class="n" style="color:#3949ab">${cnt['ממתין']||0}</div><div class="l">ממתין</div></div>
-    <div class="stat"><div class="n" style="color:#888">${cnt['בוטל']||0}</div><div class="l">בוטל</div></div>` : '';
+    <div class="stat"><div class="n" style="color:#2e7d32">${cnt['בוצע']||0}</div><div class="l">בוצע</div></div>` : '';
   el.innerHTML=`
     <div class="stat"><div class="n n-open">${cnt['פתוח']||0}</div><div class="l">פתוחות</div></div>
     <div class="stat"><div class="n n-wait">${cnt['בטיפול']||0}</div><div class="l">בטיפול</div></div>
