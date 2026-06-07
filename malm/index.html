@@ -168,7 +168,9 @@ tr:hover td{background:#fffbf0}
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
   <button onclick="refreshDB()" style="background:none;border:1px solid #1a1a2e;color:#1a1a2e;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="רענן נתונים">🔄</button>
-${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>`:''}
+${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>
+<button onclick="document.getElementById('restoreInput').click()" style="background:none;border:1px solid #1565c0;color:#1565c0;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="שחזור מגיבוי">↩️ שחזור</button>
+<input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreDB(this)">`:''}
 <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
@@ -829,6 +831,37 @@ function sortTable1(col) {
   const th = document.getElementById('th1-' + col);
   if (th) th.classList.add(sortDir1 === 1 ? 'asc' : 'desc');
   r1();
+}
+
+function restoreDB(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!confirm('האם לשחזר את המערכת מהקובץ ' + file.name + '?\nפעולה זו תחליף את כל הנתונים הקיימים.')) {
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const restored = JSON.parse(e.target.result);
+      const r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db.json', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(restored)
+      });
+      if (r.ok) {
+        DB = restored;
+        initFilters(); r1(); r2();
+        alert('✅ שוחזר בהצלחה!');
+      } else {
+        alert('❌ שגיאה בשחזור');
+      }
+    } catch(err) {
+      alert('❌ קובץ לא תקין: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function backupDB() {
