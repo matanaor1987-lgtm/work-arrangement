@@ -419,6 +419,46 @@ async function saveDB(){
   }
 }
 
+// שמירה אטומית של רשומה בודדת — מונעת דריסה בין משתמשים
+async function saveRecord(sheet, idx, rec){
+  const el=document.getElementById('savingMsg');
+  el.style.display='block';
+  el.style.background='#1a1a2e';
+  el.textContent='⏳ שומר...';
+  try{
+    const url = idx === -1
+      ? null  // רשומה חדשה — נטפל בנפרד
+      : `https://malm-focus-default-rtdb.firebaseio.com/db/${sheet}/${idx}.json`;
+    if(url){
+      const r=await fetch(url,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(rec)
+      });
+      if(!r.ok)throw new Error('Firebase error: '+r.status);
+    } else {
+      // רשומה חדשה — reload מ-Firebase, הוסף בראש, שמור חזרה
+      const fresh = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json?t='+Date.now());
+      const arr = await fresh.json() || [];
+      arr.unshift(rec);
+      const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(arr)
+      });
+      if(!r.ok)throw new Error('Firebase error: '+r.status);
+      // עדכן DB המקומי
+      DB[sheet] = arr;
+    }
+    el.textContent='✓ נשמר!';
+    setTimeout(()=>{el.style.display='none';},1500);
+  }catch(e){
+    el.textContent='❌ שגיאה: '+e.message;
+    el.style.background='#c62828';
+    setTimeout(()=>{el.style.display='none';el.style.background='#1a1a2e';},3000);
+  }
+}
+
 function sc(s){const k=(s||'פתוח').replace(/ /g,'-');return`<span class="badge s-${k}">${s||'פתוח'}</span>`}
 function pc(p){if(!p)return'<span class="muted">—</span>';let n=Number(p);let bg=n<=1?'#fde8e8':n<=3?'#fff3e0':n<=5?'#fff9c4':'#e8f5e9';let co=n<=1?'#c62828':n<=3?'#e65100':n<=5?'#f57f17':'#2e7d32';return`<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;background:${bg};color:${co}">${p}</span>`}
 function m(v){return v||'<span class="muted">—</span>'}
@@ -620,10 +660,12 @@ function saveModal(){
       sendEmailNotification(ownerUser2.email, ownerUser2.name, 'עדכון סטטוס בקשה', msgText, rec.כ||rec.נ||'', rec.ס);
     }
   }
+  const savedIdx = editIdx; // שמור לפני closeModal מאפס
+  const savedSheet = editSheet;
   closeModal();
   initFilters();
-  if(editSheet==='malm')r1();else r2();
-  saveDB();
+  if(savedSheet==='malm')r1();else r2();
+  saveRecord(savedSheet, savedIdx, rec);
 }
 
 // Smart tooltip positioning
@@ -749,7 +791,22 @@ function deleteRec(sheet, idx) {
   DB[sheet].splice(idx, 1);
   initFilters();
   if(sheet==='malm') r1(); else r2();
-  saveDB();
+  // מחיקה — שמור את כל המערך של הגיליון הרלוונטי
+  (async()=>{
+    const el=document.getElementById('savingMsg');
+    el.style.display='block'; el.style.background='#1a1a2e'; el.textContent='⏳ שומר...';
+    try{
+      const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json',{
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DB[sheet])
+      });
+      if(!r.ok)throw new Error('Firebase error: '+r.status);
+      el.textContent='✓ נמחק!';
+      setTimeout(()=>{el.style.display='none';},1500);
+    }catch(e){
+      el.textContent='❌ שגיאה: '+e.message; el.style.background='#c62828';
+      setTimeout(()=>{el.style.display='none';el.style.background='#1a1a2e';},3000);
+    }
+  })();
 }
 
 function switchTab(i) {
@@ -1043,7 +1100,7 @@ function sendMsg(){
   renderAttachments();
   renderChat();
   if(editSheet==='malm')r1();else r2();
-  saveDB();
+  saveRecord(editSheet, editIdx, rec);
 }
 
 document.addEventListener('keydown',e=>{
