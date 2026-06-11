@@ -532,7 +532,7 @@ function r2(){
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
     return true;
   });
-  if(sortCol2){f.sort((a,b)=>{let av=a[sortCol2]||'',bv=b[sortCol2]||'';if(sortCol2==='ת'){return sortDir2*(av<bv?-1:av>bv?1:0);}if(sortCol2==='ע'){return sortDir2*((av===''?99:Number(av))-(bv===''?99:Number(bv)));}return sortDir2*String(av).localeCompare(String(bv),'he');});}
+  if(sortCol2){f.sort((a,b)=>{let av=a[sortCol2]??'',bv=b[sortCol2]??'';if(sortCol2==='ת'){return sortDir2*(av<bv?-1:av>bv?1:0);}if(sortCol2==='ע'){return sortDir2*((av===''?99:Number(av))-(bv===''?99:Number(bv)));}return sortDir2*String(av).localeCompare(String(bv),'he');});}
   document.getElementById('c2').textContent=`מציג ${f.length} מתוך ${DB.rivka.length}`;
   document.getElementById('b2').innerHTML=f.length
     ?f.map(r=>{const idx=DB.rivka.indexOf(r);const eb=canEditRow(r)?'<button class="act-btn" onclick="openEdit(\'rivka\','+idx+')" title="עריכה">✏️</button>':'';
