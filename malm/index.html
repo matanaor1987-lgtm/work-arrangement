@@ -1468,6 +1468,10 @@ async function checkSanityOnLogin() {
 }
 
 async function resetSanityTasks() {
+  var pwd = prompt('הזן סיסמת אדמין לאיפוס:');
+  if (!pwd) return;
+  var adminUser = (DB.users||[]).find(function(u){ return u.role==='admin' && u.password===pwd; });
+  if (!adminUser) { alert('סיסמה שגויה'); return; }
   if (!confirm('לאפס את כל הבדיקות לברירת המחדל?\nכל השיוכים והסטטוסים יימחקו.')) return;
   await fetch('https://malm-focus-default-rtdb.firebaseio.com/sanity.json', {
     method: 'PUT',
