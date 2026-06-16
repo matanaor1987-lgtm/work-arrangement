@@ -1466,6 +1466,18 @@ async function checkSanityOnLogin() {
     }
   } catch(e) {}
 }
+
+async function resetSanityTasks() {
+  if (!confirm('לאפס את כל הבדיקות לברירת המחדל?\nכל השיוכים והסטטוסים יימחקו.')) return;
+  await fetch('https://malm-focus-default-rtdb.firebaseio.com/sanity.json', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(SANITY_SEED)
+  });
+  SANITY_TASKS = Object.assign({}, SANITY_SEED);
+  renderSanityAdmin();
+  alert('✅ אופס בהצלחה!');
+}
 </script>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
@@ -1507,6 +1519,7 @@ async function checkSanityOnLogin() {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="font-size:16px;font-weight:700;color:#1a1a2e">✅ בדיקות שפיות</div>
       <button onclick="openNewSanity()" style="background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">+ בדיקה חדשה</button>
+      <button onclick="resetSanityTasks()" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">🔄 אפס לברירת מחדל</button>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:#1a1a2e;color:#fff">
