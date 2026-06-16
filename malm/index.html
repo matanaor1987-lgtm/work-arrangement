@@ -358,6 +358,7 @@ const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP
 let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ═══════════════════════════════════════
 // AUTH SYSTEM
