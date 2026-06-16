@@ -903,19 +903,26 @@ function restoreDB(input) {
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
-      const restored = JSON.parse(e.target.result);
+      const parsed = JSON.parse(e.target.result);
+      // Support both old format (plain db) and new format {db, devTasks}
+      const dbData = parsed.db || parsed;
+      const devTasksData = parsed.devTasks || null;
       const r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db.json', {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(restored)
+        body: JSON.stringify(dbData)
       });
-      if (r.ok) {
-        DB = restored;
-        initFilters(); r1(); r2();
-        alert('✅ שוחזר בהצלחה!');
-      } else {
-        alert('❌ שגיאה בשחזור');
+      if (!r.ok) { alert('❌ שגיאה בשחזור'); input.value=''; return; }
+      DB = dbData;
+      if (devTasksData) {
+        await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(devTasksData)
+        });
       }
+      initFilters(); r1(); r2();
+      alert('✅ שוחזר בהצלחה!');
     } catch(err) {
       alert('❌ קובץ לא תקין: ' + err.message);
     }
@@ -924,12 +931,18 @@ function restoreDB(input) {
   reader.readAsText(file);
 }
 
-function backupDB() {
+async function backupDB() {
   const now = new Date();
   const date = now.toLocaleDateString('he-IL').replace(/\//g,'-');
   const time = now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}).replace(':','-');
   const filename = 'backup_malm_' + date + '_' + time + '.json';
-  const content = JSON.stringify(DB, null, 2);
+  let devTasks = {};
+  try {
+    const r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json?t='+Date.now());
+    devTasks = (await r.json()) || {};
+  } catch(e) {}
+  const fullBackup = {db: DB, devTasks: devTasks};
+  const content = JSON.stringify(fullBackup, null, 2);
   const blob = new Blob([content], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
