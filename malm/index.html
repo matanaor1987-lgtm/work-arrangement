@@ -1296,7 +1296,7 @@ function renderSanityManager() {
   if (!tb) return;
   var myName = CU ? CU.name : '';
   var tasks = Object.values(SANITY_TASKS).filter(function(t) {
-    return t.assignee === myName && t.status !== 'בוצע_מנהל_' + myName;
+    return t.assignee === myName && t.status !== 'בוצע';
   });
   if (!tasks.length) {
     tb.innerHTML = '<tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa">אין בדיקות פתוחות כרגע 👍</td></tr>';
@@ -1323,15 +1323,19 @@ function openNewSanity() {
   document.getElementById('sanityName').value = '';
   document.getElementById('sanityDesc').value = '';
   document.getElementById('sanityModalTitle').textContent = 'בדיקה חדשה';
-  // Populate assignee dropdown from DB.users managers
-  var sel = document.getElementById('sanityAssignee');
-  sel.innerHTML = '<option value="">-- בחר מנהל --</option>';
-  (DB.users||[]).filter(function(u){ return u.role==='manager'; }).forEach(function(u){
-    var o = document.createElement('option');
-    o.value = u.name; o.textContent = u.name; sel.appendChild(o);
-  });
-  document.getElementById('sanityAssignee').value = '';
+  // Populate assignee dropdown from ALL users
+  populateSanityAssignee(document.getElementById('sanityAssignee'), '');
   document.getElementById('sanityModal').style.display = 'flex';
+}
+
+function populateSanityAssignee(sel, selectedName) {
+  sel.innerHTML = '<option value="">-- בחר מבצע --</option>';
+  (DB.users||[]).forEach(function(u){
+    var o = document.createElement('option');
+    o.value = u.name; o.textContent = u.name + ' (' + (u.role||'') + ')';
+    if (u.name === selectedName) o.selected = true;
+    sel.appendChild(o);
+  });
 }
 
 function openEditSanity(id) {
@@ -1342,12 +1346,7 @@ function openEditSanity(id) {
   document.getElementById('sanityDesc').value = t.desc || '';
   document.getElementById('sanityModalTitle').textContent = 'עריכת בדיקה';
   var sel = document.getElementById('sanityAssignee');
-  sel.innerHTML = '<option value="">-- בחר מנהל --</option>';
-  (DB.users||[]).filter(function(u){ return u.role==='manager'; }).forEach(function(u){
-    var o = document.createElement('option');
-    o.value = u.name; o.textContent = u.name; sel.appendChild(o);
-  });
-  sel.value = t.assignee || '';
+  populateSanityAssignee(sel, t.assignee || '');
   document.getElementById('sanityModal').style.display = 'flex';
 }
 
