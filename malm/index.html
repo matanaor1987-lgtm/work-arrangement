@@ -1458,7 +1458,9 @@ async function checkSanityOnLogin() {
     var tasks = await r.json();
     if (!tasks) return;
     var myName = CU ? CU.name : '';
+    console.log('checkSanityOnLogin: myName=', myName, 'tasks count=', Object.keys(tasks).length);
     var open = Object.values(tasks).filter(function(t){ return t.assignee===myName && t.status==='פתוח'; });
+    console.log('open sanity tasks for me:', open.length, open.map(function(t){return t.assignee+'/'+t.name;}));
     if (open.length > 0) {
       setTimeout(function(){
         alert('יש לך ' + open.length + ' בדיקת שפיות פתוחה' + (open.length>1?'ות':'') + ' הממתינה לך!\n\nכנס ללשונית "בדיקות שפיות" לביצוע.');
