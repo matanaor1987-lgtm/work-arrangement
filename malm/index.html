@@ -1168,7 +1168,9 @@ function clearDevFilters(){
 }
 function populateDevTesterFilter(){
   var sel=document.getElementById('devFilterTester');
-  if(!sel||sel.options.length>1)return;
+  if(!sel)return;
+  // Reset and rebuild
+  sel.innerHTML='<option value="">כל הבודקים</option>';
   ['מתן','עידו','ניר','רבקה'].forEach(function(n){
     var o=document.createElement('option');
     o.value=n;o.textContent=n;sel.appendChild(o);
@@ -1202,6 +1204,22 @@ async function loadDevTasks() {
     }
   } catch(e) { console.warn('loadDevTasks error:', e); }
 }
+
+var devSortCol='', devSortDir=1;
+function sortDevTable(col){
+  if(devSortCol===col){ devSortDir*=-1; } else { devSortCol=col; devSortDir=1; }
+  DEV_TASKS.sort(function(a,b){
+    var av=a[col]||'', bv=b[col]||'';
+    return av.localeCompare(bv,'he')*devSortDir;
+  });
+  // Update sort indicators
+  ['id','dev','comp','ver','iface','tester','tStatus'].forEach(function(c){
+    var el=document.getElementById('devSort_'+c);
+    if(el) el.textContent = c===devSortCol ? (devSortDir===1?'▲':'▼') : '';
+  });
+  renderDevTable();
+  filterDevTable();
+}
 </script>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
@@ -1219,17 +1237,17 @@ async function loadDevTasks() {
   </div>
   <div style="overflow-x:auto">
   <table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
-    <thead><tr style="background:#1a1a2e;color:#fff">
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">מפתח</th>
+    <thead><tr style="background:#1a1a2e;color:#fff" id="devThead">
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('id')" title="מיון">משימה <span id="devSort_id"></span></th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('dev')" title="מיון">מפתח <span id="devSort_dev"></span></th>
       <th style="padding:8px 10px;text-align:right;min-width:220px">תאור משימה</th>
       <th style="padding:8px 10px;text-align:right;min-width:150px">הערות</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">רכיב</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">גרסה</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">ממשק</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">בודק DHL</th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('comp')" title="מיון">רכיב <span id="devSort_comp"></span></th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('ver')" title="מיון">גרסה <span id="devSort_ver"></span></th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('iface')" title="מיון">ממשק <span id="devSort_iface"></span></th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('tester')" title="מיון">בודק DHL <span id="devSort_tester"></span></th>
       <th style="padding:8px 10px;text-align:right;min-width:130px">הערות בודק</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס בדיקה</th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap;cursor:pointer" onclick="sortDevTable('tStatus')" title="מיון">סטטוס בדיקה <span id="devSort_tStatus"></span></th>
     </tr></thead>
     <tbody id="devBody"></tbody>
   </table>
