@@ -131,7 +131,9 @@ tr:hover td{background:#fffbf0}
 .btn-install{background:#2e7d32;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;display:none;gap:4px;align-items:center}
 .btn-install:hover{background:#1b5e20}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+
 // ── Dev / Fixes Tab ──────────────────────────
 var DEV_TASKS = [
   {id:'13770',dev:'קארו',status:'',desc:'שינוי בחירת יבואן ממשק DCC על פי האפיון',notes:'מאושר 5 שעות. DH תכ\' 82,83,89,54',comp:'DH',ver:'5.1557',iface:'DCC',tester:'',tNotes:'',tStatus:''},
@@ -193,6 +195,7 @@ function renderDevTable() {
     '</tr>';
   }).join('');
 }
+
 </script>
 </head>
 <body>
