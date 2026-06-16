@@ -353,7 +353,6 @@ function showApp() {
     // Admin starts on משימות לרבקה tab
     switchTab(1);
     initFilters(); r1(); r2();
-  checkSanityOnLogin();
   } else {
     // manager — רואה רק רבקה
     document.getElementById('tab0').style.display = 'none';
@@ -392,6 +391,8 @@ async function loadDB(){
         if (f) {
           CU = f;
           showApp();
+          // Check sanity tasks after DB is ready
+          setTimeout(checkSanityOnLogin, 500);
           return; // showApp handles initFilters/r1/r2
         }
       }
@@ -1452,7 +1453,6 @@ async function confirmCloseSanity() {
 
 // Check on login for open sanity tasks
 async function checkSanityOnLogin() {
-  if (isAdmin()) return;
   try {
     var r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/sanity.json?t=' + Date.now());
     var tasks = await r.json();
