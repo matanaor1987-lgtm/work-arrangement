@@ -1364,15 +1364,19 @@ async function saveSanityTask() {
   var prevAssignee = editId && SANITY_TASKS[editId] ? SANITY_TASKS[editId].assignee : '';
 
   var id = editId || 'sanity_' + Date.now();
+  var existing = (editId && SANITY_TASKS[editId]) ? SANITY_TASKS[editId] : {};
   var task = {
     id: id,
     name: name,
     desc: desc,
     assignee: assignee,
-    status: (editId && SANITY_TASKS[editId]) ? SANITY_TASKS[editId].status : 'פתוח',
-    notes: (editId && SANITY_TASKS[editId]) ? SANITY_TASKS[editId].notes : '',
-    closedBy: (editId && SANITY_TASKS[editId]) ? SANITY_TASKS[editId].closedBy : '',
-    createdAt: (editId && SANITY_TASKS[editId]) ? SANITY_TASKS[editId].createdAt : new Date().toISOString()
+    module: existing.module || '',
+    env: existing.env || '',
+    status: existing.status || 'פתוח',
+    notes: existing.notes || '',
+    closedBy: existing.closedBy || '',
+    closedAt: existing.closedAt || '',
+    createdAt: existing.createdAt || new Date().toISOString()
   };
 
   await fetch('https://malm-focus-default-rtdb.firebaseio.com/sanity/' + id + '.json', {
