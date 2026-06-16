@@ -1124,7 +1124,7 @@ function renderDevTable(){
     return '<tr style="background:'+bg+';vertical-align:top">'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap">'+esc(t.dev)+'</td>'+
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].status=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+sOpts+'</select></td>'+
+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;line-height:1.5">'+esc(t.desc)+'</td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;color:#555;line-height:1.5">'+esc(t.notes)+'</td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>'+
@@ -1145,7 +1145,6 @@ function renderDevTable(){
     <thead><tr style="background:#1a1a2e;color:#fff">
       <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
       <th style="padding:8px 10px;text-align:right;white-space:nowrap">מפתח</th>
-      <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס</th>
       <th style="padding:8px 10px;text-align:right;min-width:220px">תאור משימה</th>
       <th style="padding:8px 10px;text-align:right;min-width:150px">הערות</th>
       <th style="padding:8px 10px;text-align:right;white-space:nowrap">רכיב</th>
