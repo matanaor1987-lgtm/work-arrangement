@@ -131,7 +131,69 @@ tr:hover td{background:#fffbf0}
 .btn-install{background:#2e7d32;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;display:none;gap:4px;align-items:center}
 .btn-install:hover{background:#1b5e20}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+// ── Dev / Fixes Tab ──────────────────────────
+var DEV_TASKS = [
+  {id:'13770',dev:'קארו',status:'',desc:'שינוי בחירת יבואן ממשק DCC על פי האפיון',notes:'מאושר 5 שעות. DH תכ\' 82,83,89,54',comp:'DH',ver:'5.1557',iface:'DCC',tester:'',tNotes:'',tStatus:''},
+  {id:'14281',dev:'קארו',status:'',desc:'ממשק 116-3 DCC עדכון קוד הנחה במשלוחים מסחריים ערך נמוך',notes:'אושרו 27 שעות. מייל לנועה 26/5/26',comp:'DH',ver:'5.1555',iface:'DCC',tester:'',tNotes:'',tStatus:''},
+  {id:'12311',dev:'קארו',status:'',desc:'ממשק GCCP חלק א — ממשק יוצא במבנה JSON',notes:'אושרה הצעת מחיר 150 שע\'. FF תכ\' 1646,1647',comp:'TB|FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13557',dev:'קארו',status:'',desc:'GCCP — שינוי AppCd ל-FOCUS-IL, AppNm ל-FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13606',dev:'קארו',status:'',desc:'GCCP — שינוי שדות שורה 17+25 לערך FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13712',dev:'קארו',status:'',desc:'GCCP 380 — ריבוי אנשי קשר: מייל ראשון EML, שאר CC',notes:'FF תכ\' 1577',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13741',dev:'קארו',status:'',desc:'GCCP 380 — תיקון שגיאת סינטקס (נקודה במקום נקודתיים)',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13754',dev:'קארו',status:'',desc:'GCCP 280 — שינויים במיפוי, שדה B2C/B2B',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1530',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13816',dev:'קארו',status:'',desc:'GCCP/GCCR — אירועים לא נתפסים, בדיקת תאריך ריצה ב-SWC',notes:'FF תכ\' 1575,1578',comp:'FF',ver:'5.1531',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'14482',dev:'קארו',status:'',desc:'GCCP 380 — שינוי שדה מאובייקט למערך, תיקון אלמנט ריק',notes:'לחיוב 2 שעות. FF תכ\' 1581. מייל לנועה 26/5/26',comp:'FF',ver:'5.1555',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13545',dev:'קארו',status:'',desc:'GCCR 280 — שדות S001 D002 הוספת גרשיים',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1524',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'13617',dev:'קארו',status:'',desc:'GCCR — גרשיים מחוץ לסוגריים + חסרים בשדות string',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'13629',dev:'קארו',status:'',desc:'GCCR — הוספת שדה רץ שורה באירוע 678',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14358',dev:'קארו',status:'',desc:'GCCR 280 — גרשיים מיותרים בשדות נומריים DR01+SR01',notes:'FF תכ\' 1571',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14377',dev:'קארו',status:'',desc:'GCCR — ריבוי שורות סיווג + בעיה בבסיס מס לחשבונית',notes:'FF תכ\' 1575',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14627',dev:'קארו',status:'',desc:'GCCR — CUST SP מציג מיילים ריקים, טלפונים לא כ-string',notes:'FF תכ\' 1582',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14732',dev:'קארו',status:'',desc:'GCCR 280 — שדות L009 L021 ללא גרשיים בהצהרה ארוכה',notes:'',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'11974',dev:'אשכנזי',status:'',desc:'ביטול בדיקה — פתח שלב במקום לבטל. לקוח 3320072486',notes:'4/8/25 — מוחזר לפיתוח',comp:'NE',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13531',dev:'זוקי',status:'',desc:'בכניסה לרצף תחנות בלדרות F8 — ניירת נעלמת',notes:'',comp:'NF',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13532',dev:'זוקי',status:'',desc:'מסך בחירת פלט תדפיס הצהרה — לא נשלח סוג/מספר תיק',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13533',dev:'זוקי',status:'',desc:'לאחר שליחת תדפיס הצהרה במייל — לא נרשם אירוע משלוח',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13548',dev:'ברסקי',status:'',desc:'בדיקת פרוצדורה p_get_status_by_delay_file ב-SORT MACHINE',notes:'',comp:'Nothing',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13595',dev:'אשכנזי',status:'',desc:'משלוחים בדרך — שגיאה בשידור מפוקוס ומהכס',notes:'',comp:'NE',ver:'5.1524',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13611',dev:'גליק',status:'',desc:'תעודת עיכוב — שגיאה על עמיל שאינו במאגר, הפוך להזהרה',notes:'',comp:'MA',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13648',dev:'זוקי',status:'',desc:'הוספת צרופה בדרישות מסמך — התראה על גודל 0 שלא ניתן לסגור',notes:'',comp:'NE',ver:'5.1530',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13700',dev:'רוזובסקי',status:'',desc:'ממשק PDF חשבוניות מס לתקיה — יבוא אישי בלבד',notes:'03/2/26 אושרה הצעת מחיר. יעבוד מול SWC',comp:'FF',ver:'5.1547',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13947',dev:'ברסקי',status:'',desc:'סרגל חישוב 19 קריטריון 11 — מחיר פיקס כפול ימי אחסנה',notes:'לחיוב 18 שע\' לפי 270. מייל 27/1/26',comp:'AP',ver:'5.1537',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14044',dev:'קבטני',status:'',desc:'לא ניתן לעדכן אישורים תוקף מעל 2030 — input ל-century ב-TOOLS',notes:'',comp:'TD',ver:'5.1539',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14075',dev:'קארו',status:'',desc:'כניסה לסוג אישור — תחום לפי גורם מאשר, תכנית נפרדת',notes:'TG תכ\' חדשה. NF תכ\' 857',comp:'TG|NF',ver:'5.1541',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14314',dev:'קבטני',status:'',desc:'שטמ"ב בלדר כניסה ל-H — תוקעת מערכת, H נשאר ברירת מחדל',notes:'הסטוריה חצי שנה אחורה',comp:'NF',ver:'5.1554',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14520',dev:'קארו',status:'',desc:'קבלת ייפוי כוח מהמכס — מסר PoaUpdateForCustomsAgent',notes:'נבדק ואושר מול שער עולמי. NE תכ\' 83',comp:'NE',ver:'5.1555',iface:'',tester:'',tNotes:'',tStatus:''},
+];
+
+function renderDevTable() {
+  var tb = document.getElementById('devBody');
+  if (!tb) return;
+  var rowColors = ['#ffffff','#f9f9f9'];
+  tb.innerHTML = DEV_TASKS.map(function(t, i) {
+    var statusOpts = ['','פתוח','בפיתוח','בבדיקה','נבדק','נסגר'].map(function(s){
+      return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+s+'</option>';
+    }).join('');
+    var tStatusOpts = ['','עבר','נכשל','ממתין'].map(function(s){
+      return '<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';
+    }).join('');
+    return '<tr style="background:'+rowColors[i%2]+';vertical-align:top">' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap">'+esc(t.dev)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].status=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+statusOpts+'</select></td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;line-height:1.5">'+esc(t.desc)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;color:#555;line-height:1.5">'+esc(t.notes)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.ver)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px;font-weight:700;color:#1565c0">'+esc(t.iface)+'</td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><input value="'+esc(t.tester)+'" onchange="DEV_TASKS['+i+'].tester=this.value" style="width:75px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl" placeholder="בודק"></td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="DEV_TASKS['+i+'].tNotes=this.value" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">'+esc(t.tNotes)+'</textarea></td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tStatus=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+tStatusOpts+'</select></td>' +
+    '</tr>';
+  }).join('');
+}
+</script>
 </head>
 <body>
 
@@ -172,13 +234,13 @@ tr:hover td{background:#fffbf0}
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">מפתח</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס</th>
-        <th style="padding:8px 10px;text-align:right;min-width:200px">תאור משימה</th>
+        <th style="padding:8px 10px;text-align:right;min-width:220px">תאור משימה</th>
         <th style="padding:8px 10px;text-align:right;min-width:150px">הערות</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">רכיב</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">גרסה</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">ממשק</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">בודק DHL</th>
-        <th style="padding:8px 10px;text-align:right;min-width:120px">הערות בודק</th>
+        <th style="padding:8px 10px;text-align:right;min-width:130px">הערות בודק</th>
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס בדיקה</th>
       </tr>
     </thead>
@@ -186,6 +248,8 @@ tr:hover td{background:#fffbf0}
   </table>
   </div>
 </div>
+
+<div class="header">
   <div class="logo">DHL Express</div>
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
@@ -197,10 +261,10 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
 </div>
 
 <div class="tabs" id="mainTabs" style="display:none">
-  <div class="tab active" id="tab0" onclick="switchTab(0)">משימות מלמ כולל</div>
-  <div class="tab" id="tab1" onclick="switchTab(1)">משימות לרבקה</div>
-  <div class="tab" id="tabUsers" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
-  <div class="tab" id="tabDev" onclick="switchTab(3)" style="display:none">🛠️ פיתוחים ותיקונים לבדיקה</div>
+  <div class="tab active" id="tab0" data-tab="0" onclick="switchTab(0)">משימות מלמ כולל</div>
+  <div class="tab" id="tab1" data-tab="1" onclick="switchTab(1)">משימות לרבקה</div>
+  <div class="tab" id="tabUsers" data-tab="2" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
+  <div class="tab" id="tabDev" data-tab="3" onclick="switchTab(3)" style="display:none">🛠️ פיתוחים ותיקונים לבדיקה</div>
 </div>
 
 <div class="pane active" id="pane0">
@@ -835,7 +899,7 @@ function deleteRec(sheet, idx) {
 
 function switchTab(i) {
   currentTab = i;
-  document.querySelectorAll('#mainTabs .tab').forEach(function(t,j){ t.classList.toggle('active', j===i); });
+  document.querySelectorAll('#mainTabs .tab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab==i); });
   ['pane0','pane1','pane2','pane3'].forEach(function(id){ var el=document.getElementById(id); if(el)el.classList.remove('active'); });
   var target=document.getElementById('pane'+i); if(target)target.classList.add('active');
   var ba=document.getElementById('btnAdd');
@@ -1133,70 +1197,6 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();sendMsg();
   }
 });
-
-// ── Dev / Fixes Tab ──────────────────────────
-var DEV_TASKS = [
-  {id:'13770',dev:'קארו',status:'',desc:'שינוי בחירת יבואן ממשק DCC על פי האפיון',notes:'מאושר לתשלום 5 שעות מבנק השעות. DH תכ\' 82,83,89,54',comp:'DH',ver:'5.1557',iface:'DCC',tester:'',tNotes:'',tStatus:''},
-  {id:'14281',dev:'קארו',status:'',desc:'ממשק 116-3 DCC עדכון קוד הנחה במשלוחים מסחריים ערך נמוך',notes:'אושרו 27 שעות. בקשה לחיוב הועברה לנועה 26/5/26',comp:'DH',ver:'5.1555',iface:'DCC',tester:'',tNotes:'',tStatus:''},
-  {id:'12311',dev:'קארו',status:'',desc:'ממשק GCCP חלק א — ממשק יוצא במבנה JSON',notes:'אושרה הצעת מחיר 150 שע\' — חלק א\'. FF תכ\' 1646,1647',comp:'TB | FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13557',dev:'קארו',status:'',desc:'GCCP — שינוי ערכי AppCd ל-FOCUS-IL ו-AppNm ל-FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13606',dev:'קארו',status:'',desc:'GCCP — שינוי שתי שדות שורה 17+25 לערך FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13712',dev:'קארו',status:'',desc:'GCCP 380 — ריבוי אנשי קשר: מייל ראשון EML, שאר CC',notes:'FF תכ\' 1577',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13741',dev:'קארו',status:'',desc:'GCCP 380 — תיקון שגיאת סינטקס בשני שדות (נקודה במקום נקודתיים)',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13754',dev:'קארו',status:'',desc:'GCCP 280 — שינויים נוספים במיפוי, שדה B2C/B2B',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1530',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13816',dev:'קארו',status:'',desc:'GCCP/GCCR — אירועים לא נתפסים, בדיקה לפי תאריך ריצה אחרון ב-SWC',notes:'FF תכ\' 1575, 1578',comp:'FF',ver:'5.1531',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'14482',dev:'קארו',status:'',desc:'GCCP 380 — שינוי שדה מאובייקט למערך, תיקון אלמנט ריק',notes:'לחיוב 2 שעות. FF תכ\' 1581. הועבר לנועה 26/5/26',comp:'FF',ver:'5.1555',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13545',dev:'קארו',status:'',desc:'GCCR 280 — שדות S001 D002 הוספת גרשיים (שדות מחרוזת)',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1524',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'13617',dev:'קארו',status:'',desc:'GCCR — שינוי מבני, גרשיים מחוץ לסוגריים, חסרי גרשיים בשדות string',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'13629',dev:'קארו',status:'',desc:'GCCR — הוספת שדה רץ שורה באירוע 678',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14358',dev:'קארו',status:'',desc:'GCCR 280 — גרשיים מיותרים בשדות נומריים DR01+SR01',notes:'FF תכ\' 1571',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14377',dev:'קארו',status:'',desc:'GCCR — ריבוי שורות סיווג + בעיה בבסיס מס לסה"כ חשבונית',notes:'FF תכ\' 1575',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14627',dev:'קארו',status:'',desc:'GCCR — מערך CUST SP מציג מיילים ריקים וטלפונים לא כ-string',notes:'FF תכ\' 1582',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14732',dev:'קארו',status:'',desc:'GCCR 280 — שדות L009 L021 ללא גרשיים בהצהרה ארוכה',notes:'',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'11974',dev:'אשכנזי',status:'',desc:'ביטול בדיקה — פתח שלב במקום לבטל. דוג\' לקוח 3320072486',notes:'4/8/25 — התקבלה דוגמה, מוחזר לפיתוח',comp:'NE',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13531',dev:'זוקי',status:'',desc:'בכניסה לרצף תחנות עבודה בלדרות לחיצה F8 — ניירת נעלמת',notes:'',comp:'NF',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13532',dev:'זוקי',status:'',desc:'מסך בחירת פלט תדפיס הצהרת יבוא — לא נשלח סוג/מספר תיק',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13533',dev:'זוקי',status:'',desc:'לאחר שליחת תדפיס הצהרה במייל — לא נרשם אירוע משלוח',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13548',dev:'ברסקי',status:'',desc:'בדיקת פרוצדורה p_get_status_by_delay_file ב-SORT MACHINE',notes:'',comp:'Nothing',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13595',dev:'אשכנזי',status:'',desc:'משלוחים בדרך — שגיאה בשידור מפוקוס + מהכס',notes:'',comp:'NE',ver:'5.1524',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13611',dev:'גליק',status:'',desc:'תעודת עיכוב לאחר התרה — שגיאה על עמיל שאינו במאגר, יש להפוך להזהרה',notes:'',comp:'MA',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13648',dev:'זוקי',status:'',desc:'הוספת צרופה בדרישות מסמך — התראה על גודל 0 שלא ניתן לסגור',notes:'',comp:'NE',ver:'5.1530',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13700',dev:'רוזובסקי',status:'',desc:'ממשק PDF העברת חשבוניות מס לתקיה — יבוא אישי בלבד',notes:'03/2/26 אושרה הצעת מחיר, לפיתוח. יעבוד מול SWC',comp:'FF',ver:'5.1547',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13947',dev:'ברסקי',status:'',desc:'סרגל חישוב 19 קריטריון 11 — מחיר פיקס ליום כפול ימי אחסנה',notes:'לחיוב 18 שע\' לפי 270 לשעה. מייל 27/1/26',comp:'AP',ver:'5.1537',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14044',dev:'קבטני',status:'',desc:'לא ניתן לעדכן אישורים תוקף מעל 2030 — הוספת input ל-century ב-TOOLS',notes:'',comp:'TD',ver:'5.1539',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14075',dev:'קארו',status:'',desc:'כניסה לסוג אישור — תחום לפי גורם מאשר, תכנית נפרדת לבחירת סוגי אישורים',notes:'TG תכ\' חדשה. NF תכ\' 857',comp:'TG | NF',ver:'5.1541',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14314',dev:'קבטני',status:'',desc:'שט"מ בלדר כניסה ל-H — תוקעת מערכת, H נשאר ברירת מחדל במקום P',notes:'הסטוריה חצי שנה אחורה מספיקה',comp:'NF',ver:'5.1554',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14520',dev:'קארו',status:'',desc:'קבלת ייפוי כוח מהמכס בדחיפה — מסר LO_NG_3720_MSG313_PoaUpdate',notes:'נבדק ואושר מול שער עולמי. NE תכ\' 83',comp:'NE',ver:'5.1555',iface:'',tester:'',tNotes:'',tStatus:''},
-];
-
-function renderDevTable() {
-  var tb = document.getElementById('devBody');
-  if (!tb) return;
-  var rowColors = ['#ffffff','#f9f9f9'];
-  tb.innerHTML = DEV_TASKS.map(function(t, i) {
-    return '<tr style="background:'+rowColors[i%2]+';vertical-align:top">' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap">'+esc(t.dev)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="updateDevField('+i+',\'status\',this.value)" style="border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:11px;font-family:Arial">'+
-        ['','פתוח','בפיתוח','בבדיקה','נבדק','נסגר'].map(function(s){return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+s+'</option>';}).join('')+
-      '</select></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;direction:rtl;line-height:1.4">'+esc(t.desc)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;color:#555;direction:rtl;line-height:1.4">'+esc(t.notes)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.ver)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px;font-weight:700;color:#1565c0">'+esc(t.iface)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><input value="'+esc(t.tester)+'" onchange="updateDevField('+i+',\'tester\',this.value)" style="width:80px;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:11px;font-family:Arial;direction:rtl" placeholder="שם בודק"></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="updateDevField('+i+',\'tNotes\',this.value)" rows="2" style="width:130px;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical" placeholder="הערות">'+esc(t.tNotes)+'</textarea></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="updateDevField('+i+',\'tStatus\',this.value)" style="border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:11px;font-family:Arial">'+
-        ['','עבר','נכשל','ממתין'].map(function(s){return '<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';}).join('')+
-      '</select></td>' +
-    '</tr>';
-  }).join('');
-}
-
-function updateDevField(idx, field, val) {
-  DEV_TASKS[idx][field] = val;
-}
 </script>
 </body>
 </html>
