@@ -1156,11 +1156,10 @@ function filterDevTable(){
   var ft=document.getElementById('devFilterTester').value;
   var fs=document.getElementById('devFilterStatus').value;
   var rows=document.querySelectorAll('#devBody tr');
-  rows.forEach(function(row){
-    var cells=row.querySelectorAll('td');
-    var tester=cells[8]?cells[8].querySelector('input')?cells[8].querySelector('input').value:'':'';
-    var status=cells[10]?cells[10].querySelector('select')?cells[10].querySelector('select').value:'':'';
-    var show=(!ft||tester===ft)&&(!fs||status===fs);
+  rows.forEach(function(row, i){
+    var t=DEV_TASKS[i];
+    if(!t){row.style.display='none';return;}
+    var show=(!ft||t.tester===ft)&&(!fs||t.tStatus===fs);
     row.style.display=show?'':'none';
   });
 }
