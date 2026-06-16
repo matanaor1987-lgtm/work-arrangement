@@ -819,7 +819,7 @@ function switchTab(i) {
   var ba=document.getElementById('btnAdd');
   if(ba){ ba.style.display=(i===2||i===3)?'none':'block'; if(i===0)ba.textContent='+ משימה חדשה (מלמ)'; if(i===1)ba.textContent='+ משימה חדשה (רבקה)'; }
   if(i===2)renderUsers();
-  if(i===3)renderDevTable();
+  if(i===3){loadDevTasks().then(function(){renderDevTable();});}
 }
 
 // Auth events
@@ -1130,11 +1130,11 @@ function renderDevTable(){
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.ver)+'</td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px;font-weight:700;color:#1565c0">'+esc(t.iface)+'</td>'+
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tester=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl">'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tester=this.value;saveDevTask('+i+')" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl">'+
       ['','מתן','עידו','ניר','רבקה'].map(function(n){return'<option value="'+n+'"'+(t.tester===n?' selected':'')+'>'+n+'</option>';}).join('')+
     '</select></td>'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="DEV_TASKS['+i+'].tNotes=this.value" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">'+esc(t.tNotes)+'</textarea></td>'+
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tStatus=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+tsOpts+'</select></td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tStatus=this.value;saveDevTask('+i+')" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+tsOpts+'</select></td>'+
     '</tr>';
   }).join('');
 }
@@ -1163,6 +1163,34 @@ function populateDevTesterFilter(){
     var o=document.createElement('option');
     o.value=n;o.textContent=n;sel.appendChild(o);
   });
+}
+
+async function saveDevTask(idx) {
+  var task = DEV_TASKS[idx];
+  try {
+    await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks/' + idx + '.json', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tester: task.tester, tStatus: task.tStatus, tNotes: task.tNotes})
+    });
+  } catch(e) { console.warn('saveDevTask error:', e); }
+}
+
+async function loadDevTasks() {
+  try {
+    var r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json?t=' + Date.now());
+    var saved = await r.json();
+    if (saved) {
+      Object.keys(saved).forEach(function(idx) {
+        var i = parseInt(idx);
+        if (DEV_TASKS[i] && saved[idx]) {
+          if (saved[idx].tester !== undefined) DEV_TASKS[i].tester = saved[idx].tester;
+          if (saved[idx].tStatus !== undefined) DEV_TASKS[i].tStatus = saved[idx].tStatus;
+          if (saved[idx].tNotes !== undefined) DEV_TASKS[i].tNotes = saved[idx].tNotes;
+        }
+      });
+    }
+  } catch(e) { console.warn('loadDevTasks error:', e); }
 }
 </script>
 
