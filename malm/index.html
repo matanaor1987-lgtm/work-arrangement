@@ -178,7 +178,7 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
   <div class="tab active" id="tab0" data-tab="0" onclick="switchTab(0)">משימות מלמ כולל</div>
   <div class="tab" id="tab1" data-tab="1" onclick="switchTab(1)">משימות לרבקה</div>
   <div class="tab" id="tabUsers" data-tab="2" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
-  <div class="tab" id="tabSanity" data-tab="4" onclick="switchTab(4)" style="display:none">✅ בדיקות שפיות</div>
+  <div class="tab" id="tabSanity" data-tab="4" onclick="switchTab(4)" style="display:none">✅ בדיקות שפיות <span id="sanityBadge" style="display:none;background:#D40511;color:#fff;border-radius:50%;padding:1px 6px;font-size:10px;font-weight:700;margin-right:4px"></span></div>
   <div class="tab" id="tabDev" data-tab="3" onclick="switchTab(3)" style="display:none">🛠️ פיתוחים ותיקונים לבדיקה</div>
 </div>
 
@@ -1449,6 +1449,11 @@ async function confirmCloseSanity() {
   Object.assign(SANITY_TASKS[id], updates);
   closeSanityNotesModal();
   renderSanityManager();
+  // Update badge
+  var myName = CU ? CU.name : '';
+  var stillOpen = Object.values(SANITY_TASKS).filter(function(t){ return t.assignee===myName && t.status==='פתוח'; });
+  var badge = document.getElementById('sanityBadge');
+  if (badge) { badge.textContent = stillOpen.length; badge.style.display = stillOpen.length>0?'inline':'none'; }
 }
 
 // Check on login for open sanity tasks
@@ -1461,6 +1466,16 @@ async function checkSanityOnLogin() {
     console.log('checkSanityOnLogin: myName=', myName, 'tasks count=', Object.keys(tasks).length);
     var open = Object.values(tasks).filter(function(t){ return t.assignee===myName && t.status==='פתוח'; });
     console.log('open sanity tasks for me:', open.length, open.map(function(t){return t.assignee+'/'+t.name;}));
+    // Show badge
+    var badge = document.getElementById('sanityBadge');
+    if (badge) {
+      if (open.length > 0) {
+        badge.textContent = open.length;
+        badge.style.display = 'inline';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
     if (open.length > 0) {
       setTimeout(function(){
         alert('יש לך ' + open.length + ' בדיקת שפיות פתוחה' + (open.length>1?'ות':'') + ' הממתינה לך!\n\nכנס ללשונית "בדיקות שפיות" לביצוע.');
@@ -1523,7 +1538,7 @@ async function resetSanityTasks() {
   <!-- ADMIN VIEW -->
   <div id="sanityAdminView">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:700;color:#1a1a2e">✅ בדיקות שפיות</div>
+      <div style="font-size:16px;font-weight:700;color:#1a1a2e">✅ בדיקות שפיות <span id="sanityBadge" style="display:none;background:#D40511;color:#fff;border-radius:50%;padding:1px 6px;font-size:10px;font-weight:700;margin-right:4px"></span></div>
       <button onclick="openNewSanity()" style="background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">+ בדיקה חדשה</button>
       <button onclick="resetSanityTasks()" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">🔄 אפס לברירת מחדל</button>
     </div>
