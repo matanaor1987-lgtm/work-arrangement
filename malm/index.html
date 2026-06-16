@@ -1119,7 +1119,7 @@ function renderDevTable(){
   if(!tb)return;
   tb.innerHTML=DEV_TASKS.map(function(t,i){
     var sOpts=['','פתוח','בפיתוח','בבדיקה','נבדק','נסגר'].map(function(s){return'<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+s+'</option>';  }).join('');
-    var tsOpts=['','עבר','נכשל','ממתין'].map(function(s){return'<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';  }).join('');
+    var tsOpts=['','תקין','לא תקין'].map(function(s){return'<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';  }).join('');
     var bg=i%2?'#f9f9f9':'#fff';
     return '<tr style="background:'+bg+';vertical-align:top">'+
       '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>'+
@@ -1136,10 +1136,48 @@ function renderDevTable(){
     '</tr>';
   }).join('');
 }
+
+function filterDevTable(){
+  var ft=document.getElementById('devFilterTester').value;
+  var fs=document.getElementById('devFilterStatus').value;
+  var rows=document.querySelectorAll('#devBody tr');
+  rows.forEach(function(row){
+    var cells=row.querySelectorAll('td');
+    var tester=cells[8]?cells[8].querySelector('input')?cells[8].querySelector('input').value:'':'';
+    var status=cells[10]?cells[10].querySelector('select')?cells[10].querySelector('select').value:'':'';
+    var show=(!ft||tester===ft)&&(!fs||status===fs);
+    row.style.display=show?'':'none';
+  });
+}
+function clearDevFilters(){
+  document.getElementById('devFilterTester').value='';
+  document.getElementById('devFilterStatus').value='';
+  filterDevTable();
+}
+function populateDevTesterFilter(){
+  var sel=document.getElementById('devFilterTester');
+  if(!sel)return;
+  var testers=[...new Set(DEV_TASKS.map(function(t){return t.tester;}).filter(Boolean))];
+  testers.forEach(function(t){
+    var o=document.createElement('option');
+    o.value=t;o.textContent=t;sel.appendChild(o);
+  });
+}
 </script>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
   <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">&#128295; פיתוחים ותיקונים לבדיקה</div>
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <select id="devFilterTester" onchange="filterDevTable()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <option value="">כל הבודקים</option>
+    </select>
+    <select id="devFilterStatus" onchange="filterDevTable()" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+      <option value="">כל הסטטוסים</option>
+      <option value="תקין">תקין</option>
+      <option value="לא תקין">לא תקין</option>
+    </select>
+    <button onclick="clearDevFilters()" style="padding:6px 12px;border:1px solid #aaa;border-radius:6px;font-size:12px;font-family:Arial;background:#fff;cursor:pointer">נקה סינון</button>
+  </div>
   <div style="overflow-x:auto">
   <table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
     <thead><tr style="background:#1a1a2e;color:#fff">
