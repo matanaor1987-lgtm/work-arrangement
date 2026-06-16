@@ -132,7 +132,6 @@ tr:hover td{background:#fffbf0}
 .btn-install:hover{background:#1b5e20}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
 </head>
 <body>
 
@@ -161,30 +160,6 @@ tr:hover td{background:#fffbf0}
       <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
     </div>
     <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
-  </div>
-</div>
-
-<div class="pane" id="pane3" style="padding:14px 20px">
-  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">🛠️ פיתוחים ותיקונים לבדיקה</div>
-  <div style="overflow-x:auto">
-  <table id="devTable" style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
-    <thead>
-      <tr style="background:#1a1a2e;color:#fff">
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">מפתח</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס</th>
-        <th style="padding:8px 10px;text-align:right;min-width:220px">תאור משימה</th>
-        <th style="padding:8px 10px;text-align:right;min-width:150px">הערות</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">רכיב</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">גרסה</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">ממשק</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">בודק DHL</th>
-        <th style="padding:8px 10px;text-align:right;min-width:130px">הערות בודק</th>
-        <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס בדיקה</th>
-      </tr>
-    </thead>
-    <tbody id="devBody"></tbody>
-  </table>
   </div>
 </div>
 
@@ -297,207 +272,6 @@ const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP
 let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-E html>
-<html lang="he" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FECC02">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="בקשות מלמ">
-<title>דוח משימות בקשות מלמ</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
-.header{background:#FECC02;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #D40511}
-.logo{font-size:20px;font-weight:700;color:#D40511;letter-spacing:1px}
-.subtitle{font-size:13px;color:#333;flex:1}
-.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial}
-.btn-add{background:#D40511;color:#fff}
-.btn-add:hover{background:#b0040e}
-.btn-save{background:#2e7d32;color:#fff}
-.btn-cancel{background:#757575;color:#fff}
-.tabs{display:flex;background:#fff;border-bottom:2px solid #FECC02;padding:0 20px}
-.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
-.tab:hover{color:#1a1a2e;background:#fffbf0}
-.tab.active{color:#D40511;border-bottom-color:#D40511}
-.pane{display:none;padding:14px 20px}
-.pane.active{display:block}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:80px}
-.stat .n{font-size:20px;font-weight:700}
-.stat .l{font-size:11px;color:#777}
-.n-open{color:#D40511}.n-done{color:#2e7d32}.n-frozen{color:#e65100}.n-cancel{color:#999}.n-wait{color:#3949ab}
-.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.filters input,.filters select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
-.filters input{min-width:200px}
-.count{font-size:12px;color:#888;margin-bottom:8px}
-.tbl-wrap{overflow-x:auto;background:#fff;border-radius:8px;border:1px solid #e8e8e8}
-table{width:100%;border-collapse:collapse}
-th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap;font-weight:600}
-td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:12px}
-tr:hover td{background:#fffbf0}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
-.s-פתוח{background:#fde8e8;color:#c62828}
-.s-בבדיקה{background:#e3f2fd;color:#1565c0}
-.s-מוקפא{background:#fff3e0;color:#e65100}
-.s-הושהה{background:#f3e5f5;color:#6a1b9a}
-.s-בוצע{background:#e8f5e9;color:#2e7d32}
-.s-טופל{background:#e8f5e9;color:#1b5e20}
-.s-בוטל{background:#f5f5f5;color:#9e9e9e}
-.s-ממתין-לבדיקה{background:#e8eaf6;color:#3949ab}
-.s-בטיפול{background:#e0f2f1;color:#00695c}
-.muted{color:#ccc}
-.nores{text-align:center;padding:30px;color:#aaa}
-.act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
-.act-btn:hover{background:#f0f0f0}
-.saving{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:15px;margin-bottom:0;color:#1a1a2e}
-.form-row{margin-bottom:11px}
-.form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
-.form-row textarea{height:75px;resize:vertical}
-.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
-.dtag{font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:2px}
-.loading{text-align:center;padding:40px;color:#999;font-size:14px}
-
-/* Chat tooltip */
-.chat-preview{position:relative;cursor:pointer;font-size:11px;line-height:1.6}
-.chat-last{color:#555}
-.chat-last span.ml{color:#1565c0;font-weight:600}
-.chat-last span.dh{color:#e65100;font-weight:600}
-.chat-tooltip{display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:14px;width:320px;max-height:360px;overflow-y:auto;font-size:12px}
-.tt-msg{padding:6px 10px;border-radius:8px;margin-bottom:6px;line-height:1.5}
-.tt-msg.malm{background:#e3f2fd;text-align:right}
-.tt-msg.dhl{background:#fff3e0;text-align:left}
-.tt-sender{font-size:10px;font-weight:700;margin-bottom:2px}
-.tt-sender.malm{color:#1565c0}
-.tt-sender.dhl{color:#e65100}
-.tt-time{font-size:9px;color:#999;margin-top:2px}
-.tt-divider{font-size:10px;color:#aaa;text-align:center;margin:8px 0;border-top:1px solid #f0f0f0;padding-top:6px}
-.no-chat{color:#ccc;font-size:11px}
-
-/* File upload */
-.drop-zone{border:2px dashed #ddd;border-radius:8px;padding:10px 14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;transition:all .2s;margin-bottom:8px}
-.drop-zone.drag-over{border-color:#D40511;background:#fff5f5;color:#D40511}
-.drop-zone:hover{border-color:#bbb;color:#888}
-.attachments{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.att-item{display:flex;align-items:center;gap:6px;background:#f0f7ff;border:1px solid #b3d4f5;border-radius:6px;padding:4px 10px;font-size:11px}
-.att-item a{color:#1565c0;text-decoration:none;font-weight:600}
-.att-item a:hover{text-decoration:underline}
-.att-size{color:#999;font-size:10px}
-.uploading{color:#e65100;font-size:11px;padding:4px 0}
-/* Chat */
-.chat-section{margin-top:20px;border-top:2px solid #FECC02;padding-top:16px}
-.chat-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #e0e0e0}
-.chat-tab{padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;color:#666;border-bottom:2px solid transparent}
-.chat-tab.active{color:#D40511;border-bottom-color:#D40511}
-.chat-messages{height:200px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;padding:10px;background:#f9f9f9;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:75%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5}
-.msg-malm{background:#e3f2fd;color:#1a1a2e;align-self:flex-end;border-bottom-left-radius:2px}
-.msg-dhl{background:#fff3e0;color:#1a1a2e;align-self:flex-start;border-bottom-right-radius:2px}
-.msg-time{font-size:10px;color:#999;margin-top:3px}
-.msg-sender{font-size:10px;font-weight:700;margin-bottom:2px}
-.msg-malm .msg-sender{color:#1565c0}
-.msg-dhl .msg-sender{color:#e65100}
-.chat-input-row{display:flex;gap:8px;align-items:flex-end}
-.chat-input-row textarea{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:Arial;direction:rtl;resize:none;height:60px}
-.chat-send-col{display:flex;flex-direction:column;gap:6px}
-.chat-sender-sel{padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Arial}
-.btn-send{background:#D40511;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial;white-space:nowrap}
-.btn-send:hover{background:#b0040e}
-.no-msgs{color:#bbb;font-size:12px;text-align:center;padding:20px}
-
-.lg-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
-.lg-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
-.lg-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
-.lg-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
-.lg-inp{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:Arial;direction:rtl;margin-bottom:10px;text-align:right}
-.lg-inp:focus{border-color:#D40511;outline:none}
-.lg-btn{width:100%;background:#D40511;color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial}
-.lg-err{color:#D40511;font-size:12px;margin-top:6px;min-height:18px}
-.u-badge{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
-.btn-out{background:none;border:1px solid #D40511;color:#D40511;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial}
-.th-sort{cursor:pointer;user-select:none;white-space:nowrap}
-.th-sort:hover{background:#2a2a3e}
-.th-sort.asc::after{content:' ↑';font-size:10px;color:#FECC02}
-.th-sort.desc::after{content:' ↓';font-size:10px;color:#FECC02}
-.btn-install{background:#2e7d32;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial;display:none;gap:4px;align-items:center}
-.btn-install:hover{background:#1b5e20}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
-
-// ── Dev / Fixes Tab ──────────────────────────
-var DEV_TASKS = [
-  {id:'13770',dev:'קארו',status:'',desc:'שינוי בחירת יבואן ממשק DCC על פי האפיון',notes:'מאושר 5 שעות. DH תכ\' 82,83,89,54',comp:'DH',ver:'5.1557',iface:'DCC',tester:'',tNotes:'',tStatus:''},
-  {id:'14281',dev:'קארו',status:'',desc:'ממשק 116-3 DCC עדכון קוד הנחה במשלוחים מסחריים ערך נמוך',notes:'אושרו 27 שעות. מייל לנועה 26/5/26',comp:'DH',ver:'5.1555',iface:'DCC',tester:'',tNotes:'',tStatus:''},
-  {id:'12311',dev:'קארו',status:'',desc:'ממשק GCCP חלק א — ממשק יוצא במבנה JSON',notes:'אושרה הצעת מחיר 150 שע\'. FF תכ\' 1646,1647',comp:'TB|FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13557',dev:'קארו',status:'',desc:'GCCP — שינוי AppCd ל-FOCUS-IL, AppNm ל-FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13606',dev:'קארו',status:'',desc:'GCCP — שינוי שדות שורה 17+25 לערך FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13712',dev:'קארו',status:'',desc:'GCCP 380 — ריבוי אנשי קשר: מייל ראשון EML, שאר CC',notes:'FF תכ\' 1577',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13741',dev:'קארו',status:'',desc:'GCCP 380 — תיקון שגיאת סינטקס (נקודה במקום נקודתיים)',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13754',dev:'קארו',status:'',desc:'GCCP 280 — שינויים במיפוי, שדה B2C/B2B',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1530',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13816',dev:'קארו',status:'',desc:'GCCP/GCCR — אירועים לא נתפסים, בדיקת תאריך ריצה ב-SWC',notes:'FF תכ\' 1575,1578',comp:'FF',ver:'5.1531',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'14482',dev:'קארו',status:'',desc:'GCCP 380 — שינוי שדה מאובייקט למערך, תיקון אלמנט ריק',notes:'לחיוב 2 שעות. FF תכ\' 1581. מייל לנועה 26/5/26',comp:'FF',ver:'5.1555',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
-  {id:'13545',dev:'קארו',status:'',desc:'GCCR 280 — שדות S001 D002 הוספת גרשיים',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1524',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'13617',dev:'קארו',status:'',desc:'GCCR — גרשיים מחוץ לסוגריים + חסרים בשדות string',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'13629',dev:'קארו',status:'',desc:'GCCR — הוספת שדה רץ שורה באירוע 678',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14358',dev:'קארו',status:'',desc:'GCCR 280 — גרשיים מיותרים בשדות נומריים DR01+SR01',notes:'FF תכ\' 1571',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14377',dev:'קארו',status:'',desc:'GCCR — ריבוי שורות סיווג + בעיה בבסיס מס לחשבונית',notes:'FF תכ\' 1575',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14627',dev:'קארו',status:'',desc:'GCCR — CUST SP מציג מיילים ריקים, טלפונים לא כ-string',notes:'FF תכ\' 1582',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'14732',dev:'קארו',status:'',desc:'GCCR 280 — שדות L009 L021 ללא גרשיים בהצהרה ארוכה',notes:'',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
-  {id:'11974',dev:'אשכנזי',status:'',desc:'ביטול בדיקה — פתח שלב במקום לבטל. לקוח 3320072486',notes:'4/8/25 — מוחזר לפיתוח',comp:'NE',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13531',dev:'זוקי',status:'',desc:'בכניסה לרצף תחנות בלדרות F8 — ניירת נעלמת',notes:'',comp:'NF',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13532',dev:'זוקי',status:'',desc:'מסך בחירת פלט תדפיס הצהרה — לא נשלח סוג/מספר תיק',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13533',dev:'זוקי',status:'',desc:'לאחר שליחת תדפיס הצהרה במייל — לא נרשם אירוע משלוח',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13548',dev:'ברסקי',status:'',desc:'בדיקת פרוצדורה p_get_status_by_delay_file ב-SORT MACHINE',notes:'',comp:'Nothing',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13595',dev:'אשכנזי',status:'',desc:'משלוחים בדרך — שגיאה בשידור מפוקוס ומהכס',notes:'',comp:'NE',ver:'5.1524',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13611',dev:'גליק',status:'',desc:'תעודת עיכוב — שגיאה על עמיל שאינו במאגר, הפוך להזהרה',notes:'',comp:'MA',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13648',dev:'זוקי',status:'',desc:'הוספת צרופה בדרישות מסמך — התראה על גודל 0 שלא ניתן לסגור',notes:'',comp:'NE',ver:'5.1530',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13700',dev:'רוזובסקי',status:'',desc:'ממשק PDF חשבוניות מס לתקיה — יבוא אישי בלבד',notes:'03/2/26 אושרה הצעת מחיר. יעבוד מול SWC',comp:'FF',ver:'5.1547',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'13947',dev:'ברסקי',status:'',desc:'סרגל חישוב 19 קריטריון 11 — מחיר פיקס כפול ימי אחסנה',notes:'לחיוב 18 שע\' לפי 270. מייל 27/1/26',comp:'AP',ver:'5.1537',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14044',dev:'קבטני',status:'',desc:'לא ניתן לעדכן אישורים תוקף מעל 2030 — input ל-century ב-TOOLS',notes:'',comp:'TD',ver:'5.1539',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14075',dev:'קארו',status:'',desc:'כניסה לסוג אישור — תחום לפי גורם מאשר, תכנית נפרדת',notes:'TG תכ\' חדשה. NF תכ\' 857',comp:'TG|NF',ver:'5.1541',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14314',dev:'קבטני',status:'',desc:'שטמ"ב בלדר כניסה ל-H — תוקעת מערכת, H נשאר ברירת מחדל',notes:'הסטוריה חצי שנה אחורה',comp:'NF',ver:'5.1554',iface:'',tester:'',tNotes:'',tStatus:''},
-  {id:'14520',dev:'קארו',status:'',desc:'קבלת ייפוי כוח מהמכס — מסר PoaUpdateForCustomsAgent',notes:'נבדק ואושר מול שער עולמי. NE תכ\' 83',comp:'NE',ver:'5.1555',iface:'',tester:'',tNotes:'',tStatus:''},
-];
-
-function renderDevTable() {
-  var tb = document.getElementById('devBody');
-  if (!tb) return;
-  var rowColors = ['#ffffff','#f9f9f9'];
-  tb.innerHTML = DEV_TASKS.map(function(t, i) {
-    var statusOpts = ['','פתוח','בפיתוח','בבדיקה','נבדק','נסגר'].map(function(s){
-      return '<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+s+'</option>';
-    }).join('');
-    var tStatusOpts = ['','עבר','נכשל','ממתין'].map(function(s){
-      return '<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';
-    }).join('');
-    return '<tr style="background:'+rowColors[i%2]+';vertical-align:top">' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap">'+esc(t.dev)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].status=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+statusOpts+'</select></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;line-height:1.5">'+esc(t.desc)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;color:#555;line-height:1.5">'+esc(t.notes)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.ver)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px;font-weight:700;color:#1565c0">'+esc(t.iface)+'</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><input value="'+esc(t.tester)+'" onchange="DEV_TASKS['+i+'].tester=this.value" style="width:75px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl" placeholder="בודק"></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="DEV_TASKS['+i+'].tNotes=this.value" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">'+esc(t.tNotes)+'</textarea></td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tStatus=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+tStatusOpts+'</select></td>' +
-    '</tr>';
-  }).join('');
-}
-
-
 
 // ═══════════════════════════════════════
 // AUTH SYSTEM
@@ -1090,7 +864,31 @@ function triggerInstall() {
     });
   } else {
     // Download a .url shortcut file
-    var content = '<html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=https://matanaor1987-lgtm.github.io/work-arrangement/malm/index.html"></head><body></body></html>';
+    var content = '<html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=https://matanaor1987-lgtm.github.io/work-arrangement/malm/index.html"></head><body>
+<div class="pane" id="pane3" style="padding:14px 20px">
+  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">🛠️ פיתוחים ותיקונים לבדיקה</div>
+  <div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
+    <thead>
+      <tr style="background:#1a1a2e;color:#fff">
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">מפתח</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס</th>
+        <th style="padding:8px 10px;text-align:right;min-width:220px">תאור משימה</th>
+        <th style="padding:8px 10px;text-align:right;min-width:150px">הערות</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">רכיב</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">גרסה</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">ממשק</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">בודק DHL</th>
+        <th style="padding:8px 10px;text-align:right;min-width:130px">הערות בודק</th>
+        <th style="padding:8px 10px;text-align:right;white-space:nowrap">סטטוס בדיקה</th>
+      </tr>
+    </thead>
+    <tbody id="devBody"></tbody>
+  </table>
+  </div>
+</div>
+</body></html>';
     var blob = new Blob([content], {type: 'text/html'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1337,43 +1135,71 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();sendMsg();
   }
 });
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+var DEV_TASKS=[
+  {id:'13770',dev:'קארו',status:'',desc:'שינוי בחירת יבואן ממשק DCC על פי האפיון',notes:'מאושר 5 שעות. DH תכ\' 82,83,89,54',comp:'DH',ver:'5.1557',iface:'DCC',tester:'',tNotes:'',tStatus:''},
+  {id:'14281',dev:'קארו',status:'',desc:'ממשק 116-3 DCC עדכון קוד הנחה במשלוחים מסחריים ערך נמוך',notes:'אושרו 27 שעות. מייל לנועה 26/5/26',comp:'DH',ver:'5.1555',iface:'DCC',tester:'',tNotes:'',tStatus:''},
+  {id:'12311',dev:'קארו',status:'',desc:'ממשק GCCP חלק א — ממשק יוצא במבנה JSON',notes:'אושרה הצעת מחיר 150 שע\'. FF תכ\' 1646,1647',comp:'TB|FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13557',dev:'קארו',status:'',desc:'GCCP — שינוי AppCd ל-FOCUS-IL, AppNm ל-FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1523',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13606',dev:'קארו',status:'',desc:'GCCP — שינוי שדות שורה 17+25 לערך FOCUS',notes:'FF תכ\' 1642',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13712',dev:'קארו',status:'',desc:'GCCP 380 — ריבוי אנשי קשר: מייל ראשון EML, שאר CC',notes:'FF תכ\' 1577',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13741',dev:'קארו',status:'',desc:'GCCP 380 — תיקון שגיאת סינטקס (נקודה במקום נקודתיים)',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1525',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13754',dev:'קארו',status:'',desc:'GCCP 280 — שינויים במיפוי, שדה B2C/B2B',notes:'FF תכ\' 1578',comp:'FF',ver:'5.1530',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13816',dev:'קארו',status:'',desc:'GCCP/GCCR — אירועים לא נתפסים, בדיקת תאריך ריצה ב-SWC',notes:'FF תכ\' 1575,1578',comp:'FF',ver:'5.1531',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'14482',dev:'קארו',status:'',desc:'GCCP 380 — שינוי שדה מאובייקט למערך, תיקון אלמנט ריק',notes:'לחיוב 2 שעות. FF תכ\' 1581. מייל לנועה 26/5/26',comp:'FF',ver:'5.1555',iface:'GCCP',tester:'',tNotes:'',tStatus:''},
+  {id:'13545',dev:'קארו',status:'',desc:'GCCR 280 — שדות S001 D002 הוספת גרשיים',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1524',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'13617',dev:'קארו',status:'',desc:'GCCR — גרשיים מחוץ לסוגריים + חסרים בשדות string',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'13629',dev:'קארו',status:'',desc:'GCCR — הוספת שדה רץ שורה באירוע 678',notes:'FF תכ\' 1639',comp:'FF',ver:'5.1525',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14358',dev:'קארו',status:'',desc:'GCCR 280 — גרשיים מיותרים בשדות נומריים DR01+SR01',notes:'FF תכ\' 1571',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14377',dev:'קארו',status:'',desc:'GCCR — ריבוי שורות סיווג + בעיה בבסיס מס לחשבונית',notes:'FF תכ\' 1575',comp:'FF',ver:'5.1554',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14627',dev:'קארו',status:'',desc:'GCCR — CUST SP מציג מיילים ריקים, טלפונים לא כ-string',notes:'FF תכ\' 1582',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'14732',dev:'קארו',status:'',desc:'GCCR 280 — שדות L009 L021 ללא גרשיים בהצהרה ארוכה',notes:'',comp:'FF',ver:'5.1559',iface:'GCCR',tester:'',tNotes:'',tStatus:''},
+  {id:'11974',dev:'אשכנזי',status:'',desc:'ביטול בדיקה — פתח שלב במקום לבטל',notes:'4/8/25 — מוחזר לפיתוח',comp:'NE',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13531',dev:'זוקי',status:'',desc:'בכניסה לרצף תחנות בלדרות F8 — ניירת נעלמת',notes:'',comp:'NF',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13532',dev:'זוקי',status:'',desc:'מסך בחירת פלט תדפיס הצהרה — לא נשלח סוג/מספר תיק',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13533',dev:'זוקי',status:'',desc:'לאחר שליחת תדפיס הצהרה — לא נרשם אירוע משלוח',notes:'',comp:'OP',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13548',dev:'ברסקי',status:'',desc:'בדיקת פרוצדורה p_get_status_by_delay_file ב-SORT MACHINE',notes:'',comp:'Nothing',ver:'5.1523',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13595',dev:'אשכנזי',status:'',desc:'משלוחים בדרך — שגיאה בשידור מפוקוס ומהכס',notes:'',comp:'NE',ver:'5.1524',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13611',dev:'גליק',status:'',desc:'תעודת עיכוב — שגיאה על עמיל שאינו במאגר, הפוך להזהרה',notes:'',comp:'MA',ver:'5.1525',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13648',dev:'זוקי',status:'',desc:'הוספת צרופה בדרישות מסמך — התראה גודל 0 שלא ניתן לסגור',notes:'',comp:'NE',ver:'5.1530',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13700',dev:'רוזובסקי',status:'',desc:'ממשק PDF חשבוניות מס לתקיה — יבוא אישי בלבד',notes:'03/2/26 אושרה הצעת מחיר. יעבוד מול SWC',comp:'FF',ver:'5.1547',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'13947',dev:'ברסקי',status:'',desc:'סרגל חישוב 19 קריטריון 11 — מחיר פיקס כפול ימי אחסנה',notes:'לחיוב 18 שע\' לפי 270. מייל 27/1/26',comp:'AP',ver:'5.1537',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14044',dev:'קבטני',status:'',desc:'לא ניתן לעדכן אישורים תוקף מעל 2030 — input century ב-TOOLS',notes:'',comp:'TD',ver:'5.1539',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14075',dev:'קארו',status:'',desc:'כניסה לסוג אישור — תחום לפי גורם מאשר, תכנית נפרדת',notes:'TG תכ\' חדשה. NF תכ\' 857',comp:'TG|NF',ver:'5.1541',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14314',dev:'קבטני',status:'',desc:'שט"מ בלדר כניסה ל-H — תוקעת מערכת, H נשאר ברירת מחדל',notes:'הסטוריה חצי שנה אחורה',comp:'NF',ver:'5.1554',iface:'',tester:'',tNotes:'',tStatus:''},
+  {id:'14520',dev:'קארו',status:'',desc:'קבלת ייפוי כוח מהמכס — מסר PoaUpdateForCustomsAgent',notes:'נבדק ואושר. NE תכ\' 83',comp:'NE',ver:'5.1555',iface:'',tester:'',tNotes:'',tStatus:''},
+];
+
+function renderDevTable(){
+  var tb=document.getElementById('devBody');
+  if(!tb)return;
+  tb.innerHTML=DEV_TASKS.map(function(t,i){
+    var sOpts=['','פתוח','בפיתוח','בבדיקה','נבדק','נסגר'].map(function(s){return'<option value="'+s+'"'+(t.status===s?' selected':'')+'>'+s+'</option>';}).join('');
+    var tsOpts=['','עבר','נכשל','ממתין'].map(function(s){return'<option value="'+s+'"'+(t.tStatus===s?' selected':'')+'>'+s+'</option>';}).join('');
+    var bg=i%2?'#f9f9f9':'#fff';
+    return '<tr style="background:'+bg+';vertical-align:top">'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700;color:#D40511">'+esc(t.id)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap">'+esc(t.dev)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].status=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+sOpts+'</select></td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;line-height:1.5">'+esc(t.desc)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:11px;color:#555;line-height:1.5">'+esc(t.notes)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.comp)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px">'+esc(t.ver)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;font-size:11px;font-weight:700;color:#1565c0">'+esc(t.iface)+'</td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><input value="'+esc(t.tester)+'" onchange="DEV_TASKS['+i+'].tester=this.value" style="width:75px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl" placeholder="בודק"></td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="DEV_TASKS['+i+'].tNotes=this.value" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">'+esc(t.tNotes)+'</textarea></td>'+
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><select onchange="DEV_TASKS['+i+'].tStatus=this.value" style="border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial">'+tsOpts+'</select></td>'+
+    '</tr>';
+  }).join('');
+}
 </script>
-</body>
-</html></head>
-<body>
-
-<div class="lg-overlay" id="lgOverlay">
-  <div class="lg-box">
-    <div class="lg-logo">DHL Express</div>
-    <h3>כניסה למערכת</h3>
-    <input type="text" id="lgUser" class="lg-inp" placeholder="שם משתמש...">
-    <input type="password" id="lgPass" class="lg-inp" placeholder="סיסמה...">
-    <button class="lg-btn" id="lgBtn">כניסה</button>
-    <div class="lg-err" id="lgErr"></div>
-    <button id="lgInstallBtn" onclick="triggerInstall()" style="display:block;width:100%;margin-top:10px;background:#2e7d32;color:#fff;border:none;border-radius:7px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial">📲 הוסף לשולחן העבודה</button>
-  </div>
-</div>
-
-<div class="pane" id="pane2" style="padding:14px 20px">
-  <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">👥 ניהול משתמשים</div>
-  <div id="usersList"></div>
-  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:12px">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e">הוסף משתמש חדש</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input id="nu_name" placeholder="שם מלא..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
-      <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <input id="nu_email" placeholder="אימייל..." style="flex:1;min-width:150px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
-      <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
-    </div>
-    <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
-  </div>
-</div>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
   <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px">🛠️ פיתוחים ותיקונים לבדיקה</div>
   <div style="overflow-x:auto">
-  <table id="devTable" style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
     <thead>
       <tr style="background:#1a1a2e;color:#fff">
         <th style="padding:8px 10px;text-align:right;white-space:nowrap">משימה</th>
@@ -1393,111 +1219,5 @@ document.addEventListener('keydown',e=>{
   </table>
   </div>
 </div>
-
-<div class="header">
-  <div class="logo">DHL Express</div>
-  <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
-  <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
-  <button onclick="refreshDB()" style="background:none;border:1px solid #1a1a2e;color:#1a1a2e;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="רענן נתונים">🔄</button>
-${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>
-<button onclick="document.getElementById('restoreInput').click()" style="background:none;border:1px solid #1565c0;color:#1565c0;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="שחזור מגיבוי">↩️ שחזור</button>
-<input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreDB(this)">`:''}
-<button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
-</div>
-
-<div class="tabs" id="mainTabs" style="display:none">
-  <div class="tab active" id="tab0" data-tab="0" onclick="switchTab(0)">משימות מלמ כולל</div>
-  <div class="tab" id="tab1" data-tab="1" onclick="switchTab(1)">משימות לרבקה</div>
-  <div class="tab" id="tabUsers" data-tab="2" onclick="switchTab(2)" style="display:none">👥 משתמשים</div>
-  <div class="tab" id="tabDev" data-tab="3" onclick="switchTab(3)" style="display:none">🛠️ פיתוחים ותיקונים לבדיקה</div>
-</div>
-
-<div class="pane active" id="pane0">
-  <div class="stats" id="s1"></div>
-  <div class="filters">
-    <input type="text" id="q1" placeholder="חיפוש חופשי..." oninput="r1()">
-    <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
-    <select id="dm1" onchange="r1()"><option value="">כל התחומים</option></select>
-    <select id="pr1" onchange="r1()">
-      <option value="">כל העדיפויות</option>
-      <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-      <option value="4">4</option><option value="5">5</option>
-    </select>
-  </div>
-  <div class="count" id="c1"></div>
-  <div class="tbl-wrap">
-    <table><thead><tr>
-      <th style="width:30px"></th><th style="width:88px">תאריך</th><th>תחום / משימה</th>
-      <th style="width:36px">עד'</th><th style="width:90px">סטטוס</th>
-      <th style="width:70px">DHL</th><th style="width:70px">אחראי</th><th>💬 הערות</th>
-    </tr></thead><tbody id="b1"><tr><td colspan="8" class="loading">טוען נתונים...</td></tr></tbody></table>
-  </div>
-</div>
-
-<div class="pane" id="pane1">
-  <div class="stats" id="s2"></div>
-  <div class="filters">
-    <input type="text" id="q2" placeholder="חיפוש חופשי..." oninput="r2()">
-    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
-    <select id="pr2" onchange="r2()">
-      <option value="">כל העדיפויות</option>
-      <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-      <option value="4">4</option><option value="5">5</option>
-    </select>
-  </div>
-  <div class="count" id="c2"></div>
-  <div class="tbl-wrap">
-    <table><thead><tr>
-      <th style="width:30px"></th>
-      <th class="th-sort" onclick="sortTable2('נ')" id="th2-נ">נושא</th>
-      <th class="th-sort" style="width:80px" onclick="sortTable2('מב')" id="th2-מב">מבקש</th>
-      <th class="th-sort" style="width:88px" onclick="sortTable2('ת')" id="th2-ת">תאריך</th>
-      <th>בקשה / כותרת</th>
-      <th style="width:70px">מטפל</th>
-      <th class="th-sort" style="width:36px" onclick="sortTable2('ע')" id="th2-ע">עד'</th>
-      <th class="th-sort" style="width:90px" onclick="sortTable2('ס')" id="th2-ס">סטטוס</th>
-      <th>💬 הערות</th>
-    </tr></thead><tbody id="b2"><tr><td colspan="9" class="loading">טוען נתונים...</td></tr></tbody></table>
-  </div>
-</div>
-
-<!-- Modal -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #FECC02;padding-bottom:8px;margin-bottom:16px">
-      <h3 id="modalTitle" style="border:none;padding:0;margin:0">משימה חדשה</h3>
-      <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1;padding:0 4px">&times;</button>
-    </div>
-    <div id="modalFields"></div>
-    <div class="form-actions">
-      <button class="btn btn-cancel" onclick="closeModal()">ביטול</button>
-      <button class="btn btn-save" onclick="saveModal()">💾 שמור</button>
-    </div>
-    <!-- Chat -->
-    <div class="chat-section" id="chatSection" style="display:none">
-      <div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0">💬 הערות</div>
-      <div class="chat-input-row">
-        <textarea id="chatInput" placeholder="כתוב הערה..."></textarea>
-        <div class="chat-send-col">
-          <div id="chatSenderLabel" style="font-size:11px;color:#555;text-align:center;padding:2px 6px;background:#f0f0f0;border-radius:5px;white-space:nowrap"></div>
-          <button class="btn-send" onclick="sendMsg()">שלח ↵</button>
-        </div>
-      </div>
-
-      <div class="chat-messages" id="chatMessages"></div>
-      <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
-        📎 גרור קובץ לכאן או לחץ לבחירה (.msg, .pdf, .docx, .xlsx, תמונות)
-      </div>
-      <input type="file" id="fileInput" style="display:none" multiple onchange="handleFiles(this.files)">
-      <div id="uploadStatus"></div>
-      <div id="attachments" class="attachments"></div>
-    </div>
-  </div>
-</div>
-
-<div class="saving" id="savingMsg">⏳ שומר ב-GitHub...</div>
-
-<script src="config.js"></script>
-
 </body>
 </html>
