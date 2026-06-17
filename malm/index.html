@@ -517,7 +517,6 @@ function r1(){
   const pr=document.getElementById('pr1').value;
   buildStats(DB.malm,document.getElementById('s1'));
   let f=DB.malm.filter(r=>{
-    if(!allChecked&&!selectedStatuses.includes(r.ס||'פתוח'))return false;
     if(dm&&r.ד!==dm)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.מ+r.ד+r.א+(r.dhl||'')+r.ה).toLowerCase().includes(q))return false;
@@ -540,8 +539,8 @@ function r1(){
 function r2(){
   const q=document.getElementById('q2').value.toLowerCase();
   const st2cbs=document.querySelectorAll('.st2cb');
-  const selectedStatuses=st2cbs.length?[...st2cbs].filter(cb=>cb.checked).map(cb=>cb.value):[];
-  const allChecked=selectedStatuses.length===st2cbs.length;
+  const selectedStatuses=[...st2cbs].filter(cb=>cb.checked).map(cb=>cb.value);
+  const allChecked=st2cbs.length===0||selectedStatuses.length===st2cbs.length;
   const pr=document.getElementById('pr2').value;
   const rivkaOwn = isAdmin() ? DB.rivka : DB.rivka.filter(r=>r.מב===(CU?CU.name:''));
   buildStats(rivkaOwn,document.getElementById('s2'));
