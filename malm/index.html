@@ -1298,7 +1298,7 @@ function renderSanityAdmin() {
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;white-space:nowrap">' + esc(t.assignee||'—') + '</td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;white-space:nowrap"><span style="color:' + statusColor + ';font-weight:700">' + esc(t.status||'פתוח') + '</span>' + closedInfo + '</td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px">' + esc(t.notes||'') + '</td>' +
-      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea onchange="updateSanityAdminNotes(\\'' + t.id + '\\',this.value)" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">' + esc(t.adminNotes||'') + '</textarea></td>' +
+      '<td style="padding:7px 10px;border-bottom:1px solid #eee"><textarea data-sid="' + t.id + '" onchange="updateSanityAdminNotes(this.dataset.sid,this.value)" rows="2" style="width:120px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px;font-family:Arial;direction:rtl;resize:vertical">' + esc(t.adminNotes||'') + '</textarea></td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;white-space:nowrap">' + esc(t.closedAt ? t.closedAt.slice(0,10) : '') + '</td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid #eee;white-space:nowrap">' +
         '<button onclick="openEditSanity(\'' + t.id + '\')" style="background:#1565c0;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:Arial;margin-left:4px">עריכה</button>' +
