@@ -208,7 +208,7 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
   <div class="stats" id="s2"></div>
   <div class="filters">
     <input type="text" id="q2" placeholder="חיפוש חופשי..." oninput="r2()">
-    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
+    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין">פתוח + בטיפול</option><option value="פתוח">פתוח</option><option value="בטיפול">בטיפול</option><option value="בבדיקה">בבדיקה</option><option value="מוקפא">מוקפא</option><option value="בוטל">בוטל</option><option value="בוצע">בוצע</option></select>
     <select id="pr2" onchange="r2()">
       <option value="">כל העדיפויות</option>
       <option value="1">1</option><option value="2">2</option><option value="3">3</option>
@@ -273,6 +273,7 @@ const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP
 let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
+const SR_ADMIN=['פתוח','בטיפול','בוצע','מוקפא','בבדיקה','בוטל'];
 
 // ═══════════════════════════════════════
 // AUTH SYSTEM
@@ -573,7 +574,7 @@ function rivkaFields(r={}, isEdit=false){
     <div class="form-row"><label>בקשה</label><textarea id="f_ב">${r.ב||''}</textarea></div>
     <div class="form-row"><label>עדיפות <small style="color:#888;font-weight:normal">(1 = גבוהה, 5 = נמוכה)</small></label><select id="f_ע" onchange="checkCritical(this)"><option value="">—</option><option value="0" ${r.ע==0?'selected':''} style="color:#D40511;font-weight:bold">🚨 0 = קריטי</option>${[1,2,3,4,5].map(n=>`<option ${r.ע==n?'selected':''}>${n}</option>`).join('')}</select></div>
     ${isEdit && isAdmin()?`<div class="form-row"><label>מטפל</label><input id="f_מט" value="${(r.מט||'').replace(/"/g,'&quot;')}" placeholder="שם מטפל..."></div>`:''}
-    ${isEdit?`<div class="form-row"><label>סטטוס</label><select id="f_ס">${SR.map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>`:''}`;
+    ${isEdit?`<div class="form-row"><label>סטטוס</label><select id="f_ס">${(isAdmin()?SR_ADMIN:SR).map(s=>`<option ${(r.ס||'פתוח')===s?'selected':''}>${s}</option>`).join('')}</select></div>`:''}`;
 }
 
 function openAdd(){
