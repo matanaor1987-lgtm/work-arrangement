@@ -507,7 +507,7 @@ function populateSel(id,vals){
 function initFilters(){
   populateSel('st1',DB.malm.map(r=>r.ס));
   populateSel('dm1',DB.malm.map(r=>r.ד));
-  populateSel('st2',DB.rivka.map(r=>r.ס));
+  // st2 is now a checkbox dropdown — no populateSel needed
 }
 
 function r1(){
