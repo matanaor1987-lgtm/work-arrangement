@@ -208,7 +208,19 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
   <div class="stats" id="s2"></div>
   <div class="filters">
     <input type="text" id="q2" placeholder="חיפוש חופשי..." oninput="r2()">
-    <select id="st2" onchange="r2()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין">פתוח + בטיפול</option><option value="פתוח">פתוח</option><option value="בטיפול">בטיפול</option><option value="בבדיקה">בבדיקה</option><option value="מוקפא">מוקפא</option><option value="בוטל">בוטל</option><option value="בוצע">בוצע</option></select>
+    <div id="st2wrap" style="position:relative;display:inline-block">
+  <button onclick="toggleStatusDropdown()" id="st2btn" style="padding:5px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;font-family:Arial;min-width:130px;text-align:right;direction:rtl">כל הסטטוסים ▾</button>
+  <div id="st2dropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:999;min-width:160px;padding:6px 0">
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" id="st2_all" onchange="toggleAllStatuses(this)" checked> <span>כל הסטטוסים</span></label>
+    <hr style="margin:4px 0;border:none;border-top:1px solid #eee">
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="פתוח" onchange="onStatusChange()" checked> <span class="badge s-פתוח">פתוח</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בטיפול" onchange="onStatusChange()" checked> <span class="badge s-בטיפול">בטיפול</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בבדיקה" onchange="onStatusChange()" checked> <span class="badge s-בבדיקה">בבדיקה</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="מוקפא" onchange="onStatusChange()" checked> <span class="badge s-מוקפא">מוקפא</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוטל" onchange="onStatusChange()" checked> <span class="badge s-בוטל">בוטל</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוצע" onchange="onStatusChange()" checked> <span class="badge s-בוצע">בוצע</span></label>
+  </div>
+</div>
     <select id="pr2" onchange="r2()">
       <option value="">כל העדיפויות</option>
       <option value="1">1</option><option value="2">2</option><option value="3">3</option>
@@ -505,8 +517,7 @@ function r1(){
   const pr=document.getElementById('pr1').value;
   buildStats(DB.malm,document.getElementById('s1'));
   let f=DB.malm.filter(r=>{
-    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='בטיפול')return false;
-    if(st&&st!=='פתוח+ממתין'&&r.ס!==st)return false;
+    if(!allChecked&&!selectedStatuses.includes(r.ס||'פתוח'))return false;
     if(dm&&r.ד!==dm)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.מ+r.ד+r.א+(r.dhl||'')+r.ה).toLowerCase().includes(q))return false;
@@ -528,14 +539,15 @@ function r1(){
 
 function r2(){
   const q=document.getElementById('q2').value.toLowerCase();
-  const st=document.getElementById('st2').value;
+  const st2cbs=document.querySelectorAll('.st2cb');
+  const selectedStatuses=st2cbs.length?[...st2cbs].filter(cb=>cb.checked).map(cb=>cb.value):[];
+  const allChecked=selectedStatuses.length===st2cbs.length;
   const pr=document.getElementById('pr2').value;
   const rivkaOwn = isAdmin() ? DB.rivka : DB.rivka.filter(r=>r.מב===(CU?CU.name:''));
   buildStats(rivkaOwn,document.getElementById('s2'));
   let f=DB.rivka.filter(r=>{
     if(!isAdmin() && r.מב !== (CU?CU.name:'')) return false;
-    if(st&&st==='פתוח+ממתין'&&r.ס!=='פתוח'&&r.ס!=='בטיפול')return false;
-    if(st&&st!=='פתוח+ממתין'&&r.ס!==st)return false;
+    if(!allChecked&&!selectedStatuses.includes(r.ס||'פתוח'))return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.נ+r.מב+r.כ+r.ב+r.מט+r.ה).toLowerCase().includes(q))return false;
     return true;
@@ -1500,6 +1512,41 @@ async function resetSanityTasks() {
   renderSanityAdmin();
   alert('✅ אופס בהצלחה!');
 }
+
+function toggleStatusDropdown() {
+  var dd = document.getElementById('st2dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+function toggleAllStatuses(cb) {
+  document.querySelectorAll('.st2cb').forEach(function(c){ c.checked = cb.checked; });
+  updateStatusBtn();
+  r2();
+}
+function onStatusChange() {
+  var cbs = document.querySelectorAll('.st2cb');
+  var allCb = document.getElementById('st2_all');
+  if(allCb) allCb.checked = [...cbs].every(c=>c.checked);
+  updateStatusBtn();
+  r2();
+}
+function updateStatusBtn() {
+  var cbs = [...document.querySelectorAll('.st2cb')];
+  var checked = cbs.filter(c=>c.checked);
+  var btn = document.getElementById('st2btn');
+  if(!btn) return;
+  if(checked.length===0) btn.textContent = 'ללא סטטוס ▾';
+  else if(checked.length===cbs.length) btn.textContent = 'כל הסטטוסים ▾';
+  else if(checked.length===1) btn.textContent = checked[0].value + ' ▾';
+  else btn.textContent = checked.length + ' סטטוסים ▾';
+}
+// Close dropdown on outside click
+document.addEventListener('click', function(e){
+  var wrap = document.getElementById('st2wrap');
+  if(wrap && !wrap.contains(e.target)){
+    var dd = document.getElementById('st2dropdown');
+    if(dd) dd.style.display='none';
+  }
+});
 </script>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
