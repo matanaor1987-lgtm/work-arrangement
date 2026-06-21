@@ -282,7 +282,7 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
 <script src="config.js"></script>
 <script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
+let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',editRecId=null,sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
 const SR_ADMIN=['פתוח','בטיפול','בוצע','מוקפא','בבדיקה','בוטל'];
@@ -387,12 +387,32 @@ function showApp() {
   }
 }
 
+function genId(){ return 'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,9); }
+
+// מבטיח שלכל רשומה יש _id ייחודי. אם חסר — מוסיף ושומר בחזרה ל-Firebase.
+async function ensureIds(){
+  var changed = false;
+  ['malm','rivka'].forEach(function(sheet){
+    (DB[sheet]||[]).forEach(function(rec){
+      if(!rec._id){ rec._id = genId(); changed = true; }
+    });
+  });
+  if(changed){
+    try{
+      await fetch('https://malm-focus-default-rtdb.firebaseio.com/db.json',{
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DB)
+      });
+    }catch(e){ console.warn('ensureIds save failed:', e); }
+  }
+}
+
 async function loadDB(){
   try{
     const fbUrl='https://malm-focus-default-rtdb.firebaseio.com/db.json?t='+Date.now();
     const raw=await fetch(fbUrl);
     if(!raw.ok)throw new Error('firebase fetch failed: '+raw.status);
     DB=await raw.json();
+    await ensureIds();
 
     // ── Session restore ────────────────────────────────────────────
     // FIX: call showApp() instead of inline DOM manipulation
@@ -439,37 +459,42 @@ async function saveDB(){
   }
 }
 
-// שמירה אטומית של רשומה בודדת — מונעת דריסה בין משתמשים
+// שמירה אטומית של רשומה בודדת לפי _id — מונעת דריסה/כפילות בין משתמשים
+// תמיד טוען את המערך המלא טרי מ-Firebase, מאתר את הרשומה לפי _id (לא לפי אינדקס),
+// מעדכן/מוסיף אותה, ושומר את כל המערך בחזרה. כך אינדקסים שזזו בינתיים לא משנים כלום.
 async function saveRecord(sheet, idx, rec){
   const el=document.getElementById('savingMsg');
   el.style.display='block';
   el.style.background='#1a1a2e';
   el.textContent='⏳ שומר...';
   try{
-    const url = idx === -1
-      ? null  // רשומה חדשה — נטפל בנפרד
-      : `https://malm-focus-default-rtdb.firebaseio.com/db/${sheet}/${idx}.json`;
-    if(url){
-      const r=await fetch(url,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(rec)
-      });
-      if(!r.ok)throw new Error('Firebase error: '+r.status);
+    // טען טרי מ-Firebase כדי לא לדרוס שינויים של אחרים
+    const fresh = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json?t='+Date.now());
+    let arr = await fresh.json() || [];
+
+    if(rec._id){
+      const fi = arr.findIndex(function(x){ return x._id===rec._id; });
+      if(fi >= 0){
+        arr[fi] = rec; // עדכון רשומה קיימת — לפי ID, לא אינדקס
+      } else {
+        arr.unshift(rec); // לא נמצא (למשל רשומה חדשה) — הוסף בראש
+      }
     } else {
-      // רשומה חדשה — reload מ-Firebase, הוסף בראש, שמור חזרה
-      const fresh = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json?t='+Date.now());
-      const arr = await fresh.json() || [];
+      // הגנה לאחור — אם משום מה אין _id, ייצר אחד כדי לא ליצור כפילות עתידיות
+      rec._id = genId();
       arr.unshift(rec);
-      const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json',{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(arr)
-      });
-      if(!r.ok)throw new Error('Firebase error: '+r.status);
-      // עדכן DB המקומי
-      DB[sheet] = arr;
     }
+
+    const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(arr)
+    });
+    if(!r.ok)throw new Error('Firebase error: '+r.status);
+
+    // סנכרן DB המקומי עם מה שבאמת נשמר
+    DB[sheet] = arr;
+
     el.textContent='✓ נשמר!';
     setTimeout(()=>{el.style.display='none';},1500);
   }catch(e){
@@ -593,7 +618,7 @@ function rivkaFields(r={}, isEdit=false){
 
 function openAdd(){
   if(!CU){return;}
-  editIdx=-1;editSheet=currentTab===0?'malm':'rivka';
+  editIdx=-1;editSheet=currentTab===0?'malm':'rivka';editRecId=null;
   document.getElementById('modalTitle').textContent=currentTab===0?'✏️ משימה חדשה — מלמ כולל':'✏️ משימה חדשה — רבקה';
   document.getElementById('modalFields').innerHTML=currentTab===0?malmFields():rivkaFields({}, false);
   // Show file upload for new requests too
@@ -611,7 +636,7 @@ function openAdd(){
 function openEdit(sheet,idx){
   const r=DB[sheet][idx];
   if(sheet==='rivka' && !isAdmin() && (!r || (r.מב !== (CU?CU.name:'') && r.מב !== (CU?CU.username:'')))) return;
-  editIdx=idx;editSheet=sheet;
+  editIdx=idx;editSheet=sheet;editRecId=r?r._id:null;
   document.getElementById('modalTitle').textContent='✏️ עריכת משימה';
   document.getElementById('modalFields').innerHTML=sheet==='malm'?malmFields(r):rivkaFields(r, true);
   document.getElementById('chatSection').style.display='block';
@@ -670,8 +695,16 @@ function saveModal(){
       sendEmailNotification(ownerUser3.email, ownerUser3.name, 'הבקשה שלך נפתחה בהצלחה', 'בקשתך התקבלה ונמצאת בטיפול', rec.כ||rec.נ||'', 'פתוח');
     }
   }
-  if(editIdx===-1){DB[editSheet].unshift(rec);}
-  else{DB[editSheet][editIdx]=rec;}
+  if(editIdx===-1){
+    rec._id = genId();
+    DB[editSheet].unshift(rec);
+  } else {
+    rec._id = editRecId;
+    // עדכן את הרשומה הנכונה לפי _id (לא לפי אינדקס שעלול להיות מיושן)
+    var localIdx = DB[editSheet].findIndex(function(x){ return x._id===editRecId; });
+    if(localIdx===-1) localIdx = editIdx; // נפילה לאחור אם לא נמצא
+    DB[editSheet][localIdx]=rec;
+  }
   // Email on status change to בוצע
   const notifyStatuses = ['בוצע', 'בטיפול'];
   if (editSheet==='rivka' && notifyStatuses.includes(rec.ס) && wasStatus!==rec.ס) {
@@ -808,20 +841,26 @@ async function delUser(username) {
 function deleteRec(sheet, idx) {
   if (!isAdmin()) return;
   var rec = DB[sheet][idx];
+  if (!rec) return;
   var name = rec.נ || rec.מ || 'משימה זו';
+  var recId = rec._id;
   if (!confirm('למחוק את "' + name + '"?')) return;
   DB[sheet].splice(idx, 1);
   initFilters();
   if(sheet==='malm') r1(); else r2();
-  // מחיקה — שמור את כל המערך של הגיליון הרלוונטי
+  // מחיקה אטומית — טוען טרי, מוחק לפי _id, שומר בחזרה
   (async()=>{
     const el=document.getElementById('savingMsg');
     el.style.display='block'; el.style.background='#1a1a2e'; el.textContent='⏳ שומר...';
     try{
+      const fresh = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json?t='+Date.now());
+      let arr = await fresh.json() || [];
+      arr = recId ? arr.filter(function(x){ return x._id!==recId; }) : arr;
       const r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json',{
-        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DB[sheet])
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(arr)
       });
       if(!r.ok)throw new Error('Firebase error: '+r.status);
+      DB[sheet] = arr;
       el.textContent='✓ נמחק!';
       setTimeout(()=>{el.style.display='none';},1500);
     }catch(e){
@@ -935,6 +974,7 @@ function restoreDB(input) {
       });
       if (!r.ok) { alert('❌ שגיאה בשחזור'); input.value=''; return; }
       DB = dbData;
+      await ensureIds();
       if (devTasksData) {
         await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json', {
           method: 'PUT',
@@ -1089,9 +1129,19 @@ function switchChatTab(tab){
   renderChat();
 }
 
+function getEditRec(){
+  if(editIdx===-1)return null;
+  if(editRecId){
+    const found = DB[editSheet].find(function(x){ return x._id===editRecId; });
+    if(found) return found;
+  }
+  return DB[editSheet][editIdx]||null;
+}
+
 function renderChat(){
   if(editIdx===-1)return;
-  const rec=DB[editSheet][editIdx];
+  const rec=getEditRec();
+  if(!rec)return;
   const chat=rec.chat||{};
   const all=[
     ...(chat.malm||[]).map(m=>({...m,side:'malm'})),
@@ -1114,7 +1164,8 @@ function sendMsg(){
   const sender=CU?CU.name:'';
   if(!text&&!pendingFiles.length)return;
   if(editIdx===-1)return;
-  const rec=DB[editSheet][editIdx];
+  const rec=getEditRec();
+  if(!rec)return;
   if(!rec.chat)rec.chat={malm:[],dhl:[]};
   const side=isAdmin()?'malm':'dhl';
   if(!rec.chat[side])rec.chat[side]=[];
