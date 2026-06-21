@@ -1613,6 +1613,41 @@ async function updateSanityAdminNotes(id, val) {
     body: JSON.stringify({adminNotes: val})
   });
 }
+
+// פונקציה חד-פעמית להסרת רשומות כפולות (תוכן זהה לחלוטין למעט _id)
+// הופעלה ידנית ע"י מתן לניקוי כפילויות היסטוריות
+async function dedupRecords(sheet) {
+  if (!isAdmin()) { alert('רק אדמין יכול להריץ ניקוי'); return; }
+  const fresh = await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json?t='+Date.now());
+  let arr = await fresh.json() || [];
+  const seen = new Map();
+  const deduped = [];
+  let removedCount = 0;
+  arr.forEach(function(rec) {
+    // מפתח השוואה: כל השדות חוץ מ-_id ו-chat (כדי לא להתבלבל מהבדלי תכתובת)
+    const key = JSON.stringify(Object.keys(rec).filter(k=>k!=='_id').sort().reduce(function(o,k){o[k]=rec[k];return o;},{}));
+    if (seen.has(key)) {
+      removedCount++;
+    } else {
+      seen.set(key, true);
+      deduped.push(rec);
+    }
+  });
+  if (removedCount === 0) {
+    alert('לא נמצאו כפילויות ב-' + sheet);
+    return;
+  }
+  if (!confirm('נמצאו ' + removedCount + ' רשומות כפולות ב-' + sheet + '. למחוק אותן?')) return;
+  await fetch('https://malm-focus-default-rtdb.firebaseio.com/db/'+sheet+'.json', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(deduped)
+  });
+  DB[sheet] = deduped;
+  initFilters();
+  if (sheet==='malm') r1(); else r2();
+  alert('✅ הוסרו ' + removedCount + ' כפילויות מ-' + sheet);
+}
 </script>
 
 <div class="pane" id="pane3" style="padding:14px 20px">
