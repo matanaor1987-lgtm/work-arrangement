@@ -100,7 +100,7 @@ body{font-family:'Heebo',sans-serif;direction:rtl;background:#f2f2f2;color:var(-
 .month-label{font-size:16px;font-weight:800;color:var(--dhl-dark);flex:1;text-align:center}
 
 /* ===== LEGEND ===== */
-.legend{display:flex;gap:8px;padding:7px 14px;flex-wrap:wrap;border-bottom:1px solid var(--dhl-border);background:#fff;align-items:center}
+.legend{display:none}
 .leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--dhl-muted);font-weight:500}
 .leg-dot{width:9px;height:9px;border-radius:2px}
 .view-tag{padding:2px 9px;border-radius:3px;font-size:10px;font-weight:800;background:var(--dhl-yellow);color:var(--dhl-red);margin-right:auto}
@@ -415,7 +415,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week'};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:''};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -663,6 +663,11 @@ function getShift(emp,d){return state.schedule[emp+"|"+d]||"";}
 function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
 function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];}
 
+
+window.filterByEmp=function(name){
+  state.filterEmp=state.filterEmp===name?'':name;
+  render();
+};
 function showToast(msg){
   const t=document.getElementById("toast");
   t.textContent=msg;t.classList.add("show");
@@ -754,6 +759,10 @@ ${!isAdmin?`<div style="background:var(--dhl-red);padding:8px 16px;text-align:ce
   <span class="sync-tag">🔄 מסונכרן בזמן אמת</span>
   ${!isAdmin?'<span class="view-tag">👁 תצוגה בלבד</span>':""}
 </div>
+${state.filterEmp?`<div style="background:var(--dhl-yellow);padding:6px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0c800">
+  <span style="font-weight:800;color:var(--dhl-red)">🔍 מסנן: ${state.filterEmp}</span>
+  <button onclick="filterByEmp('')" style="padding:2px 10px;background:var(--dhl-red);color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">✕ הצג הכל</button>
+</div>`:""}
 ${isAdmin?buildNoteBar(days):""}
 ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable(days,isAdmin)}</div>`}
 ${buildSummary(days,isAdmin)}
@@ -812,23 +821,26 @@ function buildTable(days,isAdmin){
     <th class="emp-col">שם</th><th class="role-col">תפקיד</th>
     ${days.map(({d,wd})=>{
       const isFri=wd===5,isSat=wd===6;
-      const bg=isSat?"background:#fde8e8":isFri?"background:#FFF3CC":"";
-      const fc=isSat?"color:#a00":isFri?"color:#1a4a8a":"";
+      const today=new Date();
+      const isToday=today.getDate()===d&&today.getMonth()===state.month&&today.getFullYear()===state.year;
+      const bg=isToday?"background:var(--dhl-yellow)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":"";
+      const fc=isToday?"color:var(--dhl-red);font-weight:900":isSat?"color:#a00":isFri?"color:#1a4a8a":"";
+      const todayBorder=isToday?"border-left:3px solid var(--dhl-red);border-right:3px solid var(--dhl-red)":"";
       const note=state.notes[state.year+"-"+state.month+"-"+d];
       const wkBg=WEEK_BG[getWeekIndex(d)%WEEK_BG.length];
-      const wkStyle=(!isFri&&!isSat)?`background:${wkBg}`:"";
-      const finalBg=isSat?"background:#fde8e8":isFri?"background:#FFF3CC":wkStyle;
+      const wkStyle=(!isFri&&!isSat&&!isToday)?`background:${wkBg}`:"";
+      const finalBg=isToday?"background:var(--dhl-yellow)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":wkStyle;
       const bdayNames=bdayMap[d]||[];
       const bdayNote=bdayNames.map(n=>`🎂 יום הולדת שמח ${n}!`).join(' | ');
       const combinedNote=[note,bdayNote].filter(Boolean).join(' | ');
-      return `<th style="${finalBg};${fc}">${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}`;
+      return `<th style="${finalBg};${fc};${todayBorder}">${isToday?'📍 ':''}${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}`;
     }).join("")}
     <th>סה"כ</th>
   </tr></thead><tbody>`;
   roles.forEach(role=>{
     const rc=ROLE_COLORS[role]||"#333";
     h+=`<tr class="role-header"><td colspan="${days.length+3}" style="background:${rc}">${role}</td></tr>`;
-    employees.filter(e=>e.role===role).forEach((emp,ei)=>{
+    employees.filter(e=>e.role===role&&(!state.filterEmp||e.name===state.filterEmp)).forEach((emp,ei)=>{
       const bg=ei%2===0?"background:#f9fafd":"";
       let tot=0;
       const cells=days.map(({d,wd})=>{
@@ -837,7 +849,7 @@ function buildTable(days,isAdmin){
         const si=shiftInfo(k);
         if(["A","B","C","D","E","F","G","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(si.key)) tot++;
         const wkColor=WEEK_BG[getWeekIndex(d)%WEEK_BG.length];
-        const bgCell=isSat?"background:#fde8e8":isFri?"background:#FFF3CC":`background:${wkColor}`;
+        const isToday2=new Date().getDate()===d&&new Date().getMonth()===state.month&&new Date().getFullYear()===state.year;const bgCell=isToday2?"background:#FFFACD;border-left:2px solid var(--dhl-red);border-right:2px solid var(--dhl-red)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":`background:${wkColor}`;
         if(k){
           const cn=getCellNote(emp.name,d);
           return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}">${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
@@ -851,7 +863,8 @@ function buildTable(days,isAdmin){
         }
         return `<td style="${bgCell}">${isAdmin?`<div class="cell-empty-btn" onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})">+</div>`:'<div style="color:#dde;text-align:center;font-size:12px">—</div>'}</td>`;
       }).join("");
-      h+=`<tr style="${bg}"><td class="emp-col">${emp.name}</td><td class="role-badge"><span class="role-pill" style="background:${rc}">${role}</span></td>${cells}<td style="font-weight:700;color:#D40511;font-size:12px">${tot}</td></tr>`;
+      const empDisplayName=state.filterEmp===emp.name?`<span style="background:var(--dhl-red);color:#fff;border-radius:3px;padding:1px 5px">${emp.name}</span>`:emp.name;
+      h+=`<tr style="${bg}"><td class="emp-col" onclick="filterByEmp('${emp.name.replace(/'/g,\"\\\"\"')}')" style="cursor:pointer;user-select:none" title="לחץ לסנן">${empDisplayName}</td><td class="role-badge"><span class="role-pill" style="background:${rc}">${role}</span></td>${cells}<td style="font-weight:700;color:#D40511;font-size:12px">${tot}</td></tr>`;
     });
   });
   return h+`</tbody></table>`;}
@@ -1961,7 +1974,7 @@ window.exportToPDF = function(){
   roles.forEach(role=>{
     const rc=ROLE_COLORS_PDF[role]||'#333';
     tableHTML+=`<tr><td colspan="${days.length+3}" style="background:${rc};color:#fff;font-weight:700;font-size:10px;padding:4px 8px">${role}</td></tr>`;
-    employees.filter(e=>e.role===role).forEach((emp,ei)=>{
+    employees.filter(e=>e.role===role&&(!state.filterEmp||e.name===state.filterEmp)).forEach((emp,ei)=>{
       const rowBg=ei%2===0?'#f9fafd':'#fff';
       let tot=0;
       let cells='';
