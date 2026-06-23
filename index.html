@@ -73,13 +73,13 @@ body{font-family:'Heebo',sans-serif;direction:rtl;background:#f2f2f2;color:var(-
   position:sticky;
   top:0;
   z-index:200;
-  height:56px;
+  height:44px;
   box-shadow:0 2px 12px rgba(212,5,17,0.35)
 }
 .dhl-logo{background:var(--dhl-yellow);padding:5px 11px;border-radius:4px;display:flex;align-items:center;margin-left:10px;flex-shrink:0}
-.dhl-logo-text{font-family:'Heebo',sans-serif;font-weight:900;font-size:22px;color:var(--dhl-red);letter-spacing:-1.5px;line-height:1}
-.topbar-title{font-size:14px;font-weight:800;letter-spacing:0.2px}
-.topbar-sub{font-size:10px;opacity:0.75;margin-top:1px;font-weight:500}
+.dhl-logo-text{font-family:'Heebo',sans-serif;font-weight:900;font-size:18px;color:var(--dhl-red);letter-spacing:-1.5px;line-height:1}
+.topbar-title{font-size:13px;font-weight:800;letter-spacing:0.2px}
+.topbar-sub{font-size:9px;opacity:0.75;margin-top:1px;font-weight:500}
 .topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden}
 .dhl-yellow-stripe{height:3px;background:var(--dhl-yellow)}
 
@@ -714,8 +714,8 @@ function buildApp(){
   </div>
   <div class="topbar-right">
     ${state.mode!=="admin"?`<button id="pwa-install-btn" onclick="installPWA()" style="display:none;background:#FFCC00;color:#D40511;border:none;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;align-items:center;gap:4px">📲 התקן אפליקציה</button>`:""}
-    ${state.mode!=="admin"?`<button class="sign-btn" onclick="openEmpView()" style="background:var(--dhl-yellow);color:var(--dhl-red);font-weight:800;border:none;margin-left:6px">👤 כניסת עובד</button>`:""}
-    ${state.mode!=="admin"?`<button class="sign-btn" onclick="openEmpRequests()" style="background:rgba(255,255,255,0.15);margin-left:6px">📋 בקשות</button>`:""}
+    ${state.mode!=="admin"?`<button class="sign-btn" onclick="openEmpView()" style="background:var(--dhl-yellow);color:var(--dhl-red);font-weight:800;border:none;margin-left:6px">👤 כניסת עובד</button><button class="sign-btn" onclick="openEmpRequests()" style="background:rgba(255,255,255,0.15);margin-left:6px">📋 הגש בקשה</button>`:""}
+    
     ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
@@ -741,11 +741,7 @@ function buildApp(){
     </div>`:""}
   </div>
 </div>
-${!isAdmin?`<div style="background:var(--dhl-red);padding:8px 16px;text-align:center">
-  <button onclick="openEmpRequests()" style="background:#fff;color:var(--dhl-red);border:none;border-radius:3px;padding:8px 24px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">
-    📋 הגש בקשה / אילוץ
-  </button>
-</div>`:""}
+
 <div class="dhl-yellow-stripe"></div><div class="month-nav">
   <button onclick="changeMonth(-1)">&#8592;</button>
   <div class="month-label">${MONTHS[state.month]} ${state.year}</div>
@@ -1378,7 +1374,7 @@ function buildEmpView(){
   if(!state.personalEmp){
     const roles=[...new Set(employees.map(e=>e.role))];
     return `<div style="min-height:100vh;background:#f0f0f0;direction:rtl">
-      <div style="background:var(--dhl-red);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(212,5,17,0.3)">
+      <div style="background:var(--dhl-red);padding:0 16px;height:44px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(212,5,17,0.3)">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="background:var(--dhl-yellow);padding:4px 10px;border-radius:3px;font-family:Arial Black,Arial;font-weight:900;font-size:20px;color:var(--dhl-red);line-height:1">DHL</div>
           <div style="color:#fff;font-weight:800;font-size:15px">כניסת עובד</div>
@@ -1425,7 +1421,7 @@ function buildEmpView(){
 
   return `<div style="min-height:100vh;background:#f0f0f0;direction:rtl">
     <!-- Header -->
-    <div style="background:var(--dhl-red);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(212,5,17,0.3)">
+    <div style="background:var(--dhl-red);padding:0 16px;height:44px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(212,5,17,0.3)">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="background:var(--dhl-yellow);padding:4px 10px;border-radius:3px;font-family:Arial Black,Arial;font-weight:900;font-size:20px;color:var(--dhl-red);line-height:1">DHL</div>
         <div>
