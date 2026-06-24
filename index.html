@@ -739,7 +739,8 @@ function buildDailyDist(){
   const MONTHS_HE2=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
   const wd=today.getDay();
   const dateStr=`${DAY_NAMES_FULL2[wd]} ${d}/${today.getMonth()+1}/${today.getFullYear()}`;
-  const roles=[...new Set(employees.map(e=>e.role))];
+  const EXCLUDE_ROLES=['רפרנטיות'];
+  const roles=[...new Set(employees.map(e=>e.role))].filter(r=>!EXCLUDE_ROLES.includes(r));
   let rows='';
   roles.forEach(role=>{
     const rc=ROLE_COLORS[role]||'#888';
