@@ -687,7 +687,7 @@ window.copyDailyDist=function(){
   const EXCLUDE_ROLES=['רפרנטיות'];
   const roles=[...new Set(employees.map(e=>e.role))].filter(r=>!EXCLUDE_ROLES.includes(r));
   const d=today.getDate();
-  let html=`<div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;direction:rtl">`;
+  let html=`<div dir="rtl" style="font-family:Arial,sans-serif;max-width:380px;direction:rtl;display:inline-block">`;
   html+=`<div style="background:#D40511;color:#fff;padding:10px 14px;border-radius:6px 6px 0 0">`;
   html+=`<div style="display:flex;align-items:center;gap:12px">`;
   html+=`<div style="background:#FFCC00;padding:4px 10px;border-radius:3px;font-weight:900;font-size:20px;color:#D40511;font-family:Arial Black,Arial">DHL</div>`;
@@ -700,7 +700,7 @@ window.copyDailyDist=function(){
     if(working.length===0) return;
     html+=`<div style="margin-top:12px">`;
     html+=`<div style="background:${rc};color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:3px 3px 0 0">${role}</div>`;
-    html+=`<table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-top:none">`;
+    html+=`<table style="width:380px;border-collapse:collapse;border:1px solid #e0e0e0;border-top:none">`;
     html+=`<tr style="background:#f5f5f5"><th style="padding:4px 8px;text-align:right;font-size:11px;border:1px solid #e0e0e0;width:80px">שם</th><th style="padding:4px 8px;text-align:right;font-size:11px;border:1px solid #e0e0e0">אחריות</th></tr>`;
     working.forEach((emp,i)=>{
       const sh=getShift(emp.name,d);
