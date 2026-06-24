@@ -320,6 +320,18 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 }
 .copy-box h2{font-size:16px;font-weight:800;margin-bottom:14px;color:var(--dhl-red)}
 
+
+/* ===== DAILY DISTRIBUTION ===== */
+.daily-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+.daily-box{background:#fff;border-radius:12px;padding:22px;width:min(580px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.22);border-top:4px solid var(--dhl-red)}
+.daily-box h2{font-size:16px;font-weight:800;margin-bottom:4px;color:var(--dhl-red)}
+.daily-role-title{font-size:12px;font-weight:800;color:#fff;padding:4px 12px;border-radius:3px;margin:12px 0 6px;display:inline-block}
+.daily-emp-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.daily-emp-name{font-size:13px;font-weight:700;min-width:80px;color:var(--dhl-dark)}
+.daily-emp-shift{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;min-width:50px;text-align:center}
+.daily-resp-inp{flex:1;padding:6px 10px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:6px;font-family:inherit}
+.daily-copy-btn{width:100%;margin-top:16px;padding:10px;background:var(--dhl-red);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700}
+.daily-copied{background:#2e7d32 !important}
 /* ===== MISC ===== */
 .team-msg-banner{background:var(--dhl-red);color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px}
 .msg-editor button{padding:7px 14px;font-size:12px;background:var(--dhl-red);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700}
@@ -664,6 +676,88 @@ function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
 function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];}
 
 
+
+window.openDailyDist=function(){state.showDaily=true;render();};
+window.closeDailyDist=function(){state.showDaily=false;render();};
+window.copyDailyDist=function(){
+  const today=new Date();
+  const DAY_NAMES_FULL2=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const MONTHS_HE2=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const wd=today.getDay();
+  const dateStr=`${DAY_NAMES_FULL2[wd]} ${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+  let text=`בוקר טוב צוות! ☀️
+
+חלוקת עבודה — ${dateStr}
+`;
+  const roles=[...new Set(employees.map(e=>e.role))];
+  const d=today.getDate();
+  roles.forEach(role=>{
+    const roleEmps=employees.filter(e=>e.role===role);
+    const working=roleEmps.filter(emp=>{
+      const sh=getShift(emp.name,d);
+      return sh&&!['OFF','MIL','SICK'].includes(sh);
+    });
+    if(working.length===0) return;
+    text+=`
+${role}:
+`;
+    working.forEach(emp=>{
+      const inp=document.getElementById('resp-'+emp.name);
+      const resp=inp?inp.value.trim():'';
+      text+=`${emp.name}${resp?' — '+resp:''}
+`;
+    });
+  });
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('daily-copy-btn');
+    if(btn){btn.textContent='✅ הועתק!';btn.classList.add('daily-copied');setTimeout(()=>{btn.textContent='📋 העתק למייל / וואטסאפ';btn.classList.remove('daily-copied');},2000);}
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    const btn=document.getElementById('daily-copy-btn');
+    if(btn){btn.textContent='✅ הועתק!';btn.classList.add('daily-copied');setTimeout(()=>{btn.textContent='📋 העתק למייל / וואטסאפ';btn.classList.remove('daily-copied');},2000);}
+  });
+};
+
+function buildDailyDist(){
+  if(!state.showDaily) return '';
+  const today=new Date();
+  const d=today.getDate();
+  const DAY_NAMES_FULL2=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const MONTHS_HE2=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const wd=today.getDay();
+  const dateStr=`${DAY_NAMES_FULL2[wd]} ${d}/${today.getMonth()+1}/${today.getFullYear()}`;
+  const roles=[...new Set(employees.map(e=>e.role))];
+  let rows='';
+  roles.forEach(role=>{
+    const rc=ROLE_COLORS[role]||'#888';
+    const roleEmps=employees.filter(e=>e.role===role);
+    const working=roleEmps.filter(emp=>{
+      const sh=getShift(emp.name,d);
+      return sh&&!['OFF','MIL','SICK'].includes(sh);
+    });
+    if(working.length===0) return;
+    rows+=`<div class="daily-role-title" style="background:${rc}">${role}</div>`;
+    working.forEach(emp=>{
+      const sh=getShift(emp.name,d);
+      const si=shiftInfo(sh);
+      rows+=`<div class="daily-emp-row">
+        <span class="daily-emp-name">${emp.name}</span>
+        <span class="daily-emp-shift ${si.cls}">${si.label}</span>
+        <input class="daily-resp-inp" id="resp-${emp.name}" placeholder="אחריות / משימה...">
+      </div>`;
+    });
+  });
+  return `<div class="daily-modal" onclick="if(event.target===this)closeDailyDist()">
+    <div class="daily-box">
+      <h2>☀️ חלוקת עבודה — ${dateStr}</h2>
+      <div style="font-size:12px;color:#888;margin-bottom:12px">מלא אחריות לכל עובד ואז העתק</div>
+      ${rows||'<div style="color:#888;text-align:center;padding:20px">אין עובדים היום</div>'}
+      <button class="daily-copy-btn" id="daily-copy-btn" onclick="copyDailyDist()">📋 העתק למייל / וואטסאפ</button>
+      <button onclick="closeDailyDist()" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--dhl-border);border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;background:#fff">סגור</button>
+    </div>
+  </div>`;
+}
 window.filterByEmp=function(name){
   state.filterEmp=state.filterEmp===name?'':name;
   render();
@@ -717,6 +811,7 @@ function buildApp(){
     ${state.mode!=="admin"?`<button class="sign-btn" onclick="openEmpView()" style="background:var(--dhl-yellow);color:var(--dhl-red);font-weight:800;border:none;margin-left:6px">👤 כניסת עובד</button><button class="sign-btn" onclick="openEmpRequests()" style="background:rgba(255,255,255,0.15);margin-left:6px">📋 הגש בקשה</button>`:""}
     
     ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
+    ${state.mode==="admin"?`<button class="sign-btn" onclick="openDailyDist()" style="background:rgba(255,204,0,0.3);margin-left:6px">☀️ חלוקה יומית</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportToPDF()" style="background:rgba(255,255,255,0.18);margin-left:6px" title="ייצא סידור ל-PDF">🖨️ PDF</button>`:""}
@@ -764,7 +859,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
