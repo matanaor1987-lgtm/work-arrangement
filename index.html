@@ -688,36 +688,36 @@ window.copyDailyDist=function(){
   const roles=[...new Set(employees.map(e=>e.role))].filter(r=>!EXCLUDE_ROLES.includes(r));
   const d=today.getDate();
   let html=`<div dir="rtl" style="font-family:Arial,sans-serif;max-width:380px;direction:rtl;display:inline-block">`;
-  html+=`<div style="background:#D40511;color:#fff;padding:10px 14px;border-radius:6px 6px 0 0">`;
-  html+=`<div style="display:flex;align-items:center;gap:12px">`;
-  html+=`<div style="background:#FFCC00;padding:4px 10px;border-radius:3px;font-weight:900;font-size:20px;color:#D40511;font-family:Arial Black,Arial">DHL</div>`;
-  html+=`<div><div style="font-size:18px;font-weight:800">בוקר טוב צוות! ☀️</div><div style="font-size:13px;opacity:0.85">חלוקת עבודה — ${dateStr}</div></div>`;
-  html+=`</div></div>`;
+  html+=`<div style="margin-bottom:6px">`;
+  html+=`<div style="font-size:14px;font-weight:800">בוקר טוב! ☀️</div>`;
+  html+=`<div style="font-size:11px;color:#555">חלוקת עבודה — ${dateStr}</div>`;
+  html+=`</div>`;
+
   roles.forEach(role=>{
     const rc=ROLE_COLORS[role]||'#888';
     const roleEmps=employees.filter(e=>e.role===role);
     const working=roleEmps.filter(emp=>{const sh=getShift(emp.name,d);return sh&&!['OFF','MIL','SICK'].includes(sh);});
     if(working.length===0) return;
     html+=`<div style="margin-top:12px">`;
-    html+=`<div style="background:${rc};color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:3px 3px 0 0">${role}</div>`;
+    html+=`<div style="background:${rc};color:#fff;font-weight:700;font-size:11px;padding:3px 8px">${role}</div>`;
     html+=`<table style="width:380px;border-collapse:collapse;border:1px solid #e0e0e0;border-top:none">`;
-    html+=`<tr style="background:#f5f5f5"><th style="padding:4px 8px;text-align:right;font-size:11px;border:1px solid #e0e0e0;width:80px">שם</th><th style="padding:4px 8px;text-align:right;font-size:11px;border:1px solid #e0e0e0">אחריות</th></tr>`;
+    html+=`<tr style="background:#f0f0f0"><th style="padding:4px 8px;text-align:right;font-size:11px;font-weight:800;border:1px solid #ddd;width:80px;color:#333">שם</th><th style="padding:4px 8px;text-align:right;font-size:11px;font-weight:800;border:1px solid #ddd;color:#333">אחריות</th></tr>`;
     working.forEach((emp,i)=>{
       const sh=getShift(emp.name,d);
       const si=shiftInfo(sh);
       const inp=document.getElementById('resp-'+emp.name);
       const resp=inp?inp.value.trim():'';
-      const rowBg=i%2===0?'#fff':'#fafafa';
+      const rowBg=i%2===0?'#ffffff':'#f7f7f7';
       const shiftColors={A:'#fff6cc',B:'#e6f4ea',C:'#fce8dc',D:'#fff9c4',E:'#dcedc8',F:'#ffe0b2',G:'#e0f7fa',SAB:'#fce4ec',MOTZ:'#e8eaf6',AUDIT:'#fce4ec'};
       const shiftBg=shiftColors[sh]||'#f0f0f0';
       html+=`<tr style="background:${rowBg}">`;
-      html+=`<td style="padding:4px 8px;font-weight:700;font-size:12px;border:1px solid #e0e0e0">${emp.name}</td>`;
-      html+=`<td style="padding:4px 8px;font-size:12px;border:1px solid #e0e0e0;color:${resp?'#1a1a1a':'#aaa'}">${resp||'—'}</td>`;
+      html+=`<td style="padding:5px 8px;font-weight:700;font-size:12px;border:1px solid #ddd;white-space:nowrap">${emp.name}</td>`;
+      html+=`<td style="padding:5px 8px;font-size:12px;border:1px solid #ddd;color:${resp?'#1a1a1a':'#999'}">${resp||''}</td>`;
       html+=`</tr>`;
     });
     html+=`</table></div>`;
   });
-  html+=`<div style="margin-top:16px;font-size:11px;color:#aaa;text-align:center;padding-bottom:8px">נשלח ממערכת סידור עבודה DHL</div></div>`;
+  html+=`</div>`;
   const blob=new Blob([html],{type:'text/html'});
   const item=new ClipboardItem({'text/html':blob});
   navigator.clipboard.write([item]).then(()=>{
