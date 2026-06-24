@@ -687,45 +687,53 @@ window.copyDailyDist=function(){
   const EXCLUDE_ROLES=['רפרנטיות'];
   const roles=[...new Set(employees.map(e=>e.role))].filter(r=>!EXCLUDE_ROLES.includes(r));
   const d=today.getDate();
-  let html=`<div dir="rtl" style="font-family:Arial,sans-serif;max-width:380px;direction:rtl;display:inline-block">`;
-  html+=`<div style="margin-bottom:6px">`;
-  html+=`<div style="font-size:14px;font-weight:800">בוקר טוב! ☀️</div>`;
-  html+=`<div style="font-size:11px;color:#555">חלוקת עבודה — ${dateStr}</div>`;
-  html+=`</div>`;
+
+  let html=`<table dir="rtl" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;direction:rtl;border-collapse:collapse">`;
+  // Header row
+  html+=`<tr><td style="padding-bottom:6px">`;
+  html+=`<div style="font-size:14px;font-weight:bold">&#9728; בוקר טוב!</div>`;
+  html+=`<div style="font-size:11px;color:#555">חלוקת עבודה &mdash; ${dateStr}</div>`;
+  html+=`</td></tr>`;
 
   roles.forEach(role=>{
     const rc=ROLE_COLORS[role]||'#888';
     const roleEmps=employees.filter(e=>e.role===role);
     const working=roleEmps.filter(emp=>{const sh=getShift(emp.name,d);return sh&&!['OFF','MIL','SICK'].includes(sh);});
     if(working.length===0) return;
-    html+=`<div style="margin-top:12px">`;
-    html+=`<div style="background:${rc};color:#fff;font-weight:700;font-size:11px;padding:3px 8px">${role}</div>`;
-    html+=`<table style="width:380px;border-collapse:collapse;border:1px solid #e0e0e0;border-top:none">`;
-    html+=`<tr style="background:#f0f0f0"><th style="padding:4px 8px;text-align:right;font-size:11px;font-weight:800;border:1px solid #ddd;width:80px;color:#333">שם</th><th style="padding:4px 8px;text-align:right;font-size:11px;font-weight:800;border:1px solid #ddd;color:#333">אחריות</th></tr>`;
+
+    // Role header
+    html+=`<tr><td style="background-color:${rc};color:#ffffff;font-weight:bold;font-size:11px;padding:3px 8px">${role}</td></tr>`;
+
+    // Column headers
+    html+=`<tr>`;
+    html+=`<td><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:360px">`;
+    html+=`<tr style="background-color:#f0f0f0">`;
+    html+=`<td style="padding:4px 8px;font-size:11px;font-weight:bold;border:1px solid #cccccc;width:90px">שם</td>`;
+    html+=`<td style="padding:4px 8px;font-size:11px;font-weight:bold;border:1px solid #cccccc">אחריות</td>`;
+    html+=`</tr>`;
+
     working.forEach((emp,i)=>{
-      const sh=getShift(emp.name,d);
-      const si=shiftInfo(sh);
       const inp=document.getElementById('resp-'+emp.name);
       const resp=inp?inp.value.trim():'';
       const rowBg=i%2===0?'#ffffff':'#f7f7f7';
-      const shiftColors={A:'#fff6cc',B:'#e6f4ea',C:'#fce8dc',D:'#fff9c4',E:'#dcedc8',F:'#ffe0b2',G:'#e0f7fa',SAB:'#fce4ec',MOTZ:'#e8eaf6',AUDIT:'#fce4ec'};
-      const shiftBg=shiftColors[sh]||'#f0f0f0';
-      html+=`<tr style="background:${rowBg}">`;
-      html+=`<td style="padding:5px 8px;font-weight:700;font-size:12px;border:1px solid #ddd;white-space:nowrap">${emp.name}</td>`;
-      html+=`<td style="padding:5px 8px;font-size:12px;border:1px solid #ddd;color:${resp?'#1a1a1a':'#999'}">${resp||''}</td>`;
+      html+=`<tr style="background-color:${rowBg}">`;
+      html+=`<td style="padding:4px 8px;font-size:12px;font-weight:bold;border:1px solid #dddddd;white-space:nowrap">${emp.name}</td>`;
+      html+=`<td style="padding:4px 8px;font-size:12px;border:1px solid #dddddd;color:${resp?'#1a1a1a':'#999999'}">${resp||''}</td>`;
       html+=`</tr>`;
     });
-    html+=`</table></div>`;
+    html+=`</table></td></tr>`;
+    html+=`<tr><td style="padding:4px 0"></td></tr>`;
   });
-  html+=`</div>`;
+  html+=`</table>`;
+
   const blob=new Blob([html],{type:'text/html'});
   const item=new ClipboardItem({'text/html':blob});
   navigator.clipboard.write([item]).then(()=>{
     const btn=document.getElementById('daily-copy-btn');
     if(btn){btn.textContent='✅ הועתק! פתח Outlook והדבק';btn.classList.add('daily-copied');setTimeout(()=>{btn.textContent='📋 העתק למייל Outlook';btn.classList.remove('daily-copied');},3000);}
   }).catch(()=>{
-    const w=window.open('','_blank','width=700,height=600');
-    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"></head><body style="margin:20px">${html}<br><button onclick="document.execCommand('selectAll');document.execCommand('copy');this.textContent='✅ הועתק!'" style="padding:10px 20px;background:#D40511;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">📋 סמן הכל והעתק</button></body></html>`);
+    const w=window.open('','_blank','width=500,height=600');
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"></head><body style="margin:20px">${html}<br><button onclick="document.execCommand('selectAll');document.execCommand('copy');this.textContent='הועתק!'" style="padding:8px 16px;background:#D40511;color:#fff;border:none;border-radius:4px;cursor:pointer">📋 סמן הכל והעתק</button></body></html>`);
     w.document.close();
   });
 };
