@@ -698,7 +698,7 @@ window.copyDailyDist=function(){
   roles.forEach(role=>{
     const rc=ROLE_COLORS[role]||'#888';
     const roleEmps=employees.filter(e=>e.role===role);
-    const working=roleEmps.filter(emp=>{const sh=getShift(emp.name,d);return sh&&!['OFF','MIL','SICK'].includes(sh);});
+    const working=roleEmps.filter(emp=>{const sh=getShift(emp.name,d);return sh&&!['OFF','MIL','SICK','SAB'].includes(sh);});
     if(working.length===0) return;
 
     // Role header
@@ -754,7 +754,7 @@ function buildDailyDist(){
     const roleEmps=employees.filter(e=>e.role===role);
     const working=roleEmps.filter(emp=>{
       const sh=getShift(emp.name,d);
-      return sh&&!['OFF','MIL','SICK'].includes(sh);
+      return sh&&!['OFF','MIL','SICK','SAB'].includes(sh);
     });
     if(working.length===0) return;
     rows+=`<div class="daily-role-title" style="background:${rc}">${role}</div>`;
