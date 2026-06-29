@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHL — סינון דוח רובוט</title>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<style>
+  :root { --red: #D40511; --yellow: #FFCC00; --dark: #1A1A1A; --light: #F5F5F5; --border: #DDD; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: var(--light); color: var(--dark); }
+  .topbar { background: var(--red); color: white; display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 52px; }
+  .topbar-logo { font-size: 22px; font-weight: 900; letter-spacing: 1px; }
+  .topbar-title { font-size: 15px; font-weight: 600; opacity: .9; }
+  .main { max-width: 860px; margin: 32px auto; padding: 0 16px 60px; }
+  .upload-zone { border: 2.5px dashed var(--border); border-radius: 10px; background: white; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--red); background: #FFF5F5; }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 40px; margin-bottom: 10px; }
+  .upload-zone h3 { font-size: 17px; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: #777; }
+  .file-info { display: none; background: white; border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 18px; align-items: center; gap: 12px; margin-top: 12px; }
+  .file-info.show { display: flex; }
+  .file-icon { font-size: 28px; }
+  .file-details { flex: 1; }
+  .file-name { font-weight: 700; font-size: 14px; }
+  .file-meta { font-size: 12px; color: #777; margin-top: 2px; }
+  .remove-file { background: none; border: none; font-size: 18px; cursor: pointer; color: #999; }
+  .remove-file:hover { color: var(--red); }
+  .legend { display: flex; gap: 10px; margin: 20px 0 10px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; background: white; border: 1.5px solid var(--border); border-radius: 6px; padding: 6px 12px; }
+  .dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  .dot-yellow { background: #FDD835; }
+  .dot-white { background: white; border: 1px solid #CCC; }
+  .run-btn { display: block; width: 100%; background: var(--red); color: white; border: none; border-radius: 8px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 18px; transition: opacity .15s; }
+  .run-btn:hover:not(:disabled) { opacity: .88; }
+  .run-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .progress-wrap { display: none; margin-top: 16px; }
+  .progress-wrap.show { display: block; }
+  .progress-label { font-size: 13px; color: #444; margin-bottom: 6px; }
+  .progress-bar { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .progress-fill { background: var(--red); height: 100%; width: 0; transition: width .3s; }
+  .results-box { display: none; margin-top: 20px; }
+  .results-box.show { display: block; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: white; border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 12px; text-align: center; }
+  .stat-card .num { font-size: 26px; font-weight: 900; line-height: 1; }
+  .stat-card .lbl { font-size: 12px; color: #777; margin-top: 4px; }
+  .stat-card.c-yellow .num { color: #F9A825; }
+  .stat-card.c-blue .num { color: #1E88E5; }
+  .download-btn { display: block; width: 100%; background: var(--dark); color: var(--yellow); border: none; border-radius: 8px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .download-btn:hover { opacity: .85; }
+  .error-msg { display: none; background: #FFEBEE; border: 1.5px solid #EF9A9A; border-radius: 8px; padding: 12px 16px; color: #C62828; font-size: 13px; margin-top: 12px; }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">DHL</span>
+  <span class="topbar-title">סינון דוח רובוט — סיווג אוטומטי</span>
+</div>
+<div class="main">
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <div class="upload-icon">📂</div>
+    <h3>גרור את קובץ הדוח לכאן</h3>
+    <p>או לחץ לבחירת קובץ — .xlsx / .xls</p>
+  </div>
+  <div class="file-info" id="fileInfo">
+    <span class="file-icon">📊</span>
+    <div class="file-details">
+      <div class="file-name" id="fileName"></div>
+      <div class="file-meta" id="fileMeta"></div>
+    </div>
+    <button class="remove-file" onclick="clearFile()">✕</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-yellow"></div>צהוב — מזון / תוספי תזונה / ויטמינים</div>
+    <div class="legend-item"><div class="dot dot-white"></div>ללא צבע — שורה רגילה</div>
+  </div>
+  <button class="run-btn" id="runBtn" onclick="runFilter()" disabled>הפעל סינון</button>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label" id="progressLabel">מעבד...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="results-box" id="resultsBox">
+    <div class="stats-grid" id="statsGrid"></div>
+    <button class="download-btn" id="downloadBtn">⬇ הורד קובץ מסונן (.xlsx)</button>
+  </div>
+</div>
+<script>
+let fileBuffer = null;
+let outputBlob = null;
+
+// ── רשימות סינון ──────────────────────────────────────────────────────────────
+const COMPANY_KW = [
+  'בע"מ','בע״מ','LTD','INC','CORP','LLC','PLC','GMBH','SRL','SAS',
+  'INDUSTRIES','SOLUTIONS','SYSTEMS','TECHNOLOGIES','ENTERPRISE','TRADING',
+  'INTERNATIONAL','MANUFACTURING','FACTORY','LOGISTICS','GLOBAL','SUPPLY'
+];
+const MEDICAL_CO  = ['MEDICAL','PHARMA','CLINIC','HOSPITAL','SURGICAL','DENTAL','BIOTECH','MEDTECH'];
+const KNOWN_CO    = ['FLEX','ABB','AVNET','ARROW','SIEMENS','HONEYWELL','BOSCH','PHILIPS'];
+const COSMET_CO   = ['COSMETIC','BEAUTY','SKINCARE','MAKEUP','PARFUM','PERFUME','FRAGRANCE'];
+const JEWEL_CO    = ['JEWEL','DIAMOND','GOLDSMITH','SILVERSMITH','GEMSTONE'];
+const FOOD_CO     = ['FOOD','CATERING','BAKERY','DAIRY','MEAT','BUTCHER'];
+const CHEM_CO     = ['CHEMICAL','CHEM ','REAGENT','SOLVENT'];
+
+// מוצרים להסרה מוחלטת
+const REMOVE_DESC = [
+  // אלכוהול
+  'WHISKEY','WHISKY','VODKA','WINE ','BEER ','SPIRITS','COGNAC','CHAMPAGNE',
+  'BRANDY','TEQUILA','LIQUEUR','JOHNNIE WALKER','JACK DANIEL','GREY GOOSE',
+  'ABSOLUT','BACARDI','JAMESON','CHIVAS','CHÂTEAU','HENNESSY','SAKE ',
+  // רכבים
+  'RADIATOR','EXHAUST','CAR PARTS','AUTO PARTS','ROAD VEHICLE','INJECTION PARTS',
+  'SPARE PARTS CAR','BUMPER','WINDSHIELD','ENGINE PART','TRANSMISSION',
+  // רפואי
+  'PHARMACEUTICAL','MEDICATION','PRESCRIPTION','MEDICAL DEVICE','SURGICAL',
+  'STETHOSCOPE','SCALPEL','SYRINGE','MEDICAL EQUIPMENT',
+  // חקלאי טרי
+  'FRESH FRUIT','FRESH VEGETABLE','LIVE PLANT','FRESH MEAT','FRESH FISH',
+  // שמנים תעשייתיים
+  'ENGINE OIL','MOTOR OIL','LUBRICANT OIL','HYDRAULIC OIL',
+  // סכינים (למעט מטבח)
+  'TACTICAL KNIFE','COMBAT KNIFE','HUNTING KNIFE','FIXED BLADE KNIFE',
+  // טבק
+  'CIGARETTE','TOBACCO','VAPE','CIGAR','HOOKAH','SHISHA',
+  // דגימות מסחריות
+  'COMMERCIAL SAMPLE','SAMPLE ONLY','NO COMMERCIAL VALUE',
+  // ציוד רכב
+  'CAR LIFT','VEHICLE LIFT','TIRE CHANGER','WHEEL BALANCER',
+];
+
+// מוצרים לצביעה צהובה
+const YELLOW_DESC = [
+  // מזון
+  'FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','BISCUIT','COOKIE',
+  'SAUCE','SPICE','SEASONING','NUT ','NUTS','DRIED FRUIT','CEREAL',
+  'PROTEIN BAR','ENERGY BAR','GRANOLA','OATMEAL','PASTA','NOODLE',
+  // תוספי תזונה
+  'SUPPLEMENT','VITAMIN','MINERAL','PROBIOTIC','OMEGA','COLLAGEN',
+  'WHEY','CREATINE','BCAA','PRE-WORKOUT','NUTRITIONAL','DIETARY',
+  'HERBAL','HERB ','EXTRACT ','CAPSULE','TABLET','POWDER',
+  'FISH OIL','COD LIVER','MAGNESIUM','CALCIUM','ZINC','IRON ',
+  // מותגים ידועים
+  'OPTIMUM NUTRITION','LACTOFIT','DOTERRA','RED BULL','MONSTER ENERGY',
+  'MYPROTEIN','HERBALIFE','USANA','NOW FOODS','GARDEN OF LIFE',
+  // ספקים
+  'DOTERRA',
+];
+
+function isCompany(name) {
+  const u = String(name||'').toUpperCase();
+  for (const lst of [COMPANY_KW,MEDICAL_CO,KNOWN_CO,COSMET_CO,JEWEL_CO,FOOD_CO,CHEM_CO])
+    for (const kw of lst) if (u.includes(kw)) return true;
+  return false;
+}
+
+function shouldRemove(desc) {
+  const d = String(desc||'').toUpperCase();
+  for (const kw of REMOVE_DESC) if (d.includes(kw)) return true;
+  return false;
+}
+
+function shouldYellow(desc, shipper) {
+  const d = String(desc||'').toUpperCase();
+  const s = String(shipper||'').toUpperCase();
+  for (const kw of YELLOW_DESC) if (d.includes(kw) || s.includes(kw)) return true;
+  return false;
+}
+
+// ── קבצים ──────────────────────────────────────────────────────────────────────
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = (file.size/1024).toFixed(0) + ' KB';
+  document.getElementById('fileInfo').classList.add('show');
+  document.getElementById('runBtn').disabled = false;
+  const reader = new FileReader();
+  reader.onload = e => { fileBuffer = e.target.result; };
+  reader.readAsArrayBuffer(file);
+}
+
+function clearFile() {
+  fileBuffer = outputBlob = null;
+  fileInput.value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('resultsBox').classList.remove('show');
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('errorMsg').classList.remove('show');
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+
+async function runFilter() {
+  if (!fileBuffer) return;
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('resultsBox').classList.remove('show');
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('runBtn').disabled = true;
+
+  try {
+    setProgress(10, 'קורא קובץ...');
+    await new Promise(r => setTimeout(r, 30));
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(fileBuffer);
+    const ws = wb.worksheets[0];
+
+    setProgress(20, 'מאתר כותרות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    let headerRowNum = -1;
+    let headers = [];
+    ws.eachRow((row, rn) => {
+      if (headerRowNum !== -1) return;
+      const vals = row.values.map(v => String(v||''));
+      if (vals.includes('IMPORTER_NO') || vals.includes('STEP_1615')) {
+        headerRowNum = rn;
+        headers = vals;
+      }
+    });
+
+    if (headerRowNum === -1) {
+      showError('לא נמצאה שורת כותרות. ודא שהקובץ הוא הדוח הנכון.');
+      document.getElementById('progressWrap').classList.remove('show');
+      document.getElementById('runBtn').disabled = false;
+      return;
+    }
+
+    const ci = name => headers.indexOf(name);
+
+    setProgress(30, 'מסנן שורות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    const outWb = new ExcelJS.Workbook();
+    const outWs = outWb.addWorksheet('דוח מסונן');
+    const newHeaders = headers.slice(1);
+    outWs.addRow(newHeaders);
+
+    const headerRow = outWs.getRow(1);
+    headerRow.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    headerRow.height = 18;
+
+    const FILL_YELLOW = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } };
+    const FONT_NORMAL = { name: 'Arial', size: 10 };
+    const ALIGN_RIGHT = { horizontal: 'right', vertical: 'middle' };
+
+    let removed = 0, yellowC = 0, normalC = 0;
+    const totalRows = ws.rowCount - headerRowNum;
+
+    ws.eachRow((row, rn) => {
+      if (rn <= headerRowNum) return;
+
+      const get = name => {
+        const idx = ci(name);
+        return idx > 0 ? row.getCell(idx).value : '';
+      };
+
+      const weight    = parseFloat(get('WEIGHT')) || 0;
+      const step      = String(get('STEP_1615')||'').trim().toLowerCase();
+      const country   = String(get('COUNTRY_OF_ORIGIN')||'').trim().toUpperCase();
+      const wg        = String(get('WG_PRAT_MECHES')||'').trim();
+      const impNo     = String(get('IMPORTER_NO')||'').trim().replace(/\.0$/,'');
+      const impName   = String(get('IMPORTER_NAME')||'');
+      const teur      = String(get('TEUR_TOVIN')||'');
+      const shipper   = String(get('SHIPPER')||'');
+      const col151    = String(get('151')||'').trim();
+
+      // סינונים
+      if (weight >= 30)                   { removed++; return; }
+      if (step !== 'yes')                 { removed++; return; }
+      if (country === 'IL')               { removed++; return; }
+      if (wg.startsWith('9802') || wg.startsWith('9803') || wg.startsWith('9804')) { removed++; return; }
+      if (col151 !== '' && col151 !== ' ') { removed++; return; }
+      if (isCompany(impName))             { removed++; return; }
+      if (shouldRemove(teur))             { removed++; return; }
+
+      // צביעה
+      const isYellow = shouldYellow(teur, shipper);
+      if (isYellow) yellowC++; else normalC++;
+
+      const rowVals = headers.slice(1).map((h, i) => row.getCell(i+1).value);
+      const newRow = outWs.addRow(rowVals);
+      newRow.eachCell(cell => {
+        if (isYellow) cell.fill = FILL_YELLOW;
+        cell.font = FONT_NORMAL;
+        cell.alignment = ALIGN_RIGHT;
+      });
+      newRow.height = 16;
+
+      if (rn % 100 === 0) {
+        const pct = 30 + Math.round((rn - headerRowNum) / totalRows * 55);
+        setProgress(pct, `מעבד שורה ${rn - headerRowNum} מתוך ${totalRows}...`);
+      }
+    });
+
+    setProgress(88, 'מגדיר רוחב עמודות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    newHeaders.forEach((h, i) => {
+      const col = outWs.getColumn(i + 1);
+      const hs = String(h||'');
+      if (hs.includes('TEUR')) col.width = 35;
+      else if (hs.includes('IMPORTER_NAME')) col.width = 22;
+      else if (hs.includes('SHIPPER')) col.width = 25;
+      else col.width = 14;
+    });
+
+    outWs.views = [{ state: 'frozen', ySplit: 1 }];
+
+    setProgress(95, 'שומר קובץ...');
+    await new Promise(r => setTimeout(r, 20));
+
+    const buf = await outWb.xlsx.writeBuffer();
+    outputBlob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    setProgress(100, 'הסינון הושלם ✓');
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card c-blue"><div class="num">${yellowC+normalC}</div><div class="lbl">שורות אחרי סינון</div></div>
+      <div class="stat-card"><div class="num">${removed}</div><div class="lbl">שורות הוסרו</div></div>
+      <div class="stat-card c-yellow"><div class="num">${yellowC}</div><div class="lbl">🟡 מזון / תוספים</div></div>
+      <div class="stat-card"><div class="num">${normalC}</div><div class="lbl">ללא סימון</div></div>
+    `;
+
+    document.getElementById('resultsBox').classList.add('show');
+    document.getElementById('runBtn').disabled = false;
+
+    document.getElementById('downloadBtn').onclick = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(outputBlob);
+      a.download = 'דוח_רובוט_מסונן.xlsx';
+      a.click();
+    };
+
+  } catch(err) {
+    showError('שגיאה: ' + err.message);
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
