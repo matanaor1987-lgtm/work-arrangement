@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHL — כלי מכס</title>
+<style>
+  :root { --red: #D40511; --yellow: #FFCC00; --dark: #1A1A1A; --light: #F0F2F5; --border: #DDD; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; display: flex; flex-direction: column; }
+  .topbar { background: var(--red); color: white; display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 56px; }
+  .topbar-logo { font-size: 24px; font-weight: 900; letter-spacing: 1px; }
+  .topbar-title { font-size: 15px; font-weight: 600; opacity: .9; }
+  .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 16px; }
+  .subtitle { font-size: 14px; color: #777; margin-bottom: 40px; }
+  .cards { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .card {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 32px;
+    width: 240px;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--dark);
+    transition: border-color .2s, box-shadow .2s, transform .15s;
+  }
+  .card:hover { border-color: var(--red); box-shadow: 0 6px 24px rgba(212,5,17,.12); transform: translateY(-3px); }
+  .card-icon { font-size: 48px; margin-bottom: 16px; }
+  .card-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .card-desc { font-size: 13px; color: #777; line-height: 1.5; }
+  .card-badge { display: inline-block; background: var(--yellow); color: var(--dark); font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 8px; margin-top: 14px; }
+  .footer { text-align: center; padding: 20px; font-size: 12px; color: #AAA; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-logo">DHL</span>
+  <span class="topbar-title">כלי עזר — מחלקת מכס יבוא</span>
+</div>
+<div class="main">
+  <p class="subtitle">בחר כלי לעבודה</p>
+  <div class="cards">
+    <a class="card" href="robot/">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">דוח רובוט</div>
+      <div class="card-desc">סינון דוח סיווג אוטומטי והדגשת מזון / תוספים</div>
+      <div class="card-badge">STEP 1615</div>
+    </a>
+    <a class="card" href="batch/">
+      <div class="card-icon">📦</div>
+      <div class="card-title">דוח B3</div>
+      <div class="card-desc">סינון וסיווג סיכון לסגירת משלוחים בבאץ</div>
+      <div class="card-badge">עד $1,000</div>
+    </a>
+  </div>
+</div>
+<div class="footer">DHL Express Israel — Import Customs</div>
+</body>
+</html>
