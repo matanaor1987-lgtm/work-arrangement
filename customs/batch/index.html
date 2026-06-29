@@ -392,7 +392,7 @@ async function runFilter() {
       green:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8E6C9' } },
       blue:   { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB3E5FC' } },
     };
-    const labels = { red: '🔴 חשש גבוה', yellow: '🟡 חשש בינוני', green: '🟢 ניתן לבאץ', blue: '🔵 חשד פיצול — CN/HK' };
+    const labels = { red: '🔴 חשש גבוה', yellow: '🟡 חשש בינוני', green: '🟢 ניתן לבאץ', blue: '🔵 פקינג ליסט — CN/HK' };
 
     let removed = 0, redC = 0, yelC = 0, grnC = 0, blueC = 0;
     let outRowNum = 2;
@@ -430,7 +430,7 @@ async function runFilter() {
       // בדוק חשד פיצול: CN/HK עם יותר מפריט אחד
       let [level, reason] = getRisk(wg, teur);
       if ((country === 'CN' || country === 'HK') && pieces > 1) {
-        level = 'blue'; reason = `פיצול אפשרי — ${country}, ${pieces} פריטים`;
+        level = 'blue'; reason = `פקינג ליסט — ${country}, ${pieces} פריטים`;
       }
 
       if (level === 'red') redC++;
@@ -490,7 +490,7 @@ async function runFilter() {
       <div class="stat-card c-red"><div class="num">${redC}</div><div class="lbl">🔴 חשש גבוה</div></div>
       <div class="stat-card c-yellow"><div class="num">${yelC}</div><div class="lbl">🟡 חשש בינוני</div></div>
       <div class="stat-card c-green"><div class="num">${grnC}</div><div class="lbl">🟢 ניתן לבאץ</div></div>
-      <div class="stat-card" style="border-color:#B3E5FC"><div class="num" style="color:#0277BD">${blueC}</div><div class="lbl">🔵 חשד פיצול</div></div>
+      <div class="stat-card" style="border-color:#B3E5FC"><div class="num" style="color:#0277BD">${blueC}</div><div class="lbl">🔵 פקינג ליסט</div></div>
     `;
 
     document.getElementById('resultsBox').classList.add('show');
