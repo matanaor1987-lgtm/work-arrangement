@@ -390,10 +390,11 @@ async function runFilter() {
       red:    { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCDD2' } },
       yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } },
       green:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8E6C9' } },
+      blue:   { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB3E5FC' } },
     };
-    const labels = { red: '🔴 חשש גבוה', yellow: '🟡 חשש בינוני', green: '🟢 ניתן לבאץ' };
+    const labels = { red: '🔴 חשש גבוה', yellow: '🟡 חשש בינוני', green: '🟢 ניתן לבאץ', blue: '🔵 חשד פיצול — CN/HK' };
 
-    let removed = 0, redC = 0, yelC = 0, grnC = 0;
+    let removed = 0, redC = 0, yelC = 0, grnC = 0, blueC = 0;
     let outRowNum = 2;
     const totalRows = ws.rowCount - headerRowNum;
 
@@ -424,10 +425,17 @@ async function runFilter() {
       if (isCompany(impName))       { removed++; return; }
 
       const teur = String(get('TEUR_TOVIN')||'');
-      const [level, reason] = getRisk(wg, teur);
+      const pieces = parseInt(get('PIECES')) || 0;
+      
+      // בדוק חשד פיצול: CN/HK עם יותר מפריט אחד
+      let [level, reason] = getRisk(wg, teur);
+      if ((country === 'CN' || country === 'HK') && pieces > 1) {
+        level = 'blue'; reason = `פיצול אפשרי — ${country}, ${pieces} פריטים`;
+      }
 
       if (level === 'red') redC++;
       else if (level === 'yellow') yelC++;
+      else if (level === 'blue') blueC++;
       else grnC++;
 
       // בנה שורה
@@ -482,6 +490,7 @@ async function runFilter() {
       <div class="stat-card c-red"><div class="num">${redC}</div><div class="lbl">🔴 חשש גבוה</div></div>
       <div class="stat-card c-yellow"><div class="num">${yelC}</div><div class="lbl">🟡 חשש בינוני</div></div>
       <div class="stat-card c-green"><div class="num">${grnC}</div><div class="lbl">🟢 ניתן לבאץ</div></div>
+      <div class="stat-card" style="border-color:#B3E5FC"><div class="num" style="color:#0277BD">${blueC}</div><div class="lbl">🔵 חשד פיצול</div></div>
     `;
 
     document.getElementById('resultsBox').classList.add('show');
