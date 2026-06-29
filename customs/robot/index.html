@@ -286,7 +286,9 @@ async function runFilter() {
       const impName   = String(get('IMPORTER_NAME')||'');
       const teur      = String(get('TEUR_TOVIN')||'');
       const shipper   = String(get('SHIPPER')||'');
-      const col151    = String(get('151')||'').trim();
+      // עמודה 151 — יכולה להופיע כמחרוזת '151' או כמספר 151
+      const idx151 = headers.indexOf('151') > 0 ? headers.indexOf('151') : headers.indexOf(151);
+      const col151 = idx151 > 0 ? String(row.getCell(idx151).value || '').trim() : '';
 
       // סינונים
       if (weight >= 30)                   { removed++; return; }
