@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DHL — סינון דוח רובוט</title>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root { --red: #D40511; --yellow: #FFCC00; --dark: #1A1A1A; --light: #F5F5F5; --border: #DDD; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,7 +13,7 @@
   .topbar-logo { font-size: 22px; font-weight: 900; letter-spacing: 1px; }
   .topbar-title { font-size: 15px; font-weight: 600; opacity: .9; }
   .main { max-width: 860px; margin: 32px auto; padding: 0 16px 60px; }
-  .upload-zone { border: 2.5px dashed var(--border); border-radius: 10px; background: white; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+  .upload-zone { border: 2.5px dashed var(--border); border-radius: 10px; background: white; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .2s; position: relative; }
   .upload-zone:hover, .upload-zone.drag { border-color: var(--red); background: #FFF5F5; }
   .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .upload-icon { font-size: 40px; margin-bottom: 10px; }
@@ -29,9 +29,6 @@
   .remove-file:hover { color: var(--red); }
   .legend { display: flex; gap: 10px; margin: 20px 0 10px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; background: white; border: 1.5px solid var(--border); border-radius: 6px; padding: 6px 12px; }
-  .dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-  .dot-yellow { background: #FDD835; }
-  .dot-white { background: white; border: 1px solid #CCC; }
   .run-btn { display: block; width: 100%; background: var(--red); color: white; border: none; border-radius: 8px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 18px; transition: opacity .15s; }
   .run-btn:hover:not(:disabled) { opacity: .88; }
   .run-btn:disabled { opacity: .45; cursor: not-allowed; }
@@ -75,8 +72,8 @@
     <button class="remove-file" onclick="clearFile()">✕</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="dot dot-yellow"></div>צהוב — מזון / תוספי תזונה / ויטמינים</div>
-    <div class="legend-item"><div class="dot dot-white"></div>ללא צבע — שורה רגילה</div>
+    <div class="legend-item">🟡 עמודת סטטוס — מזון / תוספי תזונה / ויטמינים</div>
+    <div class="legend-item">✅ ניתן לסגירה</div>
   </div>
   <button class="run-btn" id="runBtn" onclick="runFilter()" disabled>הפעל סינון</button>
   <div class="progress-wrap" id="progressWrap">
@@ -91,14 +88,11 @@
 </div>
 <script>
 let fileBuffer = null;
-let outputBlob = null;
+let outputData = null;
 
-// ── רשימות סינון ──────────────────────────────────────────────────────────────
-const COMPANY_KW = [
-  'בע"מ','בע״מ','LTD','INC','CORP','LLC','PLC','GMBH','SRL','SAS',
+const COMPANY_KW = ['בע"מ','בע״מ','LTD','INC','CORP','LLC','PLC','GMBH','SRL','SAS',
   'INDUSTRIES','SOLUTIONS','SYSTEMS','TECHNOLOGIES','ENTERPRISE','TRADING',
-  'INTERNATIONAL','MANUFACTURING','FACTORY','LOGISTICS','SUPPLY'
-];
+  'INTERNATIONAL','MANUFACTURING','FACTORY','LOGISTICS','SUPPLY'];
 const MEDICAL_CO  = ['MEDICAL','PHARMA','CLINIC','HOSPITAL','SURGICAL','DENTAL','BIOTECH','MEDTECH'];
 const KNOWN_CO    = ['FLEX','ABB','AVNET','ARROW','SIEMENS','HONEYWELL','BOSCH','PHILIPS'];
 const COSMET_CO   = ['COSMETIC','BEAUTY','SKINCARE','MAKEUP','PARFUM','PERFUME','FRAGRANCE'];
@@ -106,48 +100,26 @@ const JEWEL_CO    = ['JEWEL','DIAMOND','GOLDSMITH','SILVERSMITH','GEMSTONE'];
 const FOOD_CO     = ['FOOD','CATERING','BAKERY','DAIRY','MEAT','BUTCHER'];
 const CHEM_CO     = ['CHEMICAL','CHEM ','REAGENT','SOLVENT'];
 
-// מוצרים להסרה מוחלטת
 const REMOVE_DESC = [
-  // אלכוהול
-  'WHISKEY','WHISKY','VODKA','WINE ','BEER ','SPIRITS','COGNAC','CHAMPAGNE',
-  'BRANDY','TEQUILA','LIQUEUR','JOHNNIE WALKER','JACK DANIEL','GREY GOOSE',
-  'ABSOLUT','BACARDI','JAMESON','CHIVAS','CHÂTEAU','HENNESSY','SAKE ',
-  // רכבים
-  'RADIATOR','EXHAUST','CAR PARTS','AUTO PARTS','ROAD VEHICLE','INJECTION PARTS',
-  'SPARE PARTS CAR','BUMPER','WINDSHIELD','ENGINE PART','TRANSMISSION',
-  // רפואי
-  'PHARMACEUTICAL','MEDICATION','PRESCRIPTION','MEDICAL DEVICE','SURGICAL',
-  'STETHOSCOPE','SCALPEL','SYRINGE','MEDICAL EQUIPMENT',
-  // חקלאי טרי
+  'WHISKEY','WHISKY','VODKA','WINE ','BEER ','SPIRITS','COGNAC','CHAMPAGNE','BRANDY','TEQUILA','LIQUEUR',
+  'JOHNNIE WALKER','JACK DANIEL','GREY GOOSE','ABSOLUT','BACARDI','JAMESON','CHIVAS','CHÂTEAU','HENNESSY','SAKE ',
+  'RADIATOR','EXHAUST','CAR PARTS','AUTO PARTS','ROAD VEHICLE','INJECTION PARTS','SPARE PARTS CAR','BUMPER','WINDSHIELD','ENGINE PART',
+  'PHARMACEUTICAL','MEDICATION','PRESCRIPTION','MEDICAL DEVICE','SURGICAL INSTRUMENT','STETHOSCOPE','SCALPEL','SYRINGE',
   'FRESH FRUIT','FRESH VEGETABLE','LIVE PLANT','FRESH MEAT','FRESH FISH',
-  // שמנים תעשייתיים
   'ENGINE OIL','MOTOR OIL','LUBRICANT OIL','HYDRAULIC OIL',
-  // סכינים (למעט מטבח)
-  'TACTICAL KNIFE','COMBAT KNIFE','HUNTING KNIFE','FIXED BLADE KNIFE',
-  // טבק
+  'TACTICAL KNIFE','COMBAT KNIFE','HUNTING KNIFE',
   'CIGARETTE','TOBACCO','VAPE','CIGAR','HOOKAH','SHISHA',
-  // דגימות מסחריות
   'COMMERCIAL SAMPLE','SAMPLE ONLY','NO COMMERCIAL VALUE',
-  // ציוד רכב
   'CAR LIFT','VEHICLE LIFT','TIRE CHANGER','WHEEL BALANCER',
 ];
 
-// מוצרים לצביעה צהובה
 const YELLOW_DESC = [
-  // מזון
-  'FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','BISCUIT','COOKIE',
-  'SAUCE','SPICE','SEASONING','NUT ','NUTS','DRIED FRUIT','CEREAL',
-  'PROTEIN BAR','ENERGY BAR','GRANOLA','OATMEAL','PASTA','NOODLE',
-  // תוספי תזונה
-  'SUPPLEMENT','VITAMIN','MINERAL','PROBIOTIC','OMEGA','COLLAGEN',
-  'WHEY','CREATINE','BCAA','PRE-WORKOUT','NUTRITIONAL','DIETARY',
-  'HERBAL','HERB ','EXTRACT ','CAPSULE','TABLET','POWDER',
+  'FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','BISCUIT','COOKIE','SAUCE','SPICE','SEASONING',
+  'NUT ','NUTS','DRIED FRUIT','CEREAL','PROTEIN BAR','ENERGY BAR','GRANOLA','OATMEAL','PASTA','NOODLE',
+  'SUPPLEMENT','VITAMIN','MINERAL','PROBIOTIC','OMEGA','COLLAGEN','WHEY','CREATINE','BCAA',
+  'PRE-WORKOUT','NUTRITIONAL','DIETARY','HERBAL','HERB ','EXTRACT ','CAPSULE','TABLET','POWDER',
   'FISH OIL','COD LIVER','MAGNESIUM','CALCIUM','ZINC','IRON ',
-  // מותגים ידועים
-  'OPTIMUM NUTRITION','LACTOFIT','DOTERRA','RED BULL','MONSTER ENERGY',
-  'MYPROTEIN','HERBALIFE','USANA','NOW FOODS','GARDEN OF LIFE',
-  // ספקים
-  'DOTERRA',
+  'OPTIMUM NUTRITION','LACTOFIT','DOTERRA','RED BULL','MONSTER ENERGY','MYPROTEIN','HERBALIFE',
 ];
 
 function isCompany(name) {
@@ -170,7 +142,6 @@ function shouldYellow(desc, shipper) {
   return false;
 }
 
-// ── קבצים ──────────────────────────────────────────────────────────────────────
 const fileInput = document.getElementById('fileInput');
 const uploadZone = document.getElementById('uploadZone');
 fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
@@ -190,7 +161,7 @@ function handleFile(file) {
 }
 
 function clearFile() {
-  fileBuffer = outputBlob = null;
+  fileBuffer = outputData = null;
   fileInput.value = '';
   document.getElementById('fileInfo').classList.remove('show');
   document.getElementById('runBtn').disabled = true;
@@ -209,159 +180,117 @@ function showError(msg) {
   el.textContent = msg; el.classList.add('show');
 }
 
-async function runFilter() {
+function runFilter() {
   if (!fileBuffer) return;
   document.getElementById('errorMsg').classList.remove('show');
   document.getElementById('resultsBox').classList.remove('show');
   document.getElementById('progressWrap').classList.add('show');
   document.getElementById('runBtn').disabled = true;
+  setProgress(10, 'קורא קובץ...');
 
-  try {
-    setProgress(10, 'קורא קובץ...');
-    await new Promise(r => setTimeout(r, 30));
+  setTimeout(() => {
+    try {
+      const wb = XLSX.read(fileBuffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(fileBuffer);
-    const ws = wb.worksheets[0];
+      setProgress(25, 'מאתר כותרות...');
 
-    setProgress(20, 'מאתר כותרות...');
-    await new Promise(r => setTimeout(r, 20));
-
-    let headerRowNum = -1;
-    let headers = [];
-    ws.eachRow((row, rn) => {
-      if (headerRowNum !== -1) return;
-      const vals = row.values.map(v => String(v||''));
-      if (vals.includes('IMPORTER_NO') || vals.includes('STEP_1615')) {
-        headerRowNum = rn;
-        headers = vals;
+      let headerRow = -1;
+      for (let i = 0; i < Math.min(15, raw.length); i++) {
+        if (raw[i].includes('IMPORTER_NO') || raw[i].includes('STEP_1615')) {
+          headerRow = i; break;
+        }
       }
-    });
+      if (headerRow === -1) {
+        showError('לא נמצאה שורת כותרות.');
+        document.getElementById('progressWrap').classList.remove('show');
+        document.getElementById('runBtn').disabled = false;
+        return;
+      }
 
-    if (headerRowNum === -1) {
-      showError('לא נמצאה שורת כותרות. ודא שהקובץ הוא הדוח הנכון.');
-      document.getElementById('progressWrap').classList.remove('show');
-      document.getElementById('runBtn').disabled = false;
-      return;
-    }
-
-    const ci = name => headers.indexOf(name);
-
-    setProgress(30, 'מסנן שורות...');
-    await new Promise(r => setTimeout(r, 20));
-
-    const outWb = new ExcelJS.Workbook();
-    const outWs = outWb.addWorksheet('דוח מסונן');
-    const newHeaders = headers.slice(1);
-    outWs.addRow(newHeaders);
-
-    const headerRow = outWs.getRow(1);
-    headerRow.eachCell(cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
-      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-    headerRow.height = 18;
-
-    const FILL_YELLOW = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } };
-    const FONT_NORMAL = { name: 'Arial', size: 10 };
-    const ALIGN_RIGHT = { horizontal: 'right', vertical: 'middle' };
-
-    let removed = 0, yellowC = 0, normalC = 0;
-    const totalRows = ws.rowCount - headerRowNum;
-
-    ws.eachRow((row, rn) => {
-      if (rn <= headerRowNum) return;
-
-      const get = name => {
-        const idx = ci(name);
-        return idx > 0 ? row.getCell(idx).value : '';
+      const headers = raw[headerRow];
+      const ci = name => {
+        let idx = headers.indexOf(name);
+        if (idx === -1) idx = headers.indexOf(Number(name));
+        return idx;
       };
 
-      const weight    = parseFloat(get('WEIGHT')) || 0;
-      const step      = String(get('STEP_1615')||'').trim().toLowerCase();
-      const country   = String(get('COUNTRY_OF_ORIGIN')||'').trim().toUpperCase();
-      const wg        = String(get('WG_PRAT_MECHES')||'').trim();
-      const impNo     = String(get('IMPORTER_NO')||'').trim().replace(/\.0$/,'');
-      const impName   = String(get('IMPORTER_NAME')||'');
-      const teur      = String(get('TEUR_TOVIN')||'');
-      const shipper   = String(get('SHIPPER')||'');
-      // עמודה 151 — יכולה להופיע כמחרוזת '151' או כמספר 151
-      const idx151 = headers.indexOf('151') > 0 ? headers.indexOf('151') : headers.indexOf(151);
-      const col151 = idx151 > 0 ? String(row.getCell(idx151).value || '').trim() : '';
+      setProgress(40, 'מסנן שורות...');
 
-      // סינונים
-      if (weight >= 30)                   { removed++; return; }
-      if (step !== 'yes')                 { removed++; return; }
-      if (country === 'IL')               { removed++; return; }
-      if (wg.startsWith('9802') || wg.startsWith('9803') || wg.startsWith('9804')) { removed++; return; }
-      if (col151 !== '' && col151 !== ' ') { removed++; return; }
-      if (isCompany(impName))             { removed++; return; }
-      if (shouldRemove(teur))             { removed++; return; }
+      const newHeaders = [...headers, 'סטטוס'];
+      const outRows = [newHeaders];
+      let removed = 0, yellowC = 0, normalC = 0;
 
-      // צביעה
-      const isYellow = shouldYellow(teur, shipper);
-      if (isYellow) yellowC++; else normalC++;
+      for (let r = headerRow + 1; r < raw.length; r++) {
+        const row = raw[r];
+        if (row.every(c => c === '' || c === null || c === undefined)) continue;
 
-      const rowVals = headers.slice(1).map((h, i) => row.getCell(i+1).value);
-      const newRow = outWs.addRow(rowVals);
-      newRow.eachCell(cell => {
-        if (isYellow) cell.fill = FILL_YELLOW;
-        cell.font = FONT_NORMAL;
-        cell.alignment = ALIGN_RIGHT;
-      });
-      newRow.height = 16;
+        const get = name => { const i = ci(name); return i >= 0 ? row[i] : ''; };
 
-      if (rn % 100 === 0) {
-        const pct = 30 + Math.round((rn - headerRowNum) / totalRows * 55);
-        setProgress(pct, `מעבד שורה ${rn - headerRowNum} מתוך ${totalRows}...`);
+        const weight  = parseFloat(get('WEIGHT')) || 0;
+        const step    = String(get('STEP_1615')||'').trim().toLowerCase();
+        const country = String(get('COUNTRY_OF_ORIGIN')||'').trim().toUpperCase();
+        const wg      = String(get('WG_PRAT_MECHES')||'').trim();
+        const impName = String(get('IMPORTER_NAME')||'');
+        const teur    = String(get('TEUR_TOVIN')||'');
+        const shipper = String(get('SHIPPER')||'');
+        const col151  = String(get('151')||'').trim();
+
+        if (weight >= 30)       { removed++; continue; }
+        if (step !== 'yes')     { removed++; continue; }
+        if (country === 'IL')   { removed++; continue; }
+        if (wg.startsWith('9802') || wg.startsWith('9803') || wg.startsWith('9804')) { removed++; continue; }
+        if (col151 !== '' && col151 !== ' ') { removed++; continue; }
+        if (isCompany(impName)) { removed++; continue; }
+        if (shouldRemove(teur)) { removed++; continue; }
+
+        const yellow = shouldYellow(teur, shipper);
+        if (yellow) yellowC++; else normalC++;
+
+        outRows.push([...row, yellow ? '🟡 מזון / תוסף' : '✅ ניתן לסגירה']);
       }
-    });
 
-    setProgress(88, 'מגדיר רוחב עמודות...');
-    await new Promise(r => setTimeout(r, 20));
+      setProgress(80, 'בונה קובץ...');
 
-    newHeaders.forEach((h, i) => {
-      const col = outWs.getColumn(i + 1);
-      const hs = String(h||'');
-      if (hs.includes('TEUR')) col.width = 35;
-      else if (hs.includes('IMPORTER_NAME')) col.width = 22;
-      else if (hs.includes('SHIPPER')) col.width = 25;
-      else col.width = 14;
-    });
+      const outWb = XLSX.utils.book_new();
+      const outWs = XLSX.utils.aoa_to_sheet(outRows);
 
-    outWs.views = [{ state: 'frozen', ySplit: 1 }];
+      // רוחב עמודות
+      outWs['!cols'] = newHeaders.map(h => {
+        const hs = String(h||'');
+        if (hs.includes('TEUR')) return { wch: 35 };
+        if (hs.includes('IMPORTER_NAME')) return { wch: 22 };
+        if (hs.includes('SHIPPER')) return { wch: 25 };
+        if (hs === 'סטטוס') return { wch: 18 };
+        return { wch: 14 };
+      });
 
-    setProgress(95, 'שומר קובץ...');
-    await new Promise(r => setTimeout(r, 20));
+      XLSX.utils.book_append_sheet(outWb, outWs, 'דוח מסונן');
+      outputData = outWb;
 
-    const buf = await outWb.xlsx.writeBuffer();
-    outputBlob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      setProgress(100, 'הסינון הושלם ✓');
 
-    setProgress(100, 'הסינון הושלם ✓');
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card c-blue"><div class="num">${yellowC+normalC}</div><div class="lbl">שורות אחרי סינון</div></div>
+        <div class="stat-card"><div class="num">${removed}</div><div class="lbl">שורות הוסרו</div></div>
+        <div class="stat-card c-yellow"><div class="num">${yellowC}</div><div class="lbl">🟡 מזון / תוספים</div></div>
+        <div class="stat-card"><div class="num">${normalC}</div><div class="lbl">✅ ניתן לסגירה</div></div>
+      `;
 
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card c-blue"><div class="num">${yellowC+normalC}</div><div class="lbl">שורות אחרי סינון</div></div>
-      <div class="stat-card"><div class="num">${removed}</div><div class="lbl">שורות הוסרו</div></div>
-      <div class="stat-card c-yellow"><div class="num">${yellowC}</div><div class="lbl">🟡 מזון / תוספים</div></div>
-      <div class="stat-card"><div class="num">${normalC}</div><div class="lbl">ללא סימון</div></div>
-    `;
+      document.getElementById('resultsBox').classList.add('show');
+      document.getElementById('runBtn').disabled = false;
 
-    document.getElementById('resultsBox').classList.add('show');
-    document.getElementById('runBtn').disabled = false;
+      document.getElementById('downloadBtn').onclick = () => {
+        XLSX.writeFile(outputData, 'דוח_רובוט_מסונן.xlsx');
+      };
 
-    document.getElementById('downloadBtn').onclick = () => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(outputBlob);
-      a.download = 'דוח_רובוט_מסונן.xlsx';
-      a.click();
-    };
-
-  } catch(err) {
-    showError('שגיאה: ' + err.message);
-    document.getElementById('progressWrap').classList.remove('show');
-    document.getElementById('runBtn').disabled = false;
-  }
+    } catch(err) {
+      showError('שגיאה: ' + err.message);
+      document.getElementById('progressWrap').classList.remove('show');
+      document.getElementById('runBtn').disabled = false;
+    }
+  }, 50);
 }
 </script>
 </body>
