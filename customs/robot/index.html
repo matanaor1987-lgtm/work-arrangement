@@ -209,7 +209,7 @@ async function runFilter() {
       if(weight>=30){removed++;return;}
       if(step!=='yes'){removed++;return;}
       if(country==='IL'){removed++;return;}
-      if(wg.startsWith('9802')||wg.startsWith('9803')||wg.startsWith('9804')){removed++;return;}
+
       if(col151!==''&&col151!==' '){removed++;return;}
       if(isCompany(impName)){removed++;return;}
       if(shouldRemove(teur)){removed++;return;}
