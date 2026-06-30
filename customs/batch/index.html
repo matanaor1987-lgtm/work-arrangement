@@ -433,6 +433,9 @@ async function runFilter() {
       if (BLOCKED_NOS.has(impNo))   { removed++; return; }
       if (isCompany(impName))       { removed++; return; }
 
+      const teurCheck = String(get('TEUR_TOVIN')||'').toUpperCase();
+      if (teurCheck.includes('METABOIN')) { removed++; return; }
+
       const teur = String(get('TEUR_TOVIN')||'');
       const pieces = parseInt(get('PIECES')) || 0;
       
