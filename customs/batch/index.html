@@ -414,12 +414,14 @@ async function runFilter() {
       const wg        = String(get('WG_PRAT_MECHES')||'').trim();
       const impNo     = String(get('IMPORTER_NO')||'').trim().replace(/\.0$/,'');
       const impName   = String(get('IMPORTER_NAME')||'');
+      const value     = parseFloat(get('SHIPMENT_VALUE_DOLL')) || 0;
 
       if (weight >= 30)             { removed++; return; }
       if (status !== 'active')      { removed++; return; }
       if (step === 'yes')           { removed++; return; }
       if (erez === 'IL')            { removed++; return; }
       if (country === 'IL')         { removed++; return; }
+      if (value > 1000)             { removed++; return; }
       if (wg.startsWith('9802') || wg.startsWith('9803') || wg.startsWith('9804')) { removed++; return; }
       if (BLOCKED_NOS.has(impNo))   { removed++; return; }
       if (isCompany(impName))       { removed++; return; }
