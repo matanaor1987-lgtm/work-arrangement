@@ -157,6 +157,10 @@ tr:hover td{background:#fffbf0}
       <input id="nu_user" placeholder="שם משתמש..." style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
       <input id="nu_pass" placeholder="סיסמה..." style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
       <input id="nu_email" placeholder="אימייל..." style="flex:1;min-width:150px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">
+      <select id="nu_role" style="padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl">
+        <option value="manager">מנהל</option>
+        <option value="admin">אדמין</option>
+      </select>
       <button onclick="addUser()" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">+ הוסף</button>
     </div>
     <div class="saving" id="addUserMsg" style="margin-top:8px"></div>
@@ -756,7 +760,7 @@ document.addEventListener('mouseout',function(e){
 function renderUsers() {
   var el = document.getElementById('usersList');
   if (!el) return;
-  var users = (DB.users||[]).filter(function(u){ return u.role !== 'admin' && u.role !== 'malam'; });
+  var users = (DB.users||[]).filter(function(u){ return u.username !== 'admin' && u.username !== 'malam'; });
   if (!users.length) { el.innerHTML = '<p style="color:#aaa;padding:10px">אין משתמשים עדיין</p>'; return; }
   el.innerHTML = '';
   users.forEach(function(u) {
@@ -766,6 +770,9 @@ function renderUsers() {
     var display = document.createElement('div');
     display.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px';
     var name = document.createElement('b'); name.style.flex='1'; name.textContent = u.name;
+    var roleBadge = document.createElement('span');
+    roleBadge.textContent = u.role==='admin' ? 'אדמין' : 'מנהל';
+    roleBadge.style.cssText = 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;min-width:44px;text-align:center;' + (u.role==='admin' ? 'background:#fdecea;color:#D40511' : 'background:#e8f0fe;color:#1565c0');
     var uname = document.createElement('span'); uname.style.cssText='color:#888;font-size:12px;min-width:80px'; uname.textContent = u.username;
     var pwd = document.createElement('span'); pwd.style.cssText='color:#aaa;font-size:12px;min-width:80px'; pwd.textContent = u.password;
     var eml = document.createElement('span'); eml.style.cssText='color:#1565c0;font-size:12px;min-width:140px'; eml.textContent = u.email||'—';
@@ -775,7 +782,7 @@ function renderUsers() {
     var delBtn = document.createElement('button');
     delBtn.textContent = 'מחק';
     delBtn.style.cssText = 'border:1px solid #D40511;color:#D40511;background:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:Arial';
-    display.appendChild(name); display.appendChild(uname); display.appendChild(pwd); display.appendChild(eml); display.appendChild(editBtn); display.appendChild(delBtn);
+    display.appendChild(name); display.appendChild(roleBadge); display.appendChild(uname); display.appendChild(pwd); display.appendChild(eml); display.appendChild(editBtn); display.appendChild(delBtn);
     // Edit form (hidden)
     var editForm = document.createElement('div');
     editForm.style.cssText = 'display:none;padding:10px 14px;background:#f9f9f9;border-top:1px solid #eee;gap:8px;flex-wrap:wrap;align-items:center';
@@ -783,6 +790,7 @@ function renderUsers() {
       +'<input class="eu_user" placeholder="שם משתמש..." value="'+u.username+'" style="flex:1;min-width:100px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
       +'<input class="eu_pass" placeholder="סיסמה..." value="'+u.password+'" style="flex:1;min-width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
       +'<input class="eu_email" placeholder="אימייל..." value="'+(u.email||'')+'" style="flex:1;min-width:150px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:ltr">'
+      +'<select class="eu_role" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial;direction:rtl"><option value="manager"'+(u.role!=='admin'?' selected':'')+'>מנהל</option><option value="admin"'+(u.role==='admin'?' selected':'')+'>אדמין</option></select>'
       +'<button class="eu_save" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:Arial">💾 שמור</button>'
       +'<button class="eu_cancel" style="background:#757575;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;font-family:Arial">ביטול</button>';
     editForm.style.display = 'none';
@@ -800,6 +808,7 @@ function renderUsers() {
       DB.users[idx].username = editForm.querySelector('.eu_user').value.trim();
       DB.users[idx].password = editForm.querySelector('.eu_pass').value.trim();
       DB.users[idx].email = editForm.querySelector('.eu_email').value.trim();
+      DB.users[idx].role = editForm.querySelector('.eu_role').value;
       await saveDB();
       renderUsers();
     }; })(u.username));
@@ -820,13 +829,16 @@ async function addUser() {
   msg.textContent = 'שומר...';
   try {
     var em = document.getElementById('nu_email').value.trim();
-    DB.users.push({name:n, username:u, password:p, role:'manager', email:em});
+    var role = document.getElementById('nu_role').value || 'manager';
+    DB.users.push({name:n, username:u, password:p, role:role, email:em});
     await saveDB();
     document.getElementById('nu_name').value='';
     document.getElementById('nu_user').value='';
     document.getElementById('nu_pass').value='';
-    msg.textContent = '✅ נוסף!';
-    setTimeout(function(){ msg.textContent=''; }, 2000);
+    document.getElementById('nu_email').value='';
+    document.getElementById('nu_role').value='manager';
+    msg.textContent = '✅ נוסף! (' + (role==='admin'?'הרשאת אדמין':'מנהל') + ')';
+    setTimeout(function(){ msg.textContent=''; }, 2500);
     renderUsers();
   } catch(e) { msg.textContent = '❌ '+e.message; }
 }
