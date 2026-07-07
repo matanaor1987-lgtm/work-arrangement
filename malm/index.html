@@ -215,14 +215,14 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
     <div id="st2wrap" style="position:relative;display:inline-block">
   <button onclick="toggleStatusDropdown()" id="st2btn" style="padding:5px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;font-family:Arial;min-width:130px;text-align:right;direction:rtl">כל הסטטוסים ▾</button>
   <div id="st2dropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:999;min-width:160px;padding:6px 0">
-    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" id="st2_all" onchange="toggleAllStatuses(this)" checked> <span>כל הסטטוסים</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" id="st2_all" onchange="toggleAllStatuses(this)"> <span>כל הסטטוסים</span></label>
     <hr style="margin:4px 0;border:none;border-top:1px solid #eee">
     <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="פתוח" onchange="onStatusChange()" checked> <span class="badge s-פתוח">פתוח</span></label>
     <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בטיפול" onchange="onStatusChange()" checked> <span class="badge s-בטיפול">בטיפול</span></label>
     <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בבדיקה" onchange="onStatusChange()" checked> <span class="badge s-בבדיקה">בבדיקה</span></label>
     <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="מוקפא" onchange="onStatusChange()" checked> <span class="badge s-מוקפא">מוקפא</span></label>
-    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוטל" onchange="onStatusChange()" checked> <span class="badge s-בוטל">בוטל</span></label>
-    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוצע" onchange="onStatusChange()" checked> <span class="badge s-בוצע">בוצע</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוטל" onchange="onStatusChange()"> <span class="badge s-בוטל">בוטל</span></label>
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st2cb" value="בוצע" onchange="onStatusChange()"> <span class="badge s-בוצע">בוצע</span></label>
   </div>
 </div>
     <select id="pr2" onchange="r2()">
@@ -286,7 +286,7 @@ ${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px soli
 <script src="config.js"></script>
 <script>
 const OWNER=window.APP_CONFIG.owner,REPO=window.APP_CONFIG.repo,TOKEN=window.APP_CONFIG.token;
-let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',editRecId=null,sortCol2='',sortDir2=1,sortCol1='',sortDir1=1;
+let DB={malm:[],rivka:[]},currentTab=0,editIdx=-1,editSheet='',editRecId=null,sortCol2='ע',sortDir2=1,sortCol1='',sortDir1=1;
 const SM=['פתוח','בטיפול','בבדיקה','ממתין לבדיקה','מוקפא','הושהה','בוצע','טופל','בוטל'];
 const SR=['פתוח','בטיפול','בוצע'];
 const SR_ADMIN=['פתוח','בטיפול','בוצע','מוקפא','בבדיקה','בוטל'];
@@ -569,6 +569,9 @@ function r1(){
 }
 
 function r2(){
+  updateStatusBtn();
+  document.querySelectorAll('[id^="th2-"]').forEach(el => { el.classList.remove('asc','desc'); });
+  if(sortCol2){ const th0=document.getElementById('th2-'+sortCol2); if(th0) th0.classList.add(sortDir2===1?'asc':'desc'); }
   const q=document.getElementById('q2').value.toLowerCase();
   const st2cbs=document.querySelectorAll('.st2cb');
   const selectedStatuses=[...st2cbs].filter(cb=>cb.checked).map(cb=>cb.value);
