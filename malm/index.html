@@ -1267,6 +1267,65 @@ function populateDevTesterFilter(){
   });
 }
 
+function openNewDevTask(){
+  document.getElementById('ndtId').value='';
+  document.getElementById('ndtDev').value='';
+  document.getElementById('ndtDesc').value='';
+  document.getElementById('ndtComp').value='';
+  document.getElementById('ndtVer').value='';
+  document.getElementById('ndtIface').value='';
+  document.getElementById('ndtNotes').value='';
+  document.getElementById('newDevMsg').textContent='';
+  document.getElementById('newDevModal').style.display='flex';
+}
+function closeNewDevModal(){
+  document.getElementById('newDevModal').style.display='none';
+}
+async function saveNewDevTask(){
+  var desc=document.getElementById('ndtDesc').value.trim();
+  if(!desc){
+    document.getElementById('newDevMsg').textContent='חובה למלא תאור משימה';
+    document.getElementById('newDevMsg').style.color='#c62828';
+    return;
+  }
+  var task={
+    id: document.getElementById('ndtId').value.trim(),
+    dev: document.getElementById('ndtDev').value.trim(),
+    status: '',
+    desc: desc,
+    notes: document.getElementById('ndtNotes').value.trim(),
+    comp: document.getElementById('ndtComp').value.trim(),
+    ver: document.getElementById('ndtVer').value.trim(),
+    iface: document.getElementById('ndtIface').value.trim(),
+    tester: '',
+    tNotes: '',
+    tStatus: ''
+  };
+  document.getElementById('newDevMsg').style.color='#666';
+  document.getElementById('newDevMsg').textContent='שומר...';
+  try{
+    // Determine next free index by checking both local array and server data,
+    // to avoid overwriting an existing record if another session added one meanwhile.
+    var r=await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json?t='+Date.now());
+    var saved=await r.json();
+    var maxSavedIdx=-1;
+    if(saved){ Object.keys(saved).forEach(function(k){var n=parseInt(k);if(!isNaN(n)&&n>maxSavedIdx)maxSavedIdx=n;}); }
+    var newIdx=Math.max(DEV_TASKS.length, maxSavedIdx+1);
+    DEV_TASKS[newIdx]=task;
+    await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks/'+newIdx+'.json',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(task)
+    });
+    renderDevTable();
+    populateDevTesterFilter();
+    closeNewDevModal();
+  }catch(e){
+    document.getElementById('newDevMsg').style.color='#c62828';
+    document.getElementById('newDevMsg').textContent='שגיאה בשמירה, נסה שוב';
+  }
+}
+
 async function saveDevTask(idx) {
   var task = DEV_TASKS[idx];
   try {
@@ -1283,15 +1342,20 @@ async function loadDevTasks() {
     var r = await fetch('https://malm-focus-default-rtdb.firebaseio.com/devTasks.json?t=' + Date.now());
     var saved = await r.json();
     if (saved) {
-      Object.keys(saved).forEach(function(idx) {
+      Object.keys(saved).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(idx) {
         var i = parseInt(idx);
-        if (DEV_TASKS[i] && saved[idx]) {
+        if (DEV_TASKS[i]) {
           if (saved[idx].tester !== undefined) DEV_TASKS[i].tester = saved[idx].tester;
           if (saved[idx].tStatus !== undefined) DEV_TASKS[i].tStatus = saved[idx].tStatus;
           if (saved[idx].tNotes !== undefined) DEV_TASKS[i].tNotes = saved[idx].tNotes;
           if (saved[idx].status !== undefined) DEV_TASKS[i].status = saved[idx].status;
+        } else if (saved[idx] && saved[idx].desc) {
+          // Manually added task beyond the hardcoded array — store the full record
+          DEV_TASKS[i] = saved[idx];
         }
       });
+      // Remove any holes (e.g. from index gaps) so rendering/sorting stays clean
+      DEV_TASKS = DEV_TASKS.filter(function(t){ return t !== undefined && t !== null; });
     }
   } catch(e) { console.warn('loadDevTasks error:', e); }
 }
@@ -1682,6 +1746,7 @@ async function dedupRecords(sheet) {
       <option value="לא תקין">לא תקין</option>
     </select>
     <button onclick="clearDevFilters()" style="padding:6px 12px;border:1px solid #aaa;border-radius:6px;font-size:12px;font-family:Arial;background:#fff;cursor:pointer">נקה סינון</button>
+    <button onclick="openNewDevTask()" style="padding:6px 14px;background:#D40511;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;font-family:Arial;cursor:pointer;margin-right:auto">+ משימה חדשה</button>
   </div>
   <div style="overflow-x:auto">
   <table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">
@@ -1782,6 +1847,47 @@ async function dedupRecords(sheet) {
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="closeSanityNotesModal()" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial;background:#fff">ביטול</button>
         <button onclick="confirmCloseSanity()" style="padding:8px 16px;background:#2e7d32;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">סגור בדיקה ✓</button>
+      </div>
+    </div>
+  </div>
+  <!-- NEW DEV TASK MODAL -->
+  <div id="newDevModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:480px;direction:rtl">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:#1a1a2e">משימה חדשה לבדיקה</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מספר משימה</label>
+        <input id="ndtId" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מפתח</label>
+        <input id="ndtDev" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">תאור משימה *</label>
+        <textarea id="ndtDesc" rows="3" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1">
+          <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">רכיב</label>
+          <input id="ndtComp" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">גרסה</label>
+          <input id="ndtVer" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">ממשק</label>
+        <input id="ndtIface" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">הערות</label>
+        <textarea id="ndtNotes" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+      <div class="saving" id="newDevMsg" style="margin-bottom:6px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button onclick="closeNewDevModal()" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial;background:#fff">ביטול</button>
+        <button onclick="saveNewDevTask()" style="padding:8px 16px;background:#D40511;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">שמור</button>
       </div>
     </div>
   </div>
