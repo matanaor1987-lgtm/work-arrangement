@@ -125,7 +125,7 @@ a.doc-link:hover{text-decoration:underline}
       <div class="stat" onclick="setStatusFilter('expired',null)"><div class="n n-expired" id="stExpired">0</div><div class="l">פג תוקף</div></div>
     </div>
     <div class="filters">
-      <input type="text" id="searchBox" placeholder="חיפוש לפי שם / מספר נוהל / אחראי..." oninput="renderProcs()">
+      <input type="text" id="searchBox" placeholder="חיפוש לפי שם / מספר נוהל..." oninput="renderProcs()">
       <select id="catFilter" onchange="renderProcs()">
         <option value="">כל הקטגוריות</option>
         <option value="מכס יבוא">מכס יבוא</option>
@@ -151,7 +151,6 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortProcsBy('num')">מס' נוהל</th>
             <th onclick="sortProcsBy('name')">שם הנוהל</th>
             <th onclick="sortProcsBy('cat')">קטגוריה</th>
-            <th onclick="sortProcsBy('owner')">אחראי</th>
             <th onclick="sortProcsBy('published')">תאריך פרסום</th>
             <th onclick="sortProcsBy('expiry')">תוקף עד</th>
             <th>סטטוס</th>
@@ -160,7 +159,7 @@ a.doc-link:hover{text-decoration:underline}
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyProcs"><tr><td colspan="10" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyProcs"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -260,10 +259,7 @@ a.doc-link:hover{text-decoration:underline}
       </div>
     </div>
     <div class="form-row"><label>שם הנוהל</label><input type="text" id="fName" placeholder="לדוגמה נוהל טיפול בתלונות לקוח"></div>
-    <div class="form-grid">
-      <div class="form-row"><label>אחראי / בעלים</label><input type="text" id="fOwner"></div>
-      <div class="form-row"><label>תאריך פרסום/עדכון</label><input type="date" id="fPub"></div>
-    </div>
+    <div class="form-row"><label>תאריך פרסום/עדכון</label><input type="date" id="fPub"></div>
     <div class="form-row"><label>תוקף עד (תאריך פקיעה)</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="date" id="fExp" style="flex:1">
@@ -562,13 +558,14 @@ async function migrateCanonicalProcs(){
   for(const id of Object.keys(PROCS)){
     const p=PROCS[id];
     const canonNum = CANON_NUMS[p.name];
-    if(!canonNum) continue;
-    const needsNum = !p.num;
-    const needsExpiry = !p.expiry;
-    if(needsNum || needsExpiry){
+    const needsOwner = p.owner !== 'מנהל יבוא';
+    const needsNum = canonNum && !p.num;
+    const needsExpiry = canonNum && !p.expiry;
+    if(needsNum || needsExpiry || needsOwner){
       const rec = {...p};
       if(needsNum) rec.num = canonNum;
       if(needsExpiry) rec.expiry = addYears(p.published || null, 1);
+      if(needsOwner) rec.owner = 'מנהל יבוא';
       try{
         await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
         PROCS[id]=rec;
@@ -683,7 +680,7 @@ function renderProcs(){
 
   document.getElementById('countLbl').textContent='מציג '+rows.length+' נהלים';
   const tb=document.getElementById('tbodyProcs');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="10" class="nores">לא נמצאו נהלים</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="9" class="nores">לא נמצאו נהלים</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>{
     const d=daysUntil(r.expiry);
     const daysTxt = r.status==='expired' ? ('פג לפני '+Math.abs(d)+' ימים') : (r.status==='soon' ? ('בעוד '+d+' ימים') : '');
@@ -691,7 +688,6 @@ function renderProcs(){
       '<td>'+esc(r.num)+'</td>'+
       '<td>'+esc(r.name)+'</td>'+
       '<td>'+esc(r.cat)+'</td>'+
-      '<td>'+esc(r.owner)+'</td>'+
       '<td>'+esc(r.published)+'</td>'+
       '<td>'+esc(r.expiry)+'</td>'+
       '<td><span class="badge '+statusClass(r.status)+'">'+statusLabel(r.status)+'</span>'+(daysTxt?'<div style="font-size:10px;color:#999;margin-top:2px">'+daysTxt+'</div>':'')+'</td>'+
@@ -708,7 +704,6 @@ function openNewProc(){
   document.getElementById('fNum').value='';
   document.getElementById('fCat').value='כללי';
   document.getElementById('fName').value='';
-  document.getElementById('fOwner').value=userName;
   document.getElementById('fPub').value=new Date().toISOString().slice(0,10);
   document.getElementById('fExp').value='';
   document.getElementById('fLink').value='';
@@ -724,7 +719,6 @@ function editProc(id){
   document.getElementById('fNum').value=p.num||'';
   document.getElementById('fCat').value=p.cat||'כללי';
   document.getElementById('fName').value=p.name||'';
-  document.getElementById('fOwner').value=p.owner||'';
   document.getElementById('fPub').value=p.published||'';
   document.getElementById('fExp').value=p.expiry||'';
   document.getElementById('fLink').value=p.link||'';
@@ -741,7 +735,7 @@ async function saveProc(){
     num:document.getElementById('fNum').value.trim(),
     cat:document.getElementById('fCat').value,
     name:document.getElementById('fName').value.trim(),
-    owner:document.getElementById('fOwner').value.trim(),
+    owner:'מנהל יבוא',
     published:document.getElementById('fPub').value,
     expiry:document.getElementById('fExp').value,
     link:document.getElementById('fLink').value.trim(),
@@ -1088,13 +1082,13 @@ function buildDigestMessage(){
   let lines=[];
   if(expired.length){
     lines.push('פג תוקף:');
-    expired.forEach(p=>lines.push('- '+(p.num?p.num+' ':'')+p.name+' (אחראי: '+(p.owner||'-')+')'));
+    expired.forEach(p=>lines.push('- '+(p.num?p.num+' ':'')+p.name));
   }
   if(soon.length){
     lines.push('מתקרבים לפקיעה (30 יום):');
     soon.forEach(p=>{
       const d=daysUntil(p.expiry);
-      lines.push('- '+(p.num?p.num+' ':'')+p.name+' — בעוד '+d+' ימים (אחראי: '+(p.owner||'-')+')');
+      lines.push('- '+(p.num?p.num+' ':'')+p.name+' — בעוד '+d+' ימים');
     });
   }
   return lines.join('\n');
