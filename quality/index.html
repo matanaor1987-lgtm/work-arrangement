@@ -114,6 +114,7 @@ a.doc-link:hover{text-decoration:underline}
   <div class="pane active" id="pane-nahalim">
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
       <button class="btn btn-mail" onclick="sendDigestNow()">📧 שלח סיכום התראות</button>
+      <button class="btn btn-mail" onclick="openEmpMgr()">👥 ניהול עובדים</button>
       <button class="btn btn-add" onclick="openNewProc()">+ נוהל חדש</button>
     </div>
     <div id="alertBanner"></div>
@@ -327,6 +328,22 @@ a.doc-link:hover{text-decoration:underline}
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal('ooModalBg')">ביטול</button>
       <button class="btn btn-save" onclick="saveOneToOne()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל ניהול עובדים -->
+<div class="modal-bg" id="empMgrModalBg">
+  <div class="modal">
+    <h3>ניהול עובדים (לשליחת נהלים לחתימה)</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="newEmpName" placeholder="שם מלא" style="flex:1">
+      <input type="email" id="newEmpEmail" placeholder="כתובת מייל" style="flex:1">
+      <button class="btn btn-save" style="white-space:nowrap" onclick="addEmployee()">+ הוסף</button>
+    </div>
+    <div id="empMgrList" style="max-height:320px;overflow-y:auto"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('empMgrModalBg')">סגור</button>
     </div>
   </div>
 </div>
@@ -779,8 +796,8 @@ async function openSendSign(procId){
   const names=Object.keys(EMP_DATA_MAP).sort((a,b)=>a.localeCompare(b,'he'));
   if(!names.length){ box.innerHTML='<span class="muted">לא נמצאה רשימת עובדים — אפשר להוסיף שמות ידנית למטה</span>'; return; }
   box.innerHTML=names.map(n=>
-    '<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid #f5f5f5;cursor:pointer">'+
-    '<span>'+esc(n)+(EMP_DATA_MAP[n].email?' <span style="color:#bbb;font-size:10px">✉️</span>':'')+'</span>'+
+    '<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid #f5f5f5;cursor:pointer">'+
+    '<span><span style="font-weight:600">'+esc(n)+'</span>'+(EMP_DATA_MAP[n].email?' <span style="color:#999;font-size:11px">— '+esc(EMP_DATA_MAP[n].email)+'</span>':' <span style="color:#ccc;font-size:11px">(אין מייל)</span>')+'</span>'+
     '<input type="checkbox" value="'+esc(n)+'" '+(selectedRecipients.has(n)?'checked':'')+' onchange="toggleRecipient(this)">'+
     '</label>'
   ).join('');
@@ -839,6 +856,69 @@ function copyEmailPackage(idx){
   if(!pkg) return;
   const text='אל: '+pkg.to+'\nנושא: '+pkg.subject+'\n\n'+pkg.body;
   navigator.clipboard.writeText(text).then(()=>alert('הועתק! אפשר להדביק במייל חדש ב-Outlook/Gmail.'));
+}
+
+/* ===== ניהול עובדים ===== */
+let EDITING_EMP_KEY=null;
+
+async function openEmpMgr(){
+  EDITING_EMP_KEY=null;
+  document.getElementById('newEmpName').value='';
+  document.getElementById('newEmpEmail').value='';
+  document.getElementById('empMgrModalBg').classList.add('open');
+  await renderEmpMgrList();
+}
+
+async function renderEmpMgrList(){
+  const box=document.getElementById('empMgrList');
+  box.innerHTML='<div class="loading">טוען...</div>';
+  let emails={};
+  try{
+    const r=await fetch(DB+'/employeeEmails.json?t='+Date.now());
+    emails=(await r.json())||{};
+  }catch(e){}
+  const names=Object.keys(emails).sort((a,b)=>a.localeCompare(b,'he'));
+  if(!names.length){ box.innerHTML='<div class="muted" style="padding:10px">אין עדיין עובדים ברשימה</div>'; return; }
+  box.innerHTML='<table style="width:100%"><thead><tr><th>שם</th><th>מייל</th><th></th></tr></thead><tbody>'+
+    names.map(n=>
+      '<tr><td>'+esc(n)+'</td><td style="color:#555">'+esc(emails[n])+'</td>'+
+      '<td style="white-space:nowrap"><button class="act-btn" title="ערוך" onclick="startEditEmployee(\''+esc(n).replace(/'/g,"\\'")+'\',\''+esc(emails[n]).replace(/'/g,"\\'")+'\')">✏️</button>'+
+      '<button class="act-btn" title="מחק" onclick="deleteEmployee(\''+esc(n).replace(/'/g,"\\'")+'\')">🗑️</button></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+function startEditEmployee(name, email){
+  EDITING_EMP_KEY=name;
+  document.getElementById('newEmpName').value=name;
+  document.getElementById('newEmpEmail').value=email;
+}
+
+async function addEmployee(){
+  const name=document.getElementById('newEmpName').value.trim();
+  const email=document.getElementById('newEmpEmail').value.trim();
+  if(!name || !email){ alert('נא להזין שם וגם מייל'); return; }
+  showSaving(true);
+  try{
+    if(EDITING_EMP_KEY && EDITING_EMP_KEY!==name){
+      await fetch(DB+'/employeeEmails/'+encodeURIComponent(EDITING_EMP_KEY)+'.json',{method:'DELETE'});
+    }
+    await fetch(DB+'/employeeEmails/'+encodeURIComponent(name)+'.json',{method:'PUT',body:JSON.stringify(email)});
+    EDITING_EMP_KEY=null;
+    document.getElementById('newEmpName').value='';
+    document.getElementById('newEmpEmail').value='';
+    await renderEmpMgrList();
+  }catch(e){ alert('שגיאה בשמירה'); }
+  showSaving(false);
+}
+
+async function deleteEmployee(name){
+  if(!confirm('למחוק את '+name+' מרשימת העובדים?')) return;
+  showSaving(true);
+  try{
+    await fetch(DB+'/employeeEmails/'+encodeURIComponent(name)+'.json',{method:'DELETE'});
+    await renderEmpMgrList();
+  }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
 }
 
 function openSignDetails(procId){
