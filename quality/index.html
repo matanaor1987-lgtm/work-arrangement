@@ -740,6 +740,8 @@ function buildSignLink(procId, name){
   return signBaseUrl()+'?p='+encodeURIComponent(procId)+'&e='+encodeURIComponent(name);
 }
 
+let EMP_DATA_MAP={};
+
 async function openSendSign(procId){
   const p=PROCS[procId];
   document.getElementById('sendSignProcId').value=procId;
@@ -753,11 +755,13 @@ async function openSendSign(procId){
   try{
     const r=await fetch(EMPLOYEES_DB+'?t='+Date.now());
     const data=await r.json();
-    const names=extractEmployeeNames(data);
+    EMP_DATA_MAP=buildEmployeeMap(data);
+    const names=Object.keys(EMP_DATA_MAP).sort();
     if(!names.length){ box.innerHTML='<span class="muted">לא נמצאה רשימת עובדים — אפשר להוסיף שמות ידנית למטה</span>'; return; }
     box.innerHTML=names.map(n=>
       '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer">'+
       '<input type="checkbox" value="'+esc(n)+'" '+(selectedRecipients.has(n)?'checked':'')+' onchange="toggleRecipient(this)"> '+esc(n)+
+      (EMP_DATA_MAP[n].phone?' <span style="color:#999;font-size:10px">📱</span>':'')+
       '</label>'
     ).join('');
   }catch(e){
@@ -765,19 +769,27 @@ async function openSendSign(procId){
   }
 }
 
-function extractEmployeeNames(data){
-  if(!data) return [];
-  const names=new Set();
+function buildEmployeeMap(data){
+  const map={};
+  if(!data) return map;
   const arr = Array.isArray(data) ? data : Object.values(data);
   arr.forEach(item=>{
     if(!item) return;
-    if(typeof item==='string') names.add(item.trim());
-    else if(typeof item==='object'){
-      const n = item.name||item.fullName||item.rep||item.empName;
-      if(n) names.add(n.toString().trim());
+    if(typeof item==='string'){ const n=item.trim(); if(n) map[n]={}; return; }
+    if(typeof item==='object'){
+      const n = (item.name||item.fullName||item.rep||item.empName||'').toString().trim();
+      if(!n) return;
+      map[n] = { phone: item.phone||item.mobile||item.tel||'', email: item.email||item.mail||'' };
     }
   });
-  return Array.from(names).filter(Boolean).sort();
+  return map;
+}
+
+function waLink(phone, text){
+  let p=(phone||'').replace(/[^0-9]/g,'');
+  if(p.startsWith('0')) p='972'+p.slice(1);
+  else if(!p.startsWith('972')) p='972'+p;
+  return 'https://wa.me/'+p+'?text='+encodeURIComponent(text);
 }
 
 function toggleRecipient(cb){
@@ -804,12 +816,17 @@ async function confirmSendSign(){
   showSaving(false);
 
   const linksBox=document.getElementById('sendLinksBox');
-  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">קישורי אישור אישיים (שלח כל קישור לעובד המתאים בוואטסאפ/מייל):</div>'+
+  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">שלח את הקישור לכל עובד (וואטסאפ/מייל בלחיצה אחת, אם קיים פרטי קשר — אחרת העתק ושלח ידנית):</div>'+
     recipients.map(n=>{
       const link=buildSignLink(procId, n);
+      const contact=EMP_DATA_MAP[n]||{};
+      const msg='שלום '+n+', מצורף נוהל לאישור קריאה: '+p.name+'\n'+link;
+      let sendBtns='';
+      if(contact.phone) sendBtns += '<a href="'+esc(waLink(contact.phone,msg))+'" target="_blank" class="doc-link" style="margin-left:6px">📱 וואטסאפ</a>';
+      if(contact.email) sendBtns += '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent('נוהל לאישור קריאה: '+p.name)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>';
       return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
         '<span>'+esc(n)+'</span>'+
-        '<span><a href="'+esc(link)+'" target="_blank" class="doc-link">פתח</a> '+
+        '<span>'+sendBtns+
         '<button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">📋</button></span>'+
         '</div>';
     }).join('');
