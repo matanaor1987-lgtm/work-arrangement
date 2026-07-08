@@ -260,7 +260,12 @@ a.doc-link:hover{text-decoration:underline}
       <div class="form-row"><label>אחראי / בעלים</label><input type="text" id="fOwner"></div>
       <div class="form-row"><label>תאריך פרסום/עדכון</label><input type="date" id="fPub"></div>
     </div>
-    <div class="form-row"><label>תוקף עד (תאריך פקיעה)</label><input type="date" id="fExp"></div>
+    <div class="form-row"><label>תוקף עד (תאריך פקיעה)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="fExp" style="flex:1">
+        <button type="button" class="btn btn-cancel" style="white-space:nowrap" onclick="document.getElementById('fExp').value=addYears(document.getElementById('fExp').value||null,1)">+שנה</button>
+      </div>
+    </div>
     <div class="form-row">
       <label>מסמך הנוהל</label>
       <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
@@ -440,6 +445,45 @@ function docCellHtml(r){
   return parts.length ? parts.join('<br>') : '<span class="muted">—</span>';
 }
 
+const CANON_NUMS = {
+  'נוהל גביה': 'CUS-63-01',
+  'נוהל בקרה וטיפול בגרעונות, קנסות וחובות מול מכס ישראל': 'CUS-63-02',
+  'נוהל הגשת בקשות לאישורי מזון, דוגמאות יצוא מוחזר ומזון רגיל': 'CUS-63-03',
+  'נוהל טיפול בפערי ערך והנמכות ערך במשלוחי יבוא': 'CUS-63-04',
+  'נוהל סינון, טיוב והורדת נתונים מדוח B3': 'CUS-63-05',
+  'נוהל פתיחת טיסה וקליטת נתונים יומיים במערכת פוקוס': 'CUS-63-06',
+  'נוהל רובוט יבוא אישי': 'CUS-63-07',
+  'תהליך שחרור והצהרות יבוא, טיוב סיווג ובקרת מסמכים': 'CUS-63-08'
+};
+
+function addYears(dateStr, years){
+  const d = dateStr ? new Date(dateStr) : new Date();
+  d.setFullYear(d.getFullYear()+years);
+  return d.toISOString().slice(0,10);
+}
+
+async function migrateCanonicalProcs(){
+  let changed=false;
+  for(const id of Object.keys(PROCS)){
+    const p=PROCS[id];
+    const canonNum = CANON_NUMS[p.name];
+    if(!canonNum) continue;
+    const needsNum = !p.num;
+    const needsExpiry = !p.expiry;
+    if(needsNum || needsExpiry){
+      const rec = {...p};
+      if(needsNum) rec.num = canonNum;
+      if(needsExpiry) rec.expiry = addYears(p.published || null, 1);
+      try{
+        await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+        PROCS[id]=rec;
+        changed=true;
+      }catch(e){}
+    }
+  }
+  return changed;
+}
+
 async function loadAll(){
   try{
     const [rp, rf, ro] = await Promise.all([
@@ -451,6 +495,7 @@ async function loadAll(){
     FEEDBACK = (await rf.json()) || {};
     ONETOONE = (await ro.json()) || {};
   }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; }
+  await migrateCanonicalProcs();
   renderProcs();
   renderFeedback();
   renderOneToOne();
@@ -533,7 +578,7 @@ function renderProcs(){
       '<td>'+esc(r.expiry)+'</td>'+
       '<td><span class="badge '+statusClass(r.status)+'">'+statusLabel(r.status)+'</span>'+(daysTxt?'<div style="font-size:10px;color:#999;margin-top:2px">'+daysTxt+'</div>':'')+'</td>'+
       '<td>'+docCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="הארך תוקף בשנה" onclick="extendProc(\''+r.id+'\')">🔄</button><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -602,6 +647,20 @@ async function deleteProc(id){
     delete PROCS[id];
     renderProcs();
   }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
+}
+async function extendProc(id){
+  const p=PROCS[id];
+  if(!p) return;
+  const newExpiry = addYears(p.expiry || null, 1);
+  if(!confirm('להאריך את "'+p.name+'" עד '+newExpiry+'?')) return;
+  const rec={...p, expiry:newExpiry, updatedBy:userName, updatedAt:new Date().toISOString()};
+  showSaving(true);
+  try{
+    await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    PROCS[id]=rec;
+    renderProcs();
+  }catch(e){ alert('שגיאה בהארכה'); }
   showSaving(false);
 }
 
