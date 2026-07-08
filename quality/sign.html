@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FECC02">
+<title>אישור קריאת נוהל</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:14px;padding:20px}
+.wrap{max-width:480px;margin:40px auto}
+.card{background:#fff;border-radius:12px;padding:28px;border:1px solid #e8e8e8;text-align:center}
+.logo{background:#FECC02;color:#D40511;font-size:18px;font-weight:700;padding:7px 18px;border-radius:6px;display:inline-block;margin-bottom:18px}
+h2{font-size:17px;margin-bottom:6px}
+.sub{color:#777;font-size:13px;margin-bottom:20px}
+.doc-link{display:inline-block;margin:10px 0 20px;color:#1565c0;font-weight:600;text-decoration:none;background:#f0f7ff;border:1px solid #b3d4f5;padding:8px 16px;border-radius:8px}
+.btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:Arial;width:100%}
+.btn-confirm{background:#D40511;color:#fff}
+.btn-confirm:hover{background:#b0040e}
+.btn-confirm:disabled{background:#ccc;cursor:default}
+.done{background:#e8f5e9;color:#2e7d32;padding:16px;border-radius:8px;font-weight:700;margin-top:10px}
+.err{background:#fde8e8;color:#c62828;padding:16px;border-radius:8px}
+.loading{color:#999;padding:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="logo">DHL</div>
+    <div class="loading">טוען...</div>
+  </div>
+</div>
+<script>
+const DB='https://malm-focus-default-rtdb.firebaseio.com';
+const params=new URLSearchParams(location.search);
+const procId=params.get('p');
+const empName=params.get('e');
+
+function sigKey(name){ return (name||'').trim().replace(/[.#$\[\]\/\s]/g,'_'); }
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function init(){
+  const card=document.getElementById('card');
+  if(!procId || !empName){
+    card.innerHTML='<div class="logo">DHL</div><div class="err">קישור לא תקין</div>';
+    return;
+  }
+  let proc;
+  try{
+    const r=await fetch(DB+'/nahalim/'+procId+'.json?t='+Date.now());
+    proc=await r.json();
+  }catch(e){
+    card.innerHTML='<div class="logo">DHL</div><div class="err">שגיאה בטעינת הנתונים, נסה שוב</div>';
+    return;
+  }
+  if(!proc){
+    card.innerHTML='<div class="logo">DHL</div><div class="err">הנוהל לא נמצא</div>';
+    return;
+  }
+  const already = proc.signatures && proc.signatures[sigKey(empName)];
+  let docHtml='';
+  (proc.attachments||[]).forEach(a=> docHtml += '<div><a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 פתח את המסמך</a></div>');
+  if(proc.link) docHtml += '<div><a class="doc-link" href="'+esc(proc.link)+'" target="_blank">🔗 קישור למסמך</a></div>';
+
+  if(already){
+    card.innerHTML='<div class="logo">DHL</div>'+
+      '<h2>'+esc(proc.name)+'</h2>'+
+      '<div class="sub">שלום '+esc(empName)+'</div>'+
+      docHtml+
+      '<div class="done">✔ כבר אישרת שקראת נוהל זה ב-'+esc((already.date||'').slice(0,10))+'</div>';
+    return;
+  }
+
+  card.innerHTML='<div class="logo">DHL</div>'+
+    '<h2>'+esc(proc.name)+'</h2>'+
+    '<div class="sub">שלום '+esc(empName)+', אנא קרא/י את הנוהל ואשר/י</div>'+
+    docHtml+
+    '<button class="btn btn-confirm" id="confirmBtn">קראתי ואני מאשר/ת</button>'+
+    '<div id="resultArea"></div>';
+
+  document.getElementById('confirmBtn').addEventListener('click', async ()=>{
+    const btn=document.getElementById('confirmBtn');
+    btn.disabled=true; btn.textContent='שומר...';
+    try{
+      await fetch(DB+'/nahalim/'+procId+'/signatures/'+sigKey(empName)+'.json',{
+        method:'PUT',
+        body:JSON.stringify({name:empName, date:new Date().toISOString()})
+      });
+      btn.style.display='none';
+      document.getElementById('resultArea').innerHTML='<div class="done">✔ תודה, האישור נקלט בהצלחה</div>';
+    }catch(e){
+      btn.disabled=false; btn.textContent='קראתי ואני מאשר/ת';
+      document.getElementById('resultArea').innerHTML='<div class="err">שגיאה בשמירה, נסה שוב</div>';
+    }
+  });
+}
+init();
+</script>
+</body>
+</html>
