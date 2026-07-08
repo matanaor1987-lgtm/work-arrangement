@@ -210,9 +210,11 @@ a.doc-link:hover{text-decoration:underline}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
       <button class="btn btn-add" onclick="openNewOneToOne()">+ שיחה חדשה</button>
     </div>
+    <div id="ooAlertBanner"></div>
     <div class="stats">
       <div class="stat"><div class="n n-all" id="ooAll">0</div><div class="l">סה"כ שיחות</div></div>
       <div class="stat"><div class="n n-month" id="ooMonth">0</div><div class="l">החודש</div></div>
+      <div class="stat"><div class="n n-soon" id="ooPending">0</div><div class="l">משימות המשך פתוחות</div></div>
     </div>
     <div class="filters">
       <input type="text" id="ooSearch" placeholder="חיפוש לפי שם עובד / נושאים..." oninput="renderOneToOne()">
@@ -226,12 +228,13 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortOOBy('employee')">שם העובד</th>
             <th>נושאים שנדונו</th>
             <th>משימות המשך</th>
+            <th onclick="sortOOBy('followUpDue')">יעד ביצוע</th>
             <th onclick="sortOOBy('createdBy')">בוצע ע"י</th>
             <th>חתימה</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyOO"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyOO"><tr><td colspan="8" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -331,7 +334,15 @@ a.doc-link:hover{text-decoration:underline}
       <div class="form-row"><label>שם העובד</label><input type="text" id="ooEmployee"></div>
     </div>
     <div class="form-row"><label>נושאים שנדונו</label><textarea id="ooTopics"></textarea></div>
-    <div class="form-row"><label>משימות המשך</label><textarea id="ooFollowUp"></textarea></div>
+    <div class="form-row"><label>משימות המשך (לא חובה)</label><textarea id="ooFollowUp"></textarea></div>
+    <div class="form-grid">
+      <div class="form-row"><label>תאריך יעד לביצוע (לא חובה)</label><input type="date" id="ooFollowUpDue"></div>
+      <div class="form-row" style="display:flex;align-items:flex-end;padding-bottom:6px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;color:#333">
+          <input type="checkbox" id="ooFollowUpDone" style="width:auto"> המשימה בוצעה
+        </label>
+      </div>
+    </div>
     <div class="form-row"><label>הערות</label><textarea id="ooNotes"></textarea></div>
     <div class="form-row"><label>בוצע ע"י</label><input type="text" id="ooCreatedBy"></div>
     <div class="form-actions">
@@ -1408,6 +1419,15 @@ async function deleteFeedback(id){
   showSaving(false);
 }
 
+function followUpDueCellHtml(r){
+  if(!r.followUpDue) return '<span class="muted">—</span>';
+  if(r.followUpDone) return '<span class="badge s-ok">✔ בוצע</span>';
+  const d=daysUntil(r.followUpDue);
+  const cls = d<0 ? 's-expired' : (d<=7 ? 's-soon' : 's-ok');
+  const label = d<0 ? ('באיחור '+Math.abs(d)+' ימים') : (d===0 ? 'היום' : ('בעוד '+d+' ימים'));
+  return '<span class="badge '+cls+'">'+esc(r.followUpDue)+'</span><div style="font-size:10px;color:#999;margin-top:2px">'+label+'</div>';
+}
+
 /* ========================= שיחות אישיות ========================= */
 function sortOOBy(col){ if(ooSortCol===col) ooSortAsc=!ooSortAsc; else { ooSortCol=col; ooSortAsc=false; } renderOneToOne(); }
 
@@ -1415,12 +1435,24 @@ function renderOneToOne(){
   const search=(document.getElementById('ooSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ONETOONE).map(id=>{
     const o=ONETOONE[id];
-    return {id, date:o.date||'', employee:o.employee||'', topics:o.topics||'', followUp:o.followUp||'', notes:o.notes||'', createdBy:o.createdBy||'', signature:o.signature||null, signSentAt:o.signSentAt||null};
+    return {id, date:o.date||'', employee:o.employee||'', topics:o.topics||'', followUp:o.followUp||'', followUpDue:o.followUpDue||'', followUpDone:!!o.followUpDone, notes:o.notes||'', createdBy:o.createdBy||'', signature:o.signature||null, signSentAt:o.signSentAt||null};
   });
 
   document.getElementById('ooAll').textContent=rows.length;
   const nowM=new Date().toISOString().slice(0,7);
   document.getElementById('ooMonth').textContent=rows.filter(r=>(r.date||'').slice(0,7)===nowM).length;
+
+  const pending = rows.filter(r=>r.followUpDue && !r.followUpDone);
+  document.getElementById('ooPending').textContent=pending.length;
+  const overdue = pending.filter(r=>daysUntil(r.followUpDue)<0);
+  const soonDue = pending.filter(r=>{ const d=daysUntil(r.followUpDue); return d>=0 && d<=7; });
+  const banner=document.getElementById('ooAlertBanner');
+  if(overdue.length||soonDue.length){
+    let msg='⚠️ ';
+    if(overdue.length) msg+='<b>'+overdue.length+' משימות המשך באיחור</b>'+(soonDue.length?' — ':'');
+    if(soonDue.length) msg+=soonDue.length+' משימות המשך בעוד 7 ימים או פחות';
+    banner.innerHTML='<div class="alert-banner">'+msg+'</div>';
+  } else banner.innerHTML='';
 
   if(search) rows=rows.filter(r=> (r.employee+' '+r.topics).toLowerCase().includes(search));
 
@@ -1433,13 +1465,14 @@ function renderOneToOne(){
 
   document.getElementById('ooCountLbl').textContent='מציג '+rows.length+' שיחות';
   const tb=document.getElementById('tbodyOO');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="nores">לא נמצאו שיחות</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="8" class="nores">לא נמצאו שיחות</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>
     '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
       '<td>'+esc(r.employee)+'</td>'+
       '<td>'+esc(r.topics)+'</td>'+
       '<td>'+esc(r.followUp)+'</td>'+
+      '<td>'+followUpDueCellHtml(r)+'</td>'+
       '<td>'+esc(r.createdBy)+'</td>'+
       '<td>'+recordSignCellHtml(r)+'</td>'+
       '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'o\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editOneToOne(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteOneToOne(\''+r.id+'\')">🗑️</button></td>'+
@@ -1454,6 +1487,8 @@ function openNewOneToOne(){
   document.getElementById('ooEmployee').value='';
   document.getElementById('ooTopics').value='';
   document.getElementById('ooFollowUp').value='';
+  document.getElementById('ooFollowUpDue').value='';
+  document.getElementById('ooFollowUpDone').checked=false;
   document.getElementById('ooNotes').value='';
   document.getElementById('ooCreatedBy').value=userName;
   document.getElementById('ooModalBg').classList.add('open');
@@ -1466,6 +1501,8 @@ function editOneToOne(id){
   document.getElementById('ooEmployee').value=o.employee||'';
   document.getElementById('ooTopics').value=o.topics||'';
   document.getElementById('ooFollowUp').value=o.followUp||'';
+  document.getElementById('ooFollowUpDue').value=o.followUpDue||'';
+  document.getElementById('ooFollowUpDone').checked=!!o.followUpDone;
   document.getElementById('ooNotes').value=o.notes||'';
   document.getElementById('ooCreatedBy').value=o.createdBy||'';
   document.getElementById('ooModalBg').classList.add('open');
@@ -1477,6 +1514,8 @@ async function saveOneToOne(){
     employee:document.getElementById('ooEmployee').value.trim(),
     topics:document.getElementById('ooTopics').value.trim(),
     followUp:document.getElementById('ooFollowUp').value.trim(),
+    followUpDue:document.getElementById('ooFollowUpDue').value,
+    followUpDone:document.getElementById('ooFollowUpDone').checked,
     notes:document.getElementById('ooNotes').value.trim(),
     createdBy:document.getElementById('ooCreatedBy').value.trim(),
     updatedAt:new Date().toISOString()
