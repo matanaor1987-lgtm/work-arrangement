@@ -560,6 +560,7 @@ async function loadAll(){
   }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; }
   await migrateCanonicalProcs();
   await fixExpiryOneYearFromToday();
+  await seedEmployeeEmails();
   renderProcs();
   renderFeedback();
   renderOneToOne();
@@ -731,6 +732,19 @@ async function extendProc(id){
 
 /* ===== שליחה לחתימה ===== */
 const EMPLOYEES_DB='https://seder-avoda-default-rtdb.firebaseio.com/employees.json';
+const EMPLOYEE_EMAIL_SEED={"אבבה אינגדה":"abebe.ingeda@dhl.com","אור אניץ":"hodandor@gmail.com","אייל ארדיטי":"eyal.arditi@dhl.com","סתיו ברלב":"stav.bazlianis@dhl.com","איילה גבריאלי":"ayala.gavrieli@dhl.com","משה גולן":"moshe.golan@dhl.com","ייטב גינגיס":"itav.guinguis@dhl.com","מירי דבוש שיינח":"mirit.shincha@dhl.com","שירלי דויטש":"shirley.doitsh@dhl.com","דלית ליבמן":"dalit.libman@dhl.com","מזל מבשב":"mazal.mavashav@dhl.com","ניר מזרחי":"nir.mizrahi@dhl.com","חיים מן":"chaim.mann@dhl.com","מתן נאור":"matan.naor@dhl.com","עידן נועם":"idan.noam@dhl.com","צאלה סבן":"zeela.saban@dhl.com","ראם סמואל":"reemsamuel@gmail.com","שניר קב":"snirkab@gmail.com","ליאור קוניק":"lior.kunik@dhl.com","רועי קושנירוב":"roei.kushnirov@dhl.com","אדן רובינשטיין":"ilana.rubinshtein@dhl.com","גיא רון":"guy.ron@dhl.com","אהובה שמשוני":"ahouva.shimshoni@dhl.com"};
+
+async function seedEmployeeEmails(){
+  try{
+    const r=await fetch(DB+'/nahalim_meta/employeeEmailsSeededV1.json?t='+Date.now());
+    const done=await r.json();
+    if(done) return;
+  }catch(e){}
+  try{
+    await fetch(DB+'/employeeEmails.json',{method:'PUT',body:JSON.stringify(EMPLOYEE_EMAIL_SEED)});
+    await fetch(DB+'/nahalim_meta/employeeEmailsSeededV1.json',{method:'PUT',body:'true'});
+  }catch(e){}
+}
 let selectedRecipients=new Set();
 
 function signBaseUrl(){
