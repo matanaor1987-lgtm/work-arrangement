@@ -172,9 +172,11 @@ tr:hover td{background:#fffbf0}
   <div class="subtitle" style="flex:1">דוח משימות בקשות מלמ</div>
   <div class="u-badge" id="uBadge" style="display:none"><span id="uName"></span><button class="btn-out" id="btnOut">יציאה</button></div>
   <button onclick="refreshDB()" style="background:none;border:1px solid #1a1a2e;color:#1a1a2e;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="רענן נתונים">🔄</button>
-${isAdmin()?`<button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>
-<button onclick="document.getElementById('restoreInput').click()" style="background:none;border:1px solid #1565c0;color:#1565c0;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="שחזור מגיבוי">↩️ שחזור</button>
-<input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreDB(this)">`:''}
+  <span id="backupControls" style="display:none">
+    <button onclick="backupDB()" style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="גיבוי נתונים">💾 גיבוי</button>
+    <button onclick="document.getElementById('restoreInput').click()" style="background:none;border:1px solid #1565c0;color:#1565c0;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:Arial;margin-left:6px" title="שחזור מגיבוי">↩️ שחזור</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreDB(this)">
+  </span>
 <button class="btn btn-add" id="btnAdd" onclick="openAdd()" style="display:none">+ משימה חדשה</button>
 </div>
 
@@ -362,6 +364,7 @@ function showApp() {
   document.getElementById('mainTabs').style.display = 'flex';
 
   if (isAdmin()) {
+    document.getElementById('backupControls').style.display = 'inline';
     document.getElementById('tabUsers').style.display = 'block';
     document.getElementById('tabDev').style.display = 'block';
     document.getElementById('tabSanity').style.display = 'block';
