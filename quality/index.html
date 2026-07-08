@@ -484,6 +484,25 @@ async function migrateCanonicalProcs(){
   return changed;
 }
 
+async function fixExpiryOneYearFromToday(){
+  try{
+    const r=await fetch(DB+'/nahalim_meta/expiryFixV2.json?t='+Date.now());
+    const done=await r.json();
+    if(done) return;
+  }catch(e){}
+  const target=addYears(null,1);
+  for(const id of Object.keys(PROCS)){
+    const p=PROCS[id];
+    if(!CANON_NUMS[p.name]) continue;
+    const rec={...p, expiry:target};
+    try{
+      await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+      PROCS[id]=rec;
+    }catch(e){}
+  }
+  try{ await fetch(DB+'/nahalim_meta/expiryFixV2.json',{method:'PUT',body:'true'}); }catch(e){}
+}
+
 async function loadAll(){
   try{
     const [rp, rf, ro] = await Promise.all([
@@ -496,6 +515,7 @@ async function loadAll(){
     ONETOONE = (await ro.json()) || {};
   }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; }
   await migrateCanonicalProcs();
+  await fixExpiryOneYearFromToday();
   renderProcs();
   renderFeedback();
   renderOneToOne();
