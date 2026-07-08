@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#FECC02">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="נהלי איכות">
-<title>ניהול נהלי איכות המחלקה</title>
+<title>ניהול איכות המחלקה</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -24,12 +24,13 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl
 .tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
 .tab:hover{color:#1a1a2e;background:#fffbf0}
 .tab.active{color:#D40511;border-bottom-color:#D40511}
-.pane{padding:14px 20px}
+.pane{display:none;padding:14px 20px}
+.pane.active{display:block}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:90px;cursor:pointer}
 .stat .n{font-size:20px;font-weight:700}
 .stat .l{font-size:11px;color:#777}
-.n-all{color:#1a1a2e}.n-ok{color:#2e7d32}.n-soon{color:#e65100}.n-expired{color:#D40511}
+.n-all{color:#1a1a2e}.n-ok{color:#2e7d32}.n-soon{color:#e65100}.n-expired{color:#D40511}.n-pos{color:#2e7d32}.n-con{color:#e65100}.n-disc{color:#D40511}.n-month{color:#3949ab}
 .alert-banner{background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#7a4a00}
 .alert-banner b{color:#D40511}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -45,6 +46,9 @@ tr:hover td{background:#fffbf0}
 .s-ok{background:#e8f5e9;color:#2e7d32}
 .s-soon{background:#fff3e0;color:#e65100}
 .s-expired{background:#fde8e8;color:#c62828}
+.s-pos{background:#e8f5e9;color:#2e7d32}
+.s-con{background:#fff3e0;color:#e65100}
+.s-disc{background:#fde8e8;color:#c62828}
 .muted{color:#ccc}
 .nores{text-align:center;padding:30px;color:#aaa}
 .act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
@@ -76,30 +80,32 @@ a.doc-link:hover{text-decoration:underline}
 <div class="lg-overlay" id="loginOverlay">
   <div class="lg-box">
     <div class="lg-logo">DHL</div>
-    <h3>ניהול נהלי איכות המחלקה</h3>
+    <h3>ניהול איכות המחלקה</h3>
     <input type="text" id="loginName" placeholder="שם מלא">
     <button class="btn btn-add" style="width:100%;padding:10px" onclick="doLogin()">כניסה</button>
-    <div class="small-note">השם ישמש לתיעוד מי הזין/עדכן נוהל</div>
+    <div class="small-note">השם ישמש לתיעוד מי הזין/עדכן רשומה</div>
   </div>
 </div>
 
 <div id="app" style="display:none">
   <div class="header">
     <div class="logo">DHL</div>
-    <div class="subtitle">ניהול נהלי איכות המחלקה — מעקב תוקף והתראות</div>
+    <div class="subtitle">ניהול איכות המחלקה</div>
     <span id="whoami" style="font-size:12px;color:#333;margin-left:10px"></span>
-    <button class="btn btn-mail" onclick="sendDigestNow()">📧 שלח סיכום התראות</button>
-    <button class="btn btn-add" onclick="openNewProc()">+ נוהל חדש</button>
   </div>
 
   <div class="tabs">
-    <div class="tab active" data-f="all" onclick="setStatusFilter('all',this)">כל הנהלים</div>
-    <div class="tab" data-f="ok" onclick="setStatusFilter('ok',this)">בתוקף</div>
-    <div class="tab" data-f="soon" onclick="setStatusFilter('soon',this)">מתקרבים לפקיעה</div>
-    <div class="tab" data-f="expired" onclick="setStatusFilter('expired',this)">פג תוקף</div>
+    <div class="tab active" onclick="openTab('nahalim',this)">נהלים</div>
+    <div class="tab" onclick="openTab('feedback',this)">משובים</div>
+    <div class="tab" onclick="openTab('onetoone',this)">שיחות אישיות</div>
   </div>
 
-  <div class="pane">
+  <!-- ============ פאנל נהלים ============ -->
+  <div class="pane active" id="pane-nahalim">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <button class="btn btn-mail" onclick="sendDigestNow()">📧 שלח סיכום התראות</button>
+      <button class="btn btn-add" onclick="openNewProc()">+ נוהל חדש</button>
+    </div>
     <div id="alertBanner"></div>
     <div class="stats">
       <div class="stat" onclick="setStatusFilter('all',null)"><div class="n n-all" id="stAll">0</div><div class="l">סה"כ נהלים</div></div>
@@ -107,10 +113,9 @@ a.doc-link:hover{text-decoration:underline}
       <div class="stat" onclick="setStatusFilter('soon',null)"><div class="n n-soon" id="stSoon">0</div><div class="l">מתקרבים לפקיעה (30 יום)</div></div>
       <div class="stat" onclick="setStatusFilter('expired',null)"><div class="n n-expired" id="stExpired">0</div><div class="l">פג תוקף</div></div>
     </div>
-
     <div class="filters">
-      <input type="text" id="searchBox" placeholder="חיפוש לפי שם / מספר נוהל / אחראי..." oninput="render()">
-      <select id="catFilter" onchange="render()">
+      <input type="text" id="searchBox" placeholder="חיפוש לפי שם / מספר נוהל / אחראי..." oninput="renderProcs()">
+      <select id="catFilter" onchange="renderProcs()">
         <option value="">כל הקטגוריות</option>
         <option value="מכס יבוא">מכס יבוא</option>
         <option value="מכס יצוא">מכס יצוא</option>
@@ -120,31 +125,108 @@ a.doc-link:hover{text-decoration:underline}
         <option value="כללי">כללי</option>
         <option value="אחר">אחר</option>
       </select>
+      <select id="procStatusFilter" onchange="setStatusFilter(this.value,null)">
+        <option value="all">כל הסטטוסים</option>
+        <option value="ok">בתוקף</option>
+        <option value="soon">מתקרב לפקיעה</option>
+        <option value="expired">פג תוקף</option>
+      </select>
     </div>
     <div class="count" id="countLbl"></div>
     <div class="tbl-wrap">
-      <table id="tbl">
+      <table id="tblProcs">
         <thead>
           <tr>
-            <th onclick="sortBy('num')">מס' נוהל</th>
-            <th onclick="sortBy('name')">שם הנוהל</th>
-            <th onclick="sortBy('cat')">קטגוריה</th>
-            <th onclick="sortBy('owner')">אחראי</th>
-            <th onclick="sortBy('published')">תאריך פרסום</th>
-            <th onclick="sortBy('expiry')">תוקף עד</th>
+            <th onclick="sortProcsBy('num')">מס' נוהל</th>
+            <th onclick="sortProcsBy('name')">שם הנוהל</th>
+            <th onclick="sortProcsBy('cat')">קטגוריה</th>
+            <th onclick="sortProcsBy('owner')">אחראי</th>
+            <th onclick="sortProcsBy('published')">תאריך פרסום</th>
+            <th onclick="sortProcsBy('expiry')">תוקף עד</th>
             <th>סטטוס</th>
             <th>מסמך</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyProcs"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
+
+  <!-- ============ פאנל משובים ============ -->
+  <div class="pane" id="pane-feedback">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <button class="btn btn-add" onclick="openNewFeedback()">+ משוב חדש</button>
+    </div>
+    <div class="stats">
+      <div class="stat" onclick="setFeedbackFilter('all')"><div class="n n-all" id="fbAll">0</div><div class="l">סה"כ משובים</div></div>
+      <div class="stat" onclick="setFeedbackFilter('חיובי')"><div class="n n-pos" id="fbPos">0</div><div class="l">חיוביים</div></div>
+      <div class="stat" onclick="setFeedbackFilter('בונה')"><div class="n n-con" id="fbCon">0</div><div class="l">בוני</div></div>
+      <div class="stat" onclick="setFeedbackFilter('משמעתי')"><div class="n n-disc" id="fbDisc">0</div><div class="l">משמעתיים</div></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="fbSearch" placeholder="חיפוש לפי שם עובד / נושא..." oninput="renderFeedback()">
+      <select id="fbTypeFilter" onchange="renderFeedback()">
+        <option value="">כל הסוגים</option>
+        <option value="חיובי">חיובי</option>
+        <option value="בונה">בונה</option>
+        <option value="משמעתי">משמעתי</option>
+      </select>
+    </div>
+    <div class="count" id="fbCountLbl"></div>
+    <div class="tbl-wrap">
+      <table id="tblFeedback">
+        <thead>
+          <tr>
+            <th onclick="sortFeedbackBy('date')">תאריך</th>
+            <th onclick="sortFeedbackBy('employee')">שם העובד</th>
+            <th onclick="sortFeedbackBy('type')">סוג</th>
+            <th onclick="sortFeedbackBy('subject')">נושא</th>
+            <th>פירוט</th>
+            <th onclick="sortFeedbackBy('givenBy')">ניתן ע"י</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyFeedback"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ פאנל שיחות אישיות ============ -->
+  <div class="pane" id="pane-onetoone">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <button class="btn btn-add" onclick="openNewOneToOne()">+ שיחה חדשה</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n n-all" id="ooAll">0</div><div class="l">סה"כ שיחות</div></div>
+      <div class="stat"><div class="n n-month" id="ooMonth">0</div><div class="l">החודש</div></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="ooSearch" placeholder="חיפוש לפי שם עובד / נושאים..." oninput="renderOneToOne()">
+    </div>
+    <div class="count" id="ooCountLbl"></div>
+    <div class="tbl-wrap">
+      <table id="tblOO">
+        <thead>
+          <tr>
+            <th onclick="sortOOBy('date')">תאריך</th>
+            <th onclick="sortOOBy('employee')">שם העובד</th>
+            <th>נושאים שנדונו</th>
+            <th>משימות המשך</th>
+            <th onclick="sortOOBy('createdBy')">בוצע ע"י</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyOO"><tr><td colspan="6" class="loading">טוען...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <div class="saving" id="savingMsg">שומר...</div>
 
+<!-- מודל נוהל -->
 <div class="modal-bg" id="procModalBg">
   <div class="modal">
     <h3 id="procModalTitle">נוהל חדש</h3>
@@ -172,8 +254,54 @@ a.doc-link:hover{text-decoration:underline}
     <div class="form-row"><label>קישור למסמך (SharePoint / Drive / Focus)</label><input type="text" id="fLink" placeholder="https://..."></div>
     <div class="form-row"><label>הערות</label><textarea id="fNotes"></textarea></div>
     <div class="form-actions">
-      <button class="btn btn-cancel" onclick="closeProcModal()">ביטול</button>
+      <button class="btn btn-cancel" onclick="closeModal('procModalBg')">ביטול</button>
       <button class="btn btn-save" onclick="saveProc()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל משוב -->
+<div class="modal-bg" id="fbModalBg">
+  <div class="modal">
+    <h3 id="fbModalTitle">משוב חדש</h3>
+    <input type="hidden" id="fbId">
+    <div class="form-grid">
+      <div class="form-row"><label>תאריך</label><input type="date" id="fbDate"></div>
+      <div class="form-row"><label>סוג</label>
+        <select id="fbType">
+          <option value="חיובי">חיובי</option>
+          <option value="בונה">בונה</option>
+          <option value="משמעתי">משמעתי</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row"><label>שם העובד</label><input type="text" id="fbEmployee"></div>
+    <div class="form-row"><label>נושא</label><input type="text" id="fbSubject"></div>
+    <div class="form-row"><label>פירוט</label><textarea id="fbDetails"></textarea></div>
+    <div class="form-row"><label>ניתן ע"י</label><input type="text" id="fbGivenBy"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('fbModalBg')">ביטול</button>
+      <button class="btn btn-save" onclick="saveFeedback()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל שיחה אישית -->
+<div class="modal-bg" id="ooModalBg">
+  <div class="modal">
+    <h3 id="ooModalTitle">שיחה אישית חדשה</h3>
+    <input type="hidden" id="ooId">
+    <div class="form-grid">
+      <div class="form-row"><label>תאריך</label><input type="date" id="ooDate"></div>
+      <div class="form-row"><label>שם העובד</label><input type="text" id="ooEmployee"></div>
+    </div>
+    <div class="form-row"><label>נושאים שנדונו</label><textarea id="ooTopics"></textarea></div>
+    <div class="form-row"><label>משימות המשך</label><textarea id="ooFollowUp"></textarea></div>
+    <div class="form-row"><label>הערות</label><textarea id="ooNotes"></textarea></div>
+    <div class="form-row"><label>בוצע ע"י</label><input type="text" id="ooCreatedBy"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('ooModalBg')">ביטול</button>
+      <button class="btn btn-save" onclick="saveOneToOne()">שמור</button>
     </div>
   </div>
 </div>
@@ -184,15 +312,17 @@ const EMAIL_SERVICE='service_q2ekmcf', EMAIL_TEMPLATE='template_jylk5i7', EMAIL_
 const NOTIFY_TO='matan.naor@dhl.com';
 const SOON_DAYS=30;
 
-let PROCS={};
+let PROCS={}, FEEDBACK={}, ONETOONE={};
 let statusFilter='all';
 let sortCol='expiry', sortAsc=true;
+let fbFilter='all', fbSortCol='date', fbSortAsc=false;
+let ooSortCol='date', ooSortAsc=false;
 let userName='';
 
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof emailjs!=='undefined') emailjs.init(EMAIL_PUBLIC);
   const saved=localStorage.getItem('quality_user');
-  if(saved){ userName=saved; showApp(); } 
+  if(saved){ userName=saved; showApp(); }
 });
 
 function doLogin(){
@@ -206,19 +336,37 @@ function showApp(){
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('whoami').textContent='מחובר/ת: '+userName;
-  loadProcs();
+  loadAll();
 }
 
-async function loadProcs(){
+function openTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('pane-'+name).classList.add('active');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function showSaving(on){ document.getElementById('savingMsg').style.display=on?'block':'none'; }
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function loadAll(){
   try{
-    const r=await fetch(DB+'/nahalim.json?t='+Date.now());
-    const data=await r.json();
-    PROCS=data||{};
-  }catch(e){ PROCS={}; }
-  render();
+    const [rp, rf, ro] = await Promise.all([
+      fetch(DB+'/nahalim.json?t='+Date.now()),
+      fetch(DB+'/feedback.json?t='+Date.now()),
+      fetch(DB+'/oneToOne.json?t='+Date.now())
+    ]);
+    PROCS = (await rp.json()) || {};
+    FEEDBACK = (await rf.json()) || {};
+    ONETOONE = (await ro.json()) || {};
+  }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; }
+  renderProcs();
+  renderFeedback();
+  renderOneToOne();
   checkDailyDigest();
 }
 
+/* ========================= נהלים ========================= */
 function daysUntil(dateStr){
   if(!dateStr) return 9999;
   const today=new Date(); today.setHours(0,0,0,0);
@@ -231,27 +379,20 @@ function statusOf(dateStr){
   if(d<=SOON_DAYS) return 'soon';
   return 'ok';
 }
-function statusLabel(s){
-  return s==='expired'?'פג תוקף':(s==='soon'?'מתקרב לפקיעה':'בתוקף');
-}
-function statusClass(s){
-  return s==='expired'?'s-expired':(s==='soon'?'s-soon':'s-ok');
-}
+function statusLabel(s){ return s==='expired'?'פג תוקף':(s==='soon'?'מתקרב לפקיעה':'בתוקף'); }
+function statusClass(s){ return s==='expired'?'s-expired':(s==='soon'?'s-soon':'s-ok'); }
 
 function setStatusFilter(f,el){
   statusFilter=f;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  if(el) el.classList.add('active');
-  else document.querySelectorAll('.tab').forEach(t=>{ if(t.dataset.f===f) t.classList.add('active'); });
-  render();
+  document.getElementById('procStatusFilter').value=f;
+  renderProcs();
 }
-
-function sortBy(col){
+function sortProcsBy(col){
   if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
-  render();
+  renderProcs();
 }
 
-function render(){
+function renderProcs(){
   const search=(document.getElementById('searchBox').value||'').trim().toLowerCase();
   const cat=document.getElementById('catFilter').value;
   let rows=Object.keys(PROCS).map(id=>{
@@ -259,7 +400,6 @@ function render(){
     return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', notes:p.notes||'', status:statusOf(p.expiry)};
   });
 
-  // stats (computed on full set, not filtered)
   document.getElementById('stAll').textContent=rows.length;
   document.getElementById('stOk').textContent=rows.filter(r=>r.status==='ok').length;
   document.getElementById('stSoon').textContent=rows.filter(r=>r.status==='soon').length;
@@ -281,15 +421,14 @@ function render(){
 
   rows.sort((a,b)=>{
     let av=a[sortCol], bv=b[sortCol];
-    if(sortCol==='expiry'||sortCol==='published'){ av=av||''; bv=bv||''; }
-    else { av=(av||'').toString().toLowerCase(); bv=(bv||'').toString().toLowerCase(); }
+    av=(av||'').toString().toLowerCase(); bv=(bv||'').toString().toLowerCase();
     if(av<bv) return sortAsc?-1:1;
     if(av>bv) return sortAsc?1:-1;
     return 0;
   });
 
   document.getElementById('countLbl').textContent='מציג '+rows.length+' נהלים';
-  const tb=document.getElementById('tbody');
+  const tb=document.getElementById('tbodyProcs');
   if(!rows.length){ tb.innerHTML='<tr><td colspan="9" class="nores">לא נמצאו נהלים</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>{
     const d=daysUntil(r.expiry);
@@ -307,8 +446,6 @@ function render(){
     '</tr>';
   }).join('');
 }
-
-function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function openNewProc(){
   document.getElementById('procModalTitle').textContent='נוהל חדש';
@@ -337,8 +474,6 @@ function editProc(id){
   document.getElementById('fNotes').value=p.notes||'';
   document.getElementById('procModalBg').classList.add('open');
 }
-function closeProcModal(){ document.getElementById('procModalBg').classList.remove('open'); }
-
 async function saveProc(){
   const id=document.getElementById('procId').value || 'p'+Date.now();
   const rec={
@@ -358,8 +493,8 @@ async function saveProc(){
   try{
     await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
     PROCS[id]=rec;
-    closeProcModal();
-    render();
+    closeModal('procModalBg');
+    renderProcs();
   }catch(e){ alert('שגיאה בשמירה'); }
   showSaving(false);
 }
@@ -369,12 +504,9 @@ async function deleteProc(id){
   try{
     await fetch(DB+'/nahalim/'+id+'.json',{method:'DELETE'});
     delete PROCS[id];
-    render();
+    renderProcs();
   }catch(e){ alert('שגיאה במחיקה'); }
   showSaving(false);
-}
-function showSaving(on){
-  document.getElementById('savingMsg').style.display=on?'block':'none';
 }
 
 function buildDigestMessage(){
@@ -396,22 +528,15 @@ function buildDigestMessage(){
   }
   return lines.join('\n');
 }
-
 function sendEmailDigest(msg){
   if(typeof emailjs==='undefined'){ console.warn('EmailJS not loaded'); return; }
   const now=new Date();
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
-    to_email: NOTIFY_TO,
-    to_name: 'מתן',
-    subject: 'התראת תוקף נהלים — איכות המחלקה',
-    message: msg,
-    task_title: 'נהלי איכות',
-    status: 'התראת תוקף',
-    time: time
+    to_email: NOTIFY_TO, to_name: 'מתן', subject: 'התראת תוקף נהלים — איכות המחלקה',
+    message: msg, task_title: 'נהלי איכות', status: 'התראת תוקף', time: time
   });
 }
-
 async function checkDailyDigest(){
   const msg=buildDigestMessage();
   if(!msg) return;
@@ -422,14 +547,205 @@ async function checkDailyDigest(){
     if(last===today) return;
     sendEmailDigest(msg);
     await fetch(DB+'/nahalim_meta/lastDigest.json',{method:'PUT',body:JSON.stringify(today)});
-  }catch(e){ /* ignore */ }
+  }catch(e){}
 }
-
 function sendDigestNow(){
   const msg=buildDigestMessage();
   if(!msg){ alert('אין נהלים שפג תוקפם או מתקרבים לפקיעה כרגע 👍'); return; }
   sendEmailDigest(msg);
   alert('הסיכום נשלח למייל');
+}
+
+/* ========================= משובים ========================= */
+function setFeedbackFilter(f){ fbFilter=f; document.getElementById('fbTypeFilter').value = (f==='all'?'':f); renderFeedback(); }
+function sortFeedbackBy(col){ if(fbSortCol===col) fbSortAsc=!fbSortAsc; else { fbSortCol=col; fbSortAsc=false; } renderFeedback(); }
+
+function renderFeedback(){
+  const search=(document.getElementById('fbSearch').value||'').trim().toLowerCase();
+  const typeSel=document.getElementById('fbTypeFilter').value;
+  let rows=Object.keys(FEEDBACK).map(id=>{
+    const f=FEEDBACK[id];
+    return {id, date:f.date||'', employee:f.employee||'', type:f.type||'', subject:f.subject||'', details:f.details||'', givenBy:f.givenBy||''};
+  });
+
+  document.getElementById('fbAll').textContent=rows.length;
+  document.getElementById('fbPos').textContent=rows.filter(r=>r.type==='חיובי').length;
+  document.getElementById('fbCon').textContent=rows.filter(r=>r.type==='בונה').length;
+  document.getElementById('fbDisc').textContent=rows.filter(r=>r.type==='משמעתי').length;
+
+  if(typeSel) rows=rows.filter(r=>r.type===typeSel);
+  if(search) rows=rows.filter(r=> (r.employee+' '+r.subject).toLowerCase().includes(search));
+
+  rows.sort((a,b)=>{
+    let av=(a[fbSortCol]||'').toString().toLowerCase(), bv=(b[fbSortCol]||'').toString().toLowerCase();
+    if(av<bv) return fbSortAsc?-1:1;
+    if(av>bv) return fbSortAsc?1:-1;
+    return 0;
+  });
+
+  document.getElementById('fbCountLbl').textContent='מציג '+rows.length+' משובים';
+  const tb=document.getElementById('tbodyFeedback');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="nores">לא נמצאו משובים</td></tr>'; return; }
+  const typeClass={'חיובי':'s-pos','בונה':'s-con','משמעתי':'s-disc'};
+  tb.innerHTML=rows.map(r=>
+    '<tr>'+
+      '<td>'+esc(r.date)+'</td>'+
+      '<td>'+esc(r.employee)+'</td>'+
+      '<td><span class="badge '+(typeClass[r.type]||'')+'">'+esc(r.type)+'</span></td>'+
+      '<td>'+esc(r.subject)+'</td>'+
+      '<td>'+esc(r.details)+'</td>'+
+      '<td>'+esc(r.givenBy)+'</td>'+
+      '<td><button class="act-btn" title="ערוך" onclick="editFeedback(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteFeedback(\''+r.id+'\')">🗑️</button></td>'+
+    '</tr>'
+  ).join('');
+}
+
+function openNewFeedback(){
+  document.getElementById('fbModalTitle').textContent='משוב חדש';
+  document.getElementById('fbId').value='';
+  document.getElementById('fbDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fbType').value='חיובי';
+  document.getElementById('fbEmployee').value='';
+  document.getElementById('fbSubject').value='';
+  document.getElementById('fbDetails').value='';
+  document.getElementById('fbGivenBy').value=userName;
+  document.getElementById('fbModalBg').classList.add('open');
+}
+function editFeedback(id){
+  const f=FEEDBACK[id];
+  document.getElementById('fbModalTitle').textContent='עריכת משוב';
+  document.getElementById('fbId').value=id;
+  document.getElementById('fbDate').value=f.date||'';
+  document.getElementById('fbType').value=f.type||'חיובי';
+  document.getElementById('fbEmployee').value=f.employee||'';
+  document.getElementById('fbSubject').value=f.subject||'';
+  document.getElementById('fbDetails').value=f.details||'';
+  document.getElementById('fbGivenBy').value=f.givenBy||'';
+  document.getElementById('fbModalBg').classList.add('open');
+}
+async function saveFeedback(){
+  const id=document.getElementById('fbId').value || 'f'+Date.now();
+  const rec={
+    date:document.getElementById('fbDate').value,
+    type:document.getElementById('fbType').value,
+    employee:document.getElementById('fbEmployee').value.trim(),
+    subject:document.getElementById('fbSubject').value.trim(),
+    details:document.getElementById('fbDetails').value.trim(),
+    givenBy:document.getElementById('fbGivenBy').value.trim(),
+    updatedAt:new Date().toISOString()
+  };
+  if(!rec.employee){ alert('נא להזין שם עובד'); return; }
+  showSaving(true);
+  try{
+    await fetch(DB+'/feedback/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    FEEDBACK[id]=rec;
+    closeModal('fbModalBg');
+    renderFeedback();
+  }catch(e){ alert('שגיאה בשמירה'); }
+  showSaving(false);
+}
+async function deleteFeedback(id){
+  if(!confirm('למחוק את המשוב?')) return;
+  showSaving(true);
+  try{
+    await fetch(DB+'/feedback/'+id+'.json',{method:'DELETE'});
+    delete FEEDBACK[id];
+    renderFeedback();
+  }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
+}
+
+/* ========================= שיחות אישיות ========================= */
+function sortOOBy(col){ if(ooSortCol===col) ooSortAsc=!ooSortAsc; else { ooSortCol=col; ooSortAsc=false; } renderOneToOne(); }
+
+function renderOneToOne(){
+  const search=(document.getElementById('ooSearch').value||'').trim().toLowerCase();
+  let rows=Object.keys(ONETOONE).map(id=>{
+    const o=ONETOONE[id];
+    return {id, date:o.date||'', employee:o.employee||'', topics:o.topics||'', followUp:o.followUp||'', notes:o.notes||'', createdBy:o.createdBy||''};
+  });
+
+  document.getElementById('ooAll').textContent=rows.length;
+  const nowM=new Date().toISOString().slice(0,7);
+  document.getElementById('ooMonth').textContent=rows.filter(r=>(r.date||'').slice(0,7)===nowM).length;
+
+  if(search) rows=rows.filter(r=> (r.employee+' '+r.topics).toLowerCase().includes(search));
+
+  rows.sort((a,b)=>{
+    let av=(a[ooSortCol]||'').toString().toLowerCase(), bv=(b[ooSortCol]||'').toString().toLowerCase();
+    if(av<bv) return ooSortAsc?-1:1;
+    if(av>bv) return ooSortAsc?1:-1;
+    return 0;
+  });
+
+  document.getElementById('ooCountLbl').textContent='מציג '+rows.length+' שיחות';
+  const tb=document.getElementById('tbodyOO');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="nores">לא נמצאו שיחות</td></tr>'; return; }
+  tb.innerHTML=rows.map(r=>
+    '<tr>'+
+      '<td>'+esc(r.date)+'</td>'+
+      '<td>'+esc(r.employee)+'</td>'+
+      '<td>'+esc(r.topics)+'</td>'+
+      '<td>'+esc(r.followUp)+'</td>'+
+      '<td>'+esc(r.createdBy)+'</td>'+
+      '<td><button class="act-btn" title="ערוך" onclick="editOneToOne(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteOneToOne(\''+r.id+'\')">🗑️</button></td>'+
+    '</tr>'
+  ).join('');
+}
+
+function openNewOneToOne(){
+  document.getElementById('ooModalTitle').textContent='שיחה אישית חדשה';
+  document.getElementById('ooId').value='';
+  document.getElementById('ooDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('ooEmployee').value='';
+  document.getElementById('ooTopics').value='';
+  document.getElementById('ooFollowUp').value='';
+  document.getElementById('ooNotes').value='';
+  document.getElementById('ooCreatedBy').value=userName;
+  document.getElementById('ooModalBg').classList.add('open');
+}
+function editOneToOne(id){
+  const o=ONETOONE[id];
+  document.getElementById('ooModalTitle').textContent='עריכת שיחה אישית';
+  document.getElementById('ooId').value=id;
+  document.getElementById('ooDate').value=o.date||'';
+  document.getElementById('ooEmployee').value=o.employee||'';
+  document.getElementById('ooTopics').value=o.topics||'';
+  document.getElementById('ooFollowUp').value=o.followUp||'';
+  document.getElementById('ooNotes').value=o.notes||'';
+  document.getElementById('ooCreatedBy').value=o.createdBy||'';
+  document.getElementById('ooModalBg').classList.add('open');
+}
+async function saveOneToOne(){
+  const id=document.getElementById('ooId').value || 'o'+Date.now();
+  const rec={
+    date:document.getElementById('ooDate').value,
+    employee:document.getElementById('ooEmployee').value.trim(),
+    topics:document.getElementById('ooTopics').value.trim(),
+    followUp:document.getElementById('ooFollowUp').value.trim(),
+    notes:document.getElementById('ooNotes').value.trim(),
+    createdBy:document.getElementById('ooCreatedBy').value.trim(),
+    updatedAt:new Date().toISOString()
+  };
+  if(!rec.employee){ alert('נא להזין שם עובד'); return; }
+  showSaving(true);
+  try{
+    await fetch(DB+'/oneToOne/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    ONETOONE[id]=rec;
+    closeModal('ooModalBg');
+    renderOneToOne();
+  }catch(e){ alert('שגיאה בשמירה'); }
+  showSaving(false);
+}
+async function deleteOneToOne(id){
+  if(!confirm('למחוק את השיחה?')) return;
+  showSaving(true);
+  try{
+    await fetch(DB+'/oneToOne/'+id+'.json',{method:'DELETE'});
+    delete ONETOONE[id];
+    renderOneToOne();
+  }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
 }
 </script>
 </body>
