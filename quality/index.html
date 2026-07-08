@@ -172,17 +172,17 @@ a.doc-link:hover{text-decoration:underline}
     </div>
     <div class="stats">
       <div class="stat" onclick="setFeedbackFilter('all')"><div class="n n-all" id="fbAll">0</div><div class="l">סה"כ משובים</div></div>
-      <div class="stat" onclick="setFeedbackFilter('חיובי')"><div class="n n-pos" id="fbPos">0</div><div class="l">חיוביים</div></div>
-      <div class="stat" onclick="setFeedbackFilter('בונה')"><div class="n n-con" id="fbCon">0</div><div class="l">בוני</div></div>
-      <div class="stat" onclick="setFeedbackFilter('משמעתי')"><div class="n n-disc" id="fbDisc">0</div><div class="l">משמעתיים</div></div>
+      <div class="stat" onclick="setFeedbackFilter('שנתי')"><div class="n n-pos" id="fbPos">0</div><div class="l">שנתיים</div></div>
+      <div class="stat" onclick="setFeedbackFilter('התפתחותי')"><div class="n n-con" id="fbCon">0</div><div class="l">התפתחותיים</div></div>
+      <div class="stat" onclick="setFeedbackFilter('מוטיבציוני')"><div class="n n-disc" id="fbDisc">0</div><div class="l">מוטיבציוניים</div></div>
     </div>
     <div class="filters">
       <input type="text" id="fbSearch" placeholder="חיפוש לפי שם עובד / נושא..." oninput="renderFeedback()">
       <select id="fbTypeFilter" onchange="renderFeedback()">
         <option value="">כל הסוגים</option>
-        <option value="חיובי">חיובי</option>
-        <option value="בונה">בונה</option>
-        <option value="משמעתי">משמעתי</option>
+        <option value="שנתי">שנתי</option>
+        <option value="התפתחותי">התפתחותי</option>
+        <option value="מוטיבציוני">מוטיבציוני</option>
       </select>
     </div>
     <div class="count" id="fbCountLbl"></div>
@@ -295,9 +295,9 @@ a.doc-link:hover{text-decoration:underline}
       <div class="form-row"><label>תאריך</label><input type="date" id="fbDate"></div>
       <div class="form-row"><label>סוג</label>
         <select id="fbType">
-          <option value="חיובי">חיובי</option>
-          <option value="בונה">בונה</option>
-          <option value="משמעתי">משמעתי</option>
+          <option value="שנתי">שנתי</option>
+          <option value="התפתחותי">התפתחותי</option>
+          <option value="מוטיבציוני">מוטיבציוני</option>
         </select>
       </div>
     </div>
@@ -1316,9 +1316,9 @@ function renderFeedback(){
   });
 
   document.getElementById('fbAll').textContent=rows.length;
-  document.getElementById('fbPos').textContent=rows.filter(r=>r.type==='חיובי').length;
-  document.getElementById('fbCon').textContent=rows.filter(r=>r.type==='בונה').length;
-  document.getElementById('fbDisc').textContent=rows.filter(r=>r.type==='משמעתי').length;
+  document.getElementById('fbPos').textContent=rows.filter(r=>r.type==='שנתי').length;
+  document.getElementById('fbCon').textContent=rows.filter(r=>r.type==='התפתחותי').length;
+  document.getElementById('fbDisc').textContent=rows.filter(r=>r.type==='מוטיבציוני').length;
 
   if(typeSel) rows=rows.filter(r=>r.type===typeSel);
   if(search) rows=rows.filter(r=> (r.employee+' '+r.subject).toLowerCase().includes(search));
@@ -1333,7 +1333,7 @@ function renderFeedback(){
   document.getElementById('fbCountLbl').textContent='מציג '+rows.length+' משובים';
   const tb=document.getElementById('tbodyFeedback');
   if(!rows.length){ tb.innerHTML='<tr><td colspan="8" class="nores">לא נמצאו משובים</td></tr>'; return; }
-  const typeClass={'חיובי':'s-pos','בונה':'s-con','משמעתי':'s-disc'};
+  const typeClass={'שנתי':'s-pos','התפתחותי':'s-con','מוטיבציוני':'s-disc'};
   tb.innerHTML=rows.map(r=>
     '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
@@ -1352,7 +1352,7 @@ function openNewFeedback(){
   document.getElementById('fbModalTitle').textContent='משוב חדש';
   document.getElementById('fbId').value='';
   document.getElementById('fbDate').value=new Date().toISOString().slice(0,10);
-  document.getElementById('fbType').value='חיובי';
+  document.getElementById('fbType').value='שנתי';
   document.getElementById('fbEmployee').value='';
   document.getElementById('fbSubject').value='';
   document.getElementById('fbDetails').value='';
@@ -1366,7 +1366,7 @@ function editFeedback(id){
   document.getElementById('fbModalTitle').textContent='עריכת משוב';
   document.getElementById('fbId').value=id;
   document.getElementById('fbDate').value=f.date||'';
-  document.getElementById('fbType').value=f.type||'חיובי';
+  document.getElementById('fbType').value=f.type||'שנתי';
   document.getElementById('fbEmployee').value=f.employee||'';
   document.getElementById('fbSubject').value=f.subject||'';
   document.getElementById('fbDetails').value=f.details||'';
