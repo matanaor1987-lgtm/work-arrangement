@@ -154,11 +154,12 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortProcsBy('published')">תאריך פרסום</th>
             <th onclick="sortProcsBy('expiry')">תוקף עד</th>
             <th>סטטוס</th>
+            <th>חתימות</th>
             <th>מסמך</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyProcs"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyProcs"><tr><td colspan="10" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -330,6 +331,39 @@ a.doc-link:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- מודל שלח לחתימה -->
+<div class="modal-bg" id="sendSignModalBg">
+  <div class="modal">
+    <h3>שליחת נוהל לחתימה</h3>
+    <input type="hidden" id="sendSignProcId">
+    <div id="sendSignProcName" style="font-weight:700;margin-bottom:10px;color:#1a1a2e"></div>
+    <div class="form-row">
+      <label>בחר עובדים (מרשימת סידור העבודה)</label>
+      <div id="empListBox" style="max-height:220px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:8px">טוען רשימת עובדים...</div>
+    </div>
+    <div class="form-row">
+      <label>או הוסף שמות ידנית (מופרד בפסיקים)</label>
+      <input type="text" id="manualNamesInput" placeholder="לדוגמה: ישראל ישראלי, דנה כהן">
+    </div>
+    <div id="sendLinksBox"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('sendSignModalBg')">סגור</button>
+      <button class="btn btn-save" onclick="confirmSendSign()">שלח לחתימה</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל פרטי חתימות -->
+<div class="modal-bg" id="signDetailsModalBg">
+  <div class="modal">
+    <h3 id="signDetailsTitle">סטטוס חתימות</h3>
+    <div id="signDetailsBox"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('signDetailsModalBg')">סגור</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DB='https://malm-focus-default-rtdb.firebaseio.com';
 const EMAIL_SERVICE='service_q2ekmcf', EMAIL_TEMPLATE='template_jylk5i7', EMAIL_PUBLIC='KSlu6K4gQJlBuxuLg';
@@ -445,6 +479,16 @@ function docCellHtml(r){
   return parts.length ? parts.join('<br>') : '<span class="muted">—</span>';
 }
 
+function signCellHtml(r){
+  const required=r.signRequired||[];
+  if(!required.length) return '<span class="muted">—</span>';
+  const signed=r.signatures||{};
+  const signedCount=required.filter(n=>signed[sigKey(n)]).length;
+  const cls = signedCount===required.length ? 's-ok' : (signedCount===0 ? 's-expired' : 's-soon');
+  return '<span class="badge '+cls+'" style="cursor:pointer" onclick="openSignDetails(\''+r.id+'\')">'+signedCount+'/'+required.length+' חתמו</span>';
+}
+function sigKey(name){ return (name||'').trim().replace(/[.#$\[\]\/\s]/g,'_'); }
+
 const CANON_NUMS = {
   'נוהל גביה': 'CUS-63-01',
   'נוהל בקרה וטיפול בגרעונות, קנסות וחובות מול מכס ישראל': 'CUS-63-02',
@@ -553,7 +597,7 @@ function renderProcs(){
   const cat=document.getElementById('catFilter').value;
   let rows=Object.keys(PROCS).map(id=>{
     const p=PROCS[id];
-    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', attachments:p.attachments||[], notes:p.notes||'', status:statusOf(p.expiry)};
+    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', attachments:p.attachments||[], notes:p.notes||'', signRequired:p.signRequired||[], signatures:p.signatures||{}, status:statusOf(p.expiry)};
   });
 
   document.getElementById('stAll').textContent=rows.length;
@@ -585,7 +629,7 @@ function renderProcs(){
 
   document.getElementById('countLbl').textContent='מציג '+rows.length+' נהלים';
   const tb=document.getElementById('tbodyProcs');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="9" class="nores">לא נמצאו נהלים</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="10" class="nores">לא נמצאו נהלים</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>{
     const d=daysUntil(r.expiry);
     const daysTxt = r.status==='expired' ? ('פג לפני '+Math.abs(d)+' ימים') : (r.status==='soon' ? ('בעוד '+d+' ימים') : '');
@@ -597,8 +641,9 @@ function renderProcs(){
       '<td>'+esc(r.published)+'</td>'+
       '<td>'+esc(r.expiry)+'</td>'+
       '<td><span class="badge '+statusClass(r.status)+'">'+statusLabel(r.status)+'</span>'+(daysTxt?'<div style="font-size:10px;color:#999;margin-top:2px">'+daysTxt+'</div>':'')+'</td>'+
+      '<td>'+signCellHtml(r)+'</td>'+
       '<td>'+docCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="הארך תוקף בשנה" onclick="extendProc(\''+r.id+'\')">🔄</button><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="הארך תוקף בשנה" onclick="extendProc(\''+r.id+'\')">🔄</button><button class="act-btn" title="שלח לחתימה" onclick="openSendSign(\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -682,6 +727,110 @@ async function extendProc(id){
     renderProcs();
   }catch(e){ alert('שגיאה בהארכה'); }
   showSaving(false);
+}
+
+/* ===== שליחה לחתימה ===== */
+const EMPLOYEES_DB='https://seder-avoda-default-rtdb.firebaseio.com/employees.json';
+let selectedRecipients=new Set();
+
+function signBaseUrl(){
+  return location.href.replace(/index\.html.*$/, 'sign.html');
+}
+function buildSignLink(procId, name){
+  return signBaseUrl()+'?p='+encodeURIComponent(procId)+'&e='+encodeURIComponent(name);
+}
+
+async function openSendSign(procId){
+  const p=PROCS[procId];
+  document.getElementById('sendSignProcId').value=procId;
+  document.getElementById('sendSignProcName').textContent=p.name;
+  document.getElementById('manualNamesInput').value='';
+  document.getElementById('sendLinksBox').innerHTML='';
+  selectedRecipients = new Set(p.signRequired||[]);
+  const box=document.getElementById('empListBox');
+  box.innerHTML='טוען רשימת עובדים...';
+  document.getElementById('sendSignModalBg').classList.add('open');
+  try{
+    const r=await fetch(EMPLOYEES_DB+'?t='+Date.now());
+    const data=await r.json();
+    const names=extractEmployeeNames(data);
+    if(!names.length){ box.innerHTML='<span class="muted">לא נמצאה רשימת עובדים — אפשר להוסיף שמות ידנית למטה</span>'; return; }
+    box.innerHTML=names.map(n=>
+      '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer">'+
+      '<input type="checkbox" value="'+esc(n)+'" '+(selectedRecipients.has(n)?'checked':'')+' onchange="toggleRecipient(this)"> '+esc(n)+
+      '</label>'
+    ).join('');
+  }catch(e){
+    box.innerHTML='<span class="muted">שגיאה בטעינת רשימת עובדים — אפשר להוסיף שמות ידנית למטה</span>';
+  }
+}
+
+function extractEmployeeNames(data){
+  if(!data) return [];
+  const names=new Set();
+  const arr = Array.isArray(data) ? data : Object.values(data);
+  arr.forEach(item=>{
+    if(!item) return;
+    if(typeof item==='string') names.add(item.trim());
+    else if(typeof item==='object'){
+      const n = item.name||item.fullName||item.rep||item.empName;
+      if(n) names.add(n.toString().trim());
+    }
+  });
+  return Array.from(names).filter(Boolean).sort();
+}
+
+function toggleRecipient(cb){
+  if(cb.checked) selectedRecipients.add(cb.value);
+  else selectedRecipients.delete(cb.value);
+}
+
+async function confirmSendSign(){
+  const procId=document.getElementById('sendSignProcId').value;
+  const manual=(document.getElementById('manualNamesInput').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  manual.forEach(n=>selectedRecipients.add(n));
+  const recipients=Array.from(selectedRecipients);
+  if(!recipients.length){ alert('לא נבחרו עובדים'); return; }
+  const p=PROCS[procId];
+  const existing=new Set(p.signRequired||[]);
+  recipients.forEach(n=>existing.add(n));
+  const rec={...p, signRequired:Array.from(existing)};
+  showSaving(true);
+  try{
+    await fetch(DB+'/nahalim/'+procId+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    PROCS[procId]=rec;
+    renderProcs();
+  }catch(e){ alert('שגיאה בשמירה'); showSaving(false); return; }
+  showSaving(false);
+
+  const linksBox=document.getElementById('sendLinksBox');
+  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">קישורי אישור אישיים (שלח כל קישור לעובד המתאים בוואטסאפ/מייל):</div>'+
+    recipients.map(n=>{
+      const link=buildSignLink(procId, n);
+      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+        '<span>'+esc(n)+'</span>'+
+        '<span><a href="'+esc(link)+'" target="_blank" class="doc-link">פתח</a> '+
+        '<button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">📋</button></span>'+
+        '</div>';
+    }).join('');
+}
+
+function openSignDetails(procId){
+  const p=PROCS[procId];
+  document.getElementById('signDetailsTitle').textContent='חתימות — '+p.name;
+  const required=p.signRequired||[];
+  const signed=p.signatures||{};
+  const box=document.getElementById('signDetailsBox');
+  if(!required.length){ box.innerHTML='<div class="muted">לא נשלח עדיין לאף עובד</div>'; }
+  else{
+    box.innerHTML=required.map(n=>{
+      const s=signed[sigKey(n)];
+      const link=buildSignLink(procId,n);
+      if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+'</span></div>';
+      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px">שלח שוב</a></div>';
+    }).join('');
+  }
+  document.getElementById('signDetailsModalBg').classList.add('open');
 }
 
 function buildDigestMessage(){
