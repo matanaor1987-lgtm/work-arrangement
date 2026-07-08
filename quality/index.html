@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FECC02">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="נהלי איכות">
+<title>ניהול נהלי איכות המחלקה</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
+.header{background:#FECC02;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #D40511}
+.logo{font-size:20px;font-weight:700;color:#D40511;letter-spacing:1px}
+.subtitle{font-size:13px;color:#333;flex:1}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial}
+.btn-add{background:#D40511;color:#fff}
+.btn-add:hover{background:#b0040e}
+.btn-save{background:#2e7d32;color:#fff}
+.btn-cancel{background:#757575;color:#fff}
+.btn-mail{background:#3949ab;color:#fff}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #FECC02;padding:0 20px}
+.tab{padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:#1a1a2e;background:#fffbf0}
+.tab.active{color:#D40511;border-bottom-color:#D40511}
+.pane{padding:14px 20px}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;text-align:center;min-width:90px;cursor:pointer}
+.stat .n{font-size:20px;font-weight:700}
+.stat .l{font-size:11px;color:#777}
+.n-all{color:#1a1a2e}.n-ok{color:#2e7d32}.n-soon{color:#e65100}.n-expired{color:#D40511}
+.alert-banner{background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#7a4a00}
+.alert-banner b{color:#D40511}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filters input,.filters select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial}
+.filters input{min-width:200px}
+.count{font-size:12px;color:#888;margin-bottom:8px}
+.tbl-wrap{overflow-x:auto;background:#fff;border-radius:8px;border:1px solid #e8e8e8}
+table{width:100%;border-collapse:collapse}
+th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap;font-weight:600;cursor:pointer}
+td{padding:7px 10px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:12px}
+tr:hover td{background:#fffbf0}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.s-ok{background:#e8f5e9;color:#2e7d32}
+.s-soon{background:#fff3e0;color:#e65100}
+.s-expired{background:#fde8e8;color:#c62828}
+.muted{color:#ccc}
+.nores{text-align:center;padding:30px;color:#aaa}
+.act-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:14px}
+.act-btn:hover{background:#f0f0f0}
+.saving{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;margin-bottom:14px;color:#1a1a2e}
+.form-row{margin-bottom:11px}
+.form-row label{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:700}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl}
+.form-row textarea{height:65px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0}
+.loading{text-align:center;padding:40px;color:#999;font-size:14px}
+.lg-overlay{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center}
+.lg-box{background:#fff;border-radius:12px;padding:32px;width:320px;text-align:center}
+.lg-logo{background:#FECC02;color:#D40511;font-size:16px;font-weight:700;padding:6px 16px;border-radius:4px;display:inline-block;margin-bottom:14px}
+.lg-box h3{font-size:15px;color:#1a1a2e;margin-bottom:18px}
+.lg-box input{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:12px;direction:rtl;text-align:right}
+.small-note{font-size:11px;color:#999;margin-top:6px}
+a.doc-link{color:#1565c0;font-weight:600;text-decoration:none}
+a.doc-link:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="lg-overlay" id="loginOverlay">
+  <div class="lg-box">
+    <div class="lg-logo">DHL</div>
+    <h3>ניהול נהלי איכות המחלקה</h3>
+    <input type="text" id="loginName" placeholder="שם מלא">
+    <button class="btn btn-add" style="width:100%;padding:10px" onclick="doLogin()">כניסה</button>
+    <div class="small-note">השם ישמש לתיעוד מי הזין/עדכן נוהל</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="logo">DHL</div>
+    <div class="subtitle">ניהול נהלי איכות המחלקה — מעקב תוקף והתראות</div>
+    <span id="whoami" style="font-size:12px;color:#333;margin-left:10px"></span>
+    <button class="btn btn-mail" onclick="sendDigestNow()">📧 שלח סיכום התראות</button>
+    <button class="btn btn-add" onclick="openNewProc()">+ נוהל חדש</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-f="all" onclick="setStatusFilter('all',this)">כל הנהלים</div>
+    <div class="tab" data-f="ok" onclick="setStatusFilter('ok',this)">בתוקף</div>
+    <div class="tab" data-f="soon" onclick="setStatusFilter('soon',this)">מתקרבים לפקיעה</div>
+    <div class="tab" data-f="expired" onclick="setStatusFilter('expired',this)">פג תוקף</div>
+  </div>
+
+  <div class="pane">
+    <div id="alertBanner"></div>
+    <div class="stats">
+      <div class="stat" onclick="setStatusFilter('all',null)"><div class="n n-all" id="stAll">0</div><div class="l">סה"כ נהלים</div></div>
+      <div class="stat" onclick="setStatusFilter('ok',null)"><div class="n n-ok" id="stOk">0</div><div class="l">בתוקף</div></div>
+      <div class="stat" onclick="setStatusFilter('soon',null)"><div class="n n-soon" id="stSoon">0</div><div class="l">מתקרבים לפקיעה (30 יום)</div></div>
+      <div class="stat" onclick="setStatusFilter('expired',null)"><div class="n n-expired" id="stExpired">0</div><div class="l">פג תוקף</div></div>
+    </div>
+
+    <div class="filters">
+      <input type="text" id="searchBox" placeholder="חיפוש לפי שם / מספר נוהל / אחראי..." oninput="render()">
+      <select id="catFilter" onchange="render()">
+        <option value="">כל הקטגוריות</option>
+        <option value="מכס יבוא">מכס יבוא</option>
+        <option value="מכס יצוא">מכס יצוא</option>
+        <option value="איכות">איכות</option>
+        <option value="בטיחות">בטיחות</option>
+        <option value="IT">IT</option>
+        <option value="כללי">כללי</option>
+        <option value="אחר">אחר</option>
+      </select>
+    </div>
+    <div class="count" id="countLbl"></div>
+    <div class="tbl-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th onclick="sortBy('num')">מס' נוהל</th>
+            <th onclick="sortBy('name')">שם הנוהל</th>
+            <th onclick="sortBy('cat')">קטגוריה</th>
+            <th onclick="sortBy('owner')">אחראי</th>
+            <th onclick="sortBy('published')">תאריך פרסום</th>
+            <th onclick="sortBy('expiry')">תוקף עד</th>
+            <th>סטטוס</th>
+            <th>מסמך</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="saving" id="savingMsg">שומר...</div>
+
+<div class="modal-bg" id="procModalBg">
+  <div class="modal">
+    <h3 id="procModalTitle">נוהל חדש</h3>
+    <input type="hidden" id="procId">
+    <div class="form-grid">
+      <div class="form-row"><label>מספר נוהל</label><input type="text" id="fNum" placeholder="לדוגמה QP-014"></div>
+      <div class="form-row"><label>קטגוריה</label>
+        <select id="fCat">
+          <option value="מכס יבוא">מכס יבוא</option>
+          <option value="מכס יצוא">מכס יצוא</option>
+          <option value="איכות">איכות</option>
+          <option value="בטיחות">בטיחות</option>
+          <option value="IT">IT</option>
+          <option value="כללי">כללי</option>
+          <option value="אחר">אחר</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row"><label>שם הנוהל</label><input type="text" id="fName" placeholder="לדוגמה נוהל טיפול בתלונות לקוח"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>אחראי / בעלים</label><input type="text" id="fOwner"></div>
+      <div class="form-row"><label>תאריך פרסום/עדכון</label><input type="date" id="fPub"></div>
+    </div>
+    <div class="form-row"><label>תוקף עד (תאריך פקיעה)</label><input type="date" id="fExp"></div>
+    <div class="form-row"><label>קישור למסמך (SharePoint / Drive / Focus)</label><input type="text" id="fLink" placeholder="https://..."></div>
+    <div class="form-row"><label>הערות</label><textarea id="fNotes"></textarea></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeProcModal()">ביטול</button>
+      <button class="btn btn-save" onclick="saveProc()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB='https://malm-focus-default-rtdb.firebaseio.com';
+const EMAIL_SERVICE='service_q2ekmcf', EMAIL_TEMPLATE='template_jylk5i7', EMAIL_PUBLIC='KSlu6K4gQJlBuxuLg';
+const NOTIFY_TO='matan.naor@dhl.com';
+const SOON_DAYS=30;
+
+let PROCS={};
+let statusFilter='all';
+let sortCol='expiry', sortAsc=true;
+let userName='';
+
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof emailjs!=='undefined') emailjs.init(EMAIL_PUBLIC);
+  const saved=localStorage.getItem('quality_user');
+  if(saved){ userName=saved; showApp(); } 
+});
+
+function doLogin(){
+  const n=document.getElementById('loginName').value.trim();
+  if(!n){ alert('נא להזין שם'); return; }
+  userName=n;
+  localStorage.setItem('quality_user', n);
+  showApp();
+}
+function showApp(){
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('whoami').textContent='מחובר/ת: '+userName;
+  loadProcs();
+}
+
+async function loadProcs(){
+  try{
+    const r=await fetch(DB+'/nahalim.json?t='+Date.now());
+    const data=await r.json();
+    PROCS=data||{};
+  }catch(e){ PROCS={}; }
+  render();
+  checkDailyDigest();
+}
+
+function daysUntil(dateStr){
+  if(!dateStr) return 9999;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const exp=new Date(dateStr); exp.setHours(0,0,0,0);
+  return Math.round((exp-today)/86400000);
+}
+function statusOf(dateStr){
+  const d=daysUntil(dateStr);
+  if(d<0) return 'expired';
+  if(d<=SOON_DAYS) return 'soon';
+  return 'ok';
+}
+function statusLabel(s){
+  return s==='expired'?'פג תוקף':(s==='soon'?'מתקרב לפקיעה':'בתוקף');
+}
+function statusClass(s){
+  return s==='expired'?'s-expired':(s==='soon'?'s-soon':'s-ok');
+}
+
+function setStatusFilter(f,el){
+  statusFilter=f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else document.querySelectorAll('.tab').forEach(t=>{ if(t.dataset.f===f) t.classList.add('active'); });
+  render();
+}
+
+function sortBy(col){
+  if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+  render();
+}
+
+function render(){
+  const search=(document.getElementById('searchBox').value||'').trim().toLowerCase();
+  const cat=document.getElementById('catFilter').value;
+  let rows=Object.keys(PROCS).map(id=>{
+    const p=PROCS[id];
+    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', notes:p.notes||'', status:statusOf(p.expiry)};
+  });
+
+  // stats (computed on full set, not filtered)
+  document.getElementById('stAll').textContent=rows.length;
+  document.getElementById('stOk').textContent=rows.filter(r=>r.status==='ok').length;
+  document.getElementById('stSoon').textContent=rows.filter(r=>r.status==='soon').length;
+  document.getElementById('stExpired').textContent=rows.filter(r=>r.status==='expired').length;
+
+  const soonList=rows.filter(r=>r.status==='soon');
+  const expList=rows.filter(r=>r.status==='expired');
+  const banner=document.getElementById('alertBanner');
+  if(soonList.length||expList.length){
+    let msg='⚠️ ';
+    if(expList.length) msg+='<b>'+expList.length+' נהלים פג תוקפם</b>'+(soonList.length?' — ':'');
+    if(soonList.length) msg+=soonList.length+' נהלים מתקרבים לפקיעה בתוך '+SOON_DAYS+' יום';
+    banner.innerHTML='<div class="alert-banner">'+msg+'</div>';
+  } else banner.innerHTML='';
+
+  if(statusFilter!=='all') rows=rows.filter(r=>r.status===statusFilter);
+  if(cat) rows=rows.filter(r=>r.cat===cat);
+  if(search) rows=rows.filter(r=> (r.num+' '+r.name+' '+r.owner).toLowerCase().includes(search));
+
+  rows.sort((a,b)=>{
+    let av=a[sortCol], bv=b[sortCol];
+    if(sortCol==='expiry'||sortCol==='published'){ av=av||''; bv=bv||''; }
+    else { av=(av||'').toString().toLowerCase(); bv=(bv||'').toString().toLowerCase(); }
+    if(av<bv) return sortAsc?-1:1;
+    if(av>bv) return sortAsc?1:-1;
+    return 0;
+  });
+
+  document.getElementById('countLbl').textContent='מציג '+rows.length+' נהלים';
+  const tb=document.getElementById('tbody');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="9" class="nores">לא נמצאו נהלים</td></tr>'; return; }
+  tb.innerHTML=rows.map(r=>{
+    const d=daysUntil(r.expiry);
+    const daysTxt = r.status==='expired' ? ('פג לפני '+Math.abs(d)+' ימים') : (r.status==='soon' ? ('בעוד '+d+' ימים') : '');
+    return '<tr>'+
+      '<td>'+esc(r.num)+'</td>'+
+      '<td>'+esc(r.name)+'</td>'+
+      '<td>'+esc(r.cat)+'</td>'+
+      '<td>'+esc(r.owner)+'</td>'+
+      '<td>'+esc(r.published)+'</td>'+
+      '<td>'+esc(r.expiry)+'</td>'+
+      '<td><span class="badge '+statusClass(r.status)+'">'+statusLabel(r.status)+'</span>'+(daysTxt?'<div style="font-size:10px;color:#999;margin-top:2px">'+daysTxt+'</div>':'')+'</td>'+
+      '<td>'+(r.link?'<a class="doc-link" href="'+esc(r.link)+'" target="_blank">פתח</a>':'<span class="muted">—</span>')+'</td>'+
+      '<td><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function openNewProc(){
+  document.getElementById('procModalTitle').textContent='נוהל חדש';
+  document.getElementById('procId').value='';
+  document.getElementById('fNum').value='';
+  document.getElementById('fCat').value='כללי';
+  document.getElementById('fName').value='';
+  document.getElementById('fOwner').value=userName;
+  document.getElementById('fPub').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fExp').value='';
+  document.getElementById('fLink').value='';
+  document.getElementById('fNotes').value='';
+  document.getElementById('procModalBg').classList.add('open');
+}
+function editProc(id){
+  const p=PROCS[id];
+  document.getElementById('procModalTitle').textContent='עריכת נוהל';
+  document.getElementById('procId').value=id;
+  document.getElementById('fNum').value=p.num||'';
+  document.getElementById('fCat').value=p.cat||'כללי';
+  document.getElementById('fName').value=p.name||'';
+  document.getElementById('fOwner').value=p.owner||'';
+  document.getElementById('fPub').value=p.published||'';
+  document.getElementById('fExp').value=p.expiry||'';
+  document.getElementById('fLink').value=p.link||'';
+  document.getElementById('fNotes').value=p.notes||'';
+  document.getElementById('procModalBg').classList.add('open');
+}
+function closeProcModal(){ document.getElementById('procModalBg').classList.remove('open'); }
+
+async function saveProc(){
+  const id=document.getElementById('procId').value || 'p'+Date.now();
+  const rec={
+    num:document.getElementById('fNum').value.trim(),
+    cat:document.getElementById('fCat').value,
+    name:document.getElementById('fName').value.trim(),
+    owner:document.getElementById('fOwner').value.trim(),
+    published:document.getElementById('fPub').value,
+    expiry:document.getElementById('fExp').value,
+    link:document.getElementById('fLink').value.trim(),
+    notes:document.getElementById('fNotes').value.trim(),
+    updatedBy:userName,
+    updatedAt:new Date().toISOString()
+  };
+  if(!rec.name){ alert('נא להזין שם נוהל'); return; }
+  showSaving(true);
+  try{
+    await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    PROCS[id]=rec;
+    closeProcModal();
+    render();
+  }catch(e){ alert('שגיאה בשמירה'); }
+  showSaving(false);
+}
+async function deleteProc(id){
+  if(!confirm('למחוק את הנוהל?')) return;
+  showSaving(true);
+  try{
+    await fetch(DB+'/nahalim/'+id+'.json',{method:'DELETE'});
+    delete PROCS[id];
+    render();
+  }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
+}
+function showSaving(on){
+  document.getElementById('savingMsg').style.display=on?'block':'none';
+}
+
+function buildDigestMessage(){
+  const rows=Object.keys(PROCS).map(id=>PROCS[id]);
+  const expired=rows.filter(p=>statusOf(p.expiry)==='expired');
+  const soon=rows.filter(p=>statusOf(p.expiry)==='soon');
+  if(!expired.length && !soon.length) return null;
+  let lines=[];
+  if(expired.length){
+    lines.push('פג תוקף:');
+    expired.forEach(p=>lines.push('- '+(p.num?p.num+' ':'')+p.name+' (אחראי: '+(p.owner||'-')+')'));
+  }
+  if(soon.length){
+    lines.push('מתקרבים לפקיעה (30 יום):');
+    soon.forEach(p=>{
+      const d=daysUntil(p.expiry);
+      lines.push('- '+(p.num?p.num+' ':'')+p.name+' — בעוד '+d+' ימים (אחראי: '+(p.owner||'-')+')');
+    });
+  }
+  return lines.join('\n');
+}
+
+function sendEmailDigest(msg){
+  if(typeof emailjs==='undefined'){ console.warn('EmailJS not loaded'); return; }
+  const now=new Date();
+  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
+    to_email: NOTIFY_TO,
+    to_name: 'מתן',
+    subject: 'התראת תוקף נהלים — איכות המחלקה',
+    message: msg,
+    task_title: 'נהלי איכות',
+    status: 'התראת תוקף',
+    time: time
+  });
+}
+
+async function checkDailyDigest(){
+  const msg=buildDigestMessage();
+  if(!msg) return;
+  const today=new Date().toISOString().slice(0,10);
+  try{
+    const r=await fetch(DB+'/nahalim_meta/lastDigest.json?t='+Date.now());
+    const last=await r.json();
+    if(last===today) return;
+    sendEmailDigest(msg);
+    await fetch(DB+'/nahalim_meta/lastDigest.json',{method:'PUT',body:JSON.stringify(today)});
+  }catch(e){ /* ignore */ }
+}
+
+function sendDigestNow(){
+  const msg=buildDigestMessage();
+  if(!msg){ alert('אין נהלים שפג תוקפם או מתקרבים לפקיעה כרגע 👍'); return; }
+  sendEmailDigest(msg);
+  alert('הסיכום נשלח למייל');
+}
+</script>
+</body>
+</html>
