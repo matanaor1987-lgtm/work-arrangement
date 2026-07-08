@@ -102,6 +102,8 @@ a.doc-link:hover{text-decoration:underline}
     <div class="logo">DHL</div>
     <div class="subtitle">ניהול איכות המחלקה</div>
     <span id="whoami" style="font-size:12px;color:#333;margin-left:10px"></span>
+    <button class="btn btn-mail" onclick="exportBackupJSON()" title="ייצא גיבוי JSON מלא">📦 גיבוי JSON</button>
+    <label class="btn btn-mail" style="cursor:pointer" title="שחזר מגיבוי JSON">♻️ שחזור<input type="file" accept=".json" onchange="importBackupJSON(event)" style="display:none"></label>
   </div>
 
   <div class="tabs">
@@ -237,6 +239,7 @@ a.doc-link:hover{text-decoration:underline}
 </div>
 
 <div class="saving" id="savingMsg">שומר...</div>
+<div class="saving" id="toastMsg" style="background:#1a1a2e"></div>
 
 <!-- מודל נוהל -->
 <div class="modal-bg" id="procModalBg">
@@ -496,6 +499,7 @@ function showApp(){
   document.getElementById('app').style.display='block';
   document.getElementById('whoami').textContent='מחובר/ת: '+userName;
   loadAll();
+  checkBackupReminder();
 }
 
 function openTab(name, el){
@@ -506,6 +510,63 @@ function openTab(name, el){
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function showSaving(on){ document.getElementById('savingMsg').style.display=on?'block':'none'; }
+
+function showToast(msg, ms){
+  const t=document.getElementById('toastMsg');
+  t.textContent=msg;
+  t.style.display='block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>{ t.style.display='none'; }, ms||3500);
+}
+
+/* ===== גיבוי ושחזור JSON ===== */
+async function exportBackupJSON(){
+  showToast('⏳ מייצא נתונים...', 60000);
+  try{
+    const r=await fetch(DB+'/.json?t='+Date.now());
+    const allData = (await r.json()) || {};
+    const now=new Date();
+    const fname='DHL_quality_backup_'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+'.json';
+    const payload={_meta:{exportedAt:now.toISOString(), version:1}, ...allData};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem('quality_last_backup', Date.now().toString());
+    showToast('✅ גיבוי JSON נשמר: '+fname);
+  }catch(e){
+    showToast('❌ שגיאה בייצוא: '+e.message);
+  }
+}
+
+async function importBackupJSON(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  if(!confirm('⚠️ שחזור מגיבוי: "'+file.name+'"\n\nפעולה זו תדרוס את כל הנתונים הנוכחיים (נהלים, משובים, שיחות אישיות, עובדים)!\nהאם אתה בטוח?')){ event.target.value=''; return; }
+  showToast('⏳ משחזר נתונים...', 60000);
+  try{
+    const data=JSON.parse(await file.text());
+    delete data._meta;
+    for(const [key,val] of Object.entries(data)){
+      await fetch(DB+'/'+key+'.json',{method:'PUT',body:JSON.stringify(val)});
+    }
+    showToast('✅ שוחזר בהצלחה! טוען נתונים...');
+    setTimeout(()=>loadAll(), 800);
+  }catch(e){
+    showToast('❌ שגיאה בשחזור: '+e.message);
+  }
+  event.target.value='';
+}
+
+function checkBackupReminder(){
+  const last=parseInt(localStorage.getItem('quality_last_backup')||'0');
+  const hoursSince=(Date.now()-last)/1000/3600;
+  if(hoursSince>24){
+    setTimeout(()=>showToast('💡 לא גיבית מזה '+Math.floor(hoursSince)+' שעות — לחץ 📦 גיבוי JSON', 6000), 3000);
+  }
+}
 function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function docCellHtml(r){
