@@ -361,6 +361,17 @@ a.doc-link:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- מודל היסטוריית גרסאות -->
+<div class="modal-bg" id="versionHistoryModalBg">
+  <div class="modal">
+    <h3 id="versionHistoryTitle">גרסאות קודמות</h3>
+    <div id="versionHistoryBox"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('versionHistoryModalBg')">סגור</button>
+    </div>
+  </div>
+</div>
+
 <!-- מודל שלח לחתימה -->
 <div class="modal-bg" id="sendSignModalBg">
   <div class="modal">
@@ -506,7 +517,11 @@ function docCellHtml(r){
   const parts=[];
   (r.attachments||[]).forEach(a=> parts.push('<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>'));
   if(r.link) parts.push('<a class="doc-link" href="'+esc(r.link)+'" target="_blank">🔗 קישור</a>');
-  return parts.length ? parts.join('<br>') : '<span class="muted">—</span>';
+  let html = parts.length ? parts.join('<br>') : '<span class="muted">—</span>';
+  if((r.versionHistory||[]).length){
+    html += '<div><span class="doc-link" style="cursor:pointer;font-size:11px" onclick="openVersionHistory(\''+r.id+'\')">📜 '+r.versionHistory.length+' גרסאות קודמות</span></div>';
+  }
+  return html;
 }
 
 function signCellHtml(r){
@@ -598,6 +613,7 @@ async function loadAll(){
   await fixExpiryOneYearFromToday();
   await seedEmployeeEmails();
   await ensureEmpDataMap();
+  await checkSignatureReminders();
   renderProcs();
   renderFeedback();
   renderOneToOne();
@@ -635,7 +651,7 @@ function renderProcs(){
   const cat=document.getElementById('catFilter').value;
   let rows=Object.keys(PROCS).map(id=>{
     const p=PROCS[id];
-    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', attachments:p.attachments||[], notes:p.notes||'', signRequired:p.signRequired||[], signatures:p.signatures||{}, status:statusOf(p.expiry)};
+    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', attachments:p.attachments||[], notes:p.notes||'', signRequired:p.signRequired||[], signatures:p.signatures||{}, versionHistory:p.versionHistory||[], status:statusOf(p.expiry)};
   });
 
   document.getElementById('stAll').textContent=rows.length;
@@ -719,6 +735,8 @@ function editProc(id){
 }
 async function saveProc(){
   const id=document.getElementById('procId').value || 'p'+Date.now();
+  const existingProc = PROCS[id];
+  const newAttachments = pendingAttachments.slice();
   const rec={
     num:document.getElementById('fNum').value.trim(),
     cat:document.getElementById('fCat').value,
@@ -728,10 +746,22 @@ async function saveProc(){
     expiry:document.getElementById('fExp').value,
     link:document.getElementById('fLink').value.trim(),
     notes:document.getElementById('fNotes').value.trim(),
-    attachments:pendingAttachments.slice(),
+    attachments:newAttachments,
+    versionHistory:(existingProc && existingProc.versionHistory)||[],
     updatedBy:userName,
     updatedAt:new Date().toISOString()
   };
+  if(existingProc){
+    const newUrls=new Set(newAttachments.map(a=>a.url));
+    const removed=(existingProc.attachments||[]).filter(a=>!newUrls.has(a.url));
+    if(removed.length){
+      rec.versionHistory = [...rec.versionHistory, {
+        attachments: removed,
+        archivedAt: new Date().toISOString(),
+        archivedBy: userName
+      }];
+    }
+  }
   if(!rec.name){ alert('נא להזין שם נוהל'); return; }
   showSaving(true);
   try{
@@ -809,6 +839,24 @@ async function ensureEmpDataMap(force){
   EMP_DATA_MAP=map;
 }
 
+async function openVersionHistory(procId){
+  const p=PROCS[procId];
+  document.getElementById('versionHistoryTitle').textContent='גרסאות קודמות — '+p.name;
+  const box=document.getElementById('versionHistoryBox');
+  const history=(p.versionHistory||[]).slice().reverse();
+  if(!history.length){ box.innerHTML='<div class="muted">אין גרסאות קודמות</div>'; }
+  else{
+    box.innerHTML=history.map(v=>{
+      const files=(v.attachments||[]).map(a=>'<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>').join('<br>');
+      return '<div style="border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px">'+
+        '<div style="font-size:11px;color:#999;margin-bottom:6px">הוחלף ב-'+esc((v.archivedAt||'').slice(0,10))+' ע"י '+esc(v.archivedBy||'')+'</div>'+
+        files+
+        '</div>';
+    }).join('');
+  }
+  document.getElementById('versionHistoryModalBg').classList.add('open');
+}
+
 async function openSendSign(procId){
   const p=PROCS[procId];
   document.getElementById('sendSignProcId').value=procId;
@@ -856,7 +904,9 @@ async function confirmSendSign(){
   const p=PROCS[procId];
   const existing=new Set(p.signRequired||[]);
   recipients.forEach(n=>existing.add(n));
-  const rec={...p, signRequired:Array.from(existing)};
+  const sentDates={...(p.signSentDates||{})};
+  recipients.forEach(n=> sentDates[n]=new Date().toISOString());
+  const rec={...p, signRequired:Array.from(existing), signSentDates:sentDates};
   showSaving(true);
   try{
     await fetch(DB+'/nahalim/'+procId+'.json',{method:'PUT',body:JSON.stringify(rec)});
@@ -1075,6 +1125,73 @@ function sendDigestNow(){
   if(!msg){ alert('אין נהלים שפג תוקפם או מתקרבים לפקיעה כרגע 👍'); return; }
   sendEmailDigest(msg);
   alert('הסיכום נשלח למייל');
+}
+
+/* ===== תזכורות אוטומטיות לחתימה שלא הושלמה ===== */
+function sendReminderEmail(toEmail, toName, subject, message){
+  if(typeof emailjs==='undefined') return Promise.resolve();
+  const now=new Date();
+  const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  return emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
+    to_email:toEmail, to_name:toName, subject, message, task_title:subject, status:'תזכורת לחתימה', time
+  }).catch(()=>{});
+}
+
+async function checkSignatureReminders(){
+  const REMIND_DAYS=7;
+  const now=Date.now();
+  const daysSince=(iso)=> iso ? Math.floor((now-new Date(iso).getTime())/86400000) : 9999;
+
+  for(const id of Object.keys(PROCS)){
+    const p=PROCS[id];
+    const required=p.signRequired||[];
+    if(!required.length) continue;
+    const sentDates=p.signSentDates||{};
+    const signatures=p.signatures||{};
+    const reminded={...(p.signRemindedDates||{})};
+    let changed=false;
+    for(const name of required){
+      if(signatures[sigKey(name)]) continue;
+      const sentAt=sentDates[name];
+      if(!sentAt) continue;
+      const lastCheck = reminded[name] || sentAt;
+      if(daysSince(sentAt) >= REMIND_DAYS && daysSince(lastCheck) >= REMIND_DAYS){
+        const contact=EMP_DATA_MAP[name];
+        if(contact && contact.email){
+          const link=buildSignLink(id, name);
+          await sendReminderEmail(contact.email, name, 'תזכורת: נוהל ממתין לאישור קריאה - '+p.name,
+            'שלום '+name+', זו תזכורת שהנוהל "'+p.name+'" עדיין ממתין לאישור הקריאה שלך.\n'+link);
+          reminded[name]=new Date().toISOString();
+          changed=true;
+        }
+      }
+    }
+    if(changed){
+      const rec={...p, signRemindedDates:reminded};
+      try{ await fetch(DB+'/nahalim/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)}); PROCS[id]=rec; }catch(e){}
+    }
+  }
+
+  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית']];
+  for(const [store,node,label] of singleTargets){
+    for(const id of Object.keys(store)){
+      const rec=store[id];
+      if(rec.signature || !rec.signSentAt) continue;
+      const lastCheck = rec.signRemindedAt || rec.signSentAt;
+      if(daysSince(rec.signSentAt) >= REMIND_DAYS && daysSince(lastCheck) >= REMIND_DAYS){
+        const contact=EMP_DATA_MAP[rec.employee];
+        if(contact && contact.email){
+          const link=buildRecordSignLink(node==='feedback'?'f':'o', id);
+          await sendReminderEmail(contact.email, rec.employee, 'תזכורת: '+label+' ממתין לאישור קריאה',
+            'שלום '+rec.employee+', זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
+          try{
+            await fetch(DB+'/'+node+'/'+id+'/signRemindedAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
+            rec.signRemindedAt=new Date().toISOString();
+          }catch(e){}
+        }
+      }
+    }
+  }
 }
 
 /* ========================= משובים ========================= */
