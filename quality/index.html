@@ -731,7 +731,6 @@ async function extendProc(id){
 }
 
 /* ===== שליחה לחתימה ===== */
-const EMPLOYEES_DB='https://seder-avoda-default-rtdb.firebaseio.com/employees.json';
 const EMPLOYEE_EMAIL_SEED={"אבבה אינגדה":"abebe.ingeda@dhl.com","אור אניץ":"hodandor@gmail.com","אייל ארדיטי":"eyal.arditi@dhl.com","סתיו ברלב":"stav.bazlianis@dhl.com","איילה גבריאלי":"ayala.gavrieli@dhl.com","משה גולן":"moshe.golan@dhl.com","ייטב גינגיס":"itav.guinguis@dhl.com","מירי דבוש שיינח":"mirit.shincha@dhl.com","שירלי דויטש":"shirley.doitsh@dhl.com","דלית ליבמן":"dalit.libman@dhl.com","מזל מבשב":"mazal.mavashav@dhl.com","ניר מזרחי":"nir.mizrahi@dhl.com","חיים מן":"chaim.mann@dhl.com","מתן נאור":"matan.naor@dhl.com","עידן נועם":"idan.noam@dhl.com","צאלה סבן":"zeela.saban@dhl.com","ראם סמואל":"reemsamuel@gmail.com","שניר קב":"snirkab@gmail.com","ליאור קוניק":"lior.kunik@dhl.com","רועי קושנירוב":"roei.kushnirov@dhl.com","אדן רובינשטיין":"ilana.rubinshtein@dhl.com","גיא רון":"guy.ron@dhl.com","אהובה שמשוני":"ahouva.shimshoni@dhl.com"};
 
 async function seedEmployeeEmails(){
@@ -766,47 +765,25 @@ async function openSendSign(procId){
   const box=document.getElementById('empListBox');
   box.innerHTML='טוען רשימת עובדים...';
   document.getElementById('sendSignModalBg').classList.add('open');
-  try{
-    const r=await fetch(EMPLOYEES_DB+'?t='+Date.now());
-    const data=await r.json();
-    EMP_DATA_MAP=buildEmployeeMap(data);
-  }catch(e){
-    EMP_DATA_MAP={};
-  }
+
+  EMP_DATA_MAP={};
   try{
     const re=await fetch(DB+'/employeeEmails.json?t='+Date.now());
     const emails=await re.json();
-    if(emails){
-      Object.keys(emails).forEach(n=>{
-        if(!EMP_DATA_MAP[n]) EMP_DATA_MAP[n]={};
-        EMP_DATA_MAP[n].email=emails[n];
-      });
-    }
+    if(emails) Object.keys(emails).forEach(n=> EMP_DATA_MAP[n]={email:emails[n]});
   }catch(e){}
-  const names=Object.keys(EMP_DATA_MAP).sort();
+  if(!Object.keys(EMP_DATA_MAP).length){
+    Object.keys(EMPLOYEE_EMAIL_SEED).forEach(n=> EMP_DATA_MAP[n]={email:EMPLOYEE_EMAIL_SEED[n]});
+  }
+
+  const names=Object.keys(EMP_DATA_MAP).sort((a,b)=>a.localeCompare(b,'he'));
   if(!names.length){ box.innerHTML='<span class="muted">לא נמצאה רשימת עובדים — אפשר להוסיף שמות ידנית למטה</span>'; return; }
   box.innerHTML=names.map(n=>
-    '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer">'+
-    '<input type="checkbox" value="'+esc(n)+'" '+(selectedRecipients.has(n)?'checked':'')+' onchange="toggleRecipient(this)"> '+esc(n)+
-    (EMP_DATA_MAP[n].email?' <span style="color:#999;font-size:10px">✉️</span>':'')+
+    '<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid #f5f5f5;cursor:pointer">'+
+    '<span>'+esc(n)+(EMP_DATA_MAP[n].email?' <span style="color:#bbb;font-size:10px">✉️</span>':'')+'</span>'+
+    '<input type="checkbox" value="'+esc(n)+'" '+(selectedRecipients.has(n)?'checked':'')+' onchange="toggleRecipient(this)">'+
     '</label>'
   ).join('');
-}
-
-function buildEmployeeMap(data){
-  const map={};
-  if(!data) return map;
-  const arr = Array.isArray(data) ? data : Object.values(data);
-  arr.forEach(item=>{
-    if(!item) return;
-    if(typeof item==='string'){ const n=item.trim(); if(n) map[n]={}; return; }
-    if(typeof item==='object'){
-      const n = (item.name||item.fullName||item.rep||item.empName||'').toString().trim();
-      if(!n) return;
-      map[n] = { phone: item.phone||item.mobile||item.tel||'', email: item.email||item.mail||'' };
-    }
-  });
-  return map;
 }
 
 
