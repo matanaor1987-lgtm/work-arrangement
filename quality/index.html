@@ -196,10 +196,11 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortFeedbackBy('subject')">נושא</th>
             <th>פירוט</th>
             <th onclick="sortFeedbackBy('givenBy')">ניתן ע"י</th>
+            <th>חתימה</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyFeedback"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyFeedback"><tr><td colspan="8" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -226,10 +227,11 @@ a.doc-link:hover{text-decoration:underline}
             <th>נושאים שנדונו</th>
             <th>משימות המשך</th>
             <th onclick="sortOOBy('createdBy')">בוצע ע"י</th>
+            <th>חתימה</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyOO"><tr><td colspan="6" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyOO"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -344,6 +346,17 @@ a.doc-link:hover{text-decoration:underline}
     <div id="empMgrList" style="max-height:320px;overflow-y:auto"></div>
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal('empMgrModalBg')">סגור</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל שליחת חתימה מהירה (משוב/שיחה אישית) -->
+<div class="modal-bg" id="quickSignModalBg">
+  <div class="modal">
+    <h3>שליחת אישור קריאה</h3>
+    <div id="quickSignBox"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('quickSignModalBg')">סגור</button>
     </div>
   </div>
 </div>
@@ -506,6 +519,12 @@ function signCellHtml(r){
 }
 function sigKey(name){ return (name||'').trim().replace(/[.#$\[\]\/\s]/g,'_'); }
 
+function recordSignCellHtml(r){
+  if(r.signature) return '<span class="badge s-ok">✔ נחתם '+esc((r.signature.date||'').slice(0,10))+'</span>';
+  if(r.signSentAt) return '<span class="badge s-soon">⏳ נשלח '+esc((r.signSentAt||'').slice(0,10))+'</span>';
+  return '<span class="muted">לא נשלח</span>';
+}
+
 const CANON_NUMS = {
   'נוהל גביה': 'CUS-63-01',
   'נוהל בקרה וטיפול בגרעונות, קנסות וחובות מול מכס ישראל': 'CUS-63-02',
@@ -578,6 +597,7 @@ async function loadAll(){
   await migrateCanonicalProcs();
   await fixExpiryOneYearFromToday();
   await seedEmployeeEmails();
+  await ensureEmpDataMap();
   renderProcs();
   renderFeedback();
   renderOneToOne();
@@ -767,10 +787,27 @@ function signBaseUrl(){
   return location.href.replace(/index\.html.*$/, 'sign.html');
 }
 function buildSignLink(procId, name){
-  return signBaseUrl()+'?p='+encodeURIComponent(procId)+'&e='+encodeURIComponent(name);
+  return signBaseUrl()+'?t=p&p='+encodeURIComponent(procId)+'&e='+encodeURIComponent(name);
+}
+function buildRecordSignLink(type, id){
+  return signBaseUrl()+'?t='+type+'&id='+encodeURIComponent(id);
 }
 
 let EMP_DATA_MAP={};
+
+async function ensureEmpDataMap(force){
+  if(!force && Object.keys(EMP_DATA_MAP).length) return;
+  let map={};
+  try{
+    const r=await fetch(DB+'/employeeEmails.json?t='+Date.now());
+    const emails=await r.json();
+    if(emails) Object.keys(emails).forEach(n=> map[n]={email:emails[n]});
+  }catch(e){}
+  if(!Object.keys(map).length){
+    Object.keys(EMPLOYEE_EMAIL_SEED).forEach(n=> map[n]={email:EMPLOYEE_EMAIL_SEED[n]});
+  }
+  EMP_DATA_MAP=map;
+}
 
 async function openSendSign(procId){
   const p=PROCS[procId];
@@ -856,6 +893,60 @@ function copyEmailPackage(idx){
   if(!pkg) return;
   const text='אל: '+pkg.to+'\nנושא: '+pkg.subject+'\n\n'+pkg.body;
   navigator.clipboard.writeText(text).then(()=>alert('הועתק! אפשר להדביק במייל חדש ב-Outlook/Gmail.'));
+}
+
+/* ===== חתימה מהירה למשוב / שיחה אישית (נמען יחיד) ===== */
+const RECORD_TYPE_INFO={
+  f:{store:FEEDBACK, node:'feedback', label:'משוב', subjectField:'subject'},
+  o:{store:ONETOONE, node:'oneToOne', label:'שיחה אישית', subjectField:'topics'}
+};
+
+async function openQuickSign(type, id){
+  await ensureEmpDataMap();
+  const info=RECORD_TYPE_INFO[type];
+  const store = type==='f' ? FEEDBACK : ONETOONE;
+  const rec=store[id];
+  const box=document.getElementById('quickSignBox');
+  if(!rec){ box.innerHTML='<div class="err">רשומה לא נמצאה</div>'; document.getElementById('quickSignModalBg').classList.add('open'); return; }
+  const contact=EMP_DATA_MAP[rec.employee];
+  const title=info.label+' — '+esc(rec.employee)+(rec[info.subjectField]?(' ('+esc((rec[info.subjectField]||'').slice(0,40))+')'):'');
+
+  if(rec.signature){
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px">✔ '+esc(rec.employee)+' כבר אישר/ה קריאה ב-'+esc((rec.signature.date||'').slice(0,10))+'</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+
+  if(!contact || !contact.email){
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא נמצאה כתובת מייל עבור "'+esc(rec.employee)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+
+  const link=buildRecordSignLink(type, id);
+  const subject = info.label+' לאישור קריאה';
+  const msg='שלום '+rec.employee+', מצורף '+info.label+' לאישור קריאה.\n'+link;
+
+  // mark as sent
+  try{
+    await fetch(DB+'/'+info.node+'/'+id+'/signSentAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
+    rec.signSentAt=new Date().toISOString();
+    if(type==='f') renderFeedback(); else renderOneToOne();
+  }catch(e){}
+
+  window.SEND_EMAIL_PACKAGES = window.SEND_EMAIL_PACKAGES || [];
+  const pkgIdx=window.SEND_EMAIL_PACKAGES.length;
+  window.SEND_EMAIL_PACKAGES.push({to:contact.email, subject, body:msg});
+
+  box.innerHTML='<div style="margin-bottom:10px">'+title+'</div>'+
+    '<div class="att-item" style="width:100%;justify-content:space-between">'+
+    '<span>'+esc(rec.employee)+' — '+esc(contact.email)+'</span>'+
+    '<span>'+
+    '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>'+
+    '<button class="act-btn" title="העתק תוכן מייל" onclick="copyEmailPackage('+pkgIdx+')">📋 העתק תוכן</button>'+
+    '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
+    '</span></div>';
+  document.getElementById('quickSignModalBg').classList.add('open');
 }
 
 /* ===== ניהול עובדים ===== */
@@ -995,7 +1086,7 @@ function renderFeedback(){
   const typeSel=document.getElementById('fbTypeFilter').value;
   let rows=Object.keys(FEEDBACK).map(id=>{
     const f=FEEDBACK[id];
-    return {id, date:f.date||'', employee:f.employee||'', type:f.type||'', subject:f.subject||'', details:f.details||'', givenBy:f.givenBy||''};
+    return {id, date:f.date||'', employee:f.employee||'', type:f.type||'', subject:f.subject||'', details:f.details||'', givenBy:f.givenBy||'', signature:f.signature||null, signSentAt:f.signSentAt||null};
   });
 
   document.getElementById('fbAll').textContent=rows.length;
@@ -1015,7 +1106,7 @@ function renderFeedback(){
 
   document.getElementById('fbCountLbl').textContent='מציג '+rows.length+' משובים';
   const tb=document.getElementById('tbodyFeedback');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="nores">לא נמצאו משובים</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="8" class="nores">לא נמצאו משובים</td></tr>'; return; }
   const typeClass={'חיובי':'s-pos','בונה':'s-con','משמעתי':'s-disc'};
   tb.innerHTML=rows.map(r=>
     '<tr>'+
@@ -1025,7 +1116,8 @@ function renderFeedback(){
       '<td>'+esc(r.subject)+'</td>'+
       '<td>'+esc(r.details)+'</td>'+
       '<td>'+esc(r.givenBy)+'</td>'+
-      '<td><button class="act-btn" title="ערוך" onclick="editFeedback(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteFeedback(\''+r.id+'\')">🗑️</button></td>'+
+      '<td>'+recordSignCellHtml(r)+'</td>'+
+      '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'f\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editFeedback(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteFeedback(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>'
   ).join('');
 }
@@ -1092,7 +1184,7 @@ function renderOneToOne(){
   const search=(document.getElementById('ooSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ONETOONE).map(id=>{
     const o=ONETOONE[id];
-    return {id, date:o.date||'', employee:o.employee||'', topics:o.topics||'', followUp:o.followUp||'', notes:o.notes||'', createdBy:o.createdBy||''};
+    return {id, date:o.date||'', employee:o.employee||'', topics:o.topics||'', followUp:o.followUp||'', notes:o.notes||'', createdBy:o.createdBy||'', signature:o.signature||null, signSentAt:o.signSentAt||null};
   });
 
   document.getElementById('ooAll').textContent=rows.length;
@@ -1110,7 +1202,7 @@ function renderOneToOne(){
 
   document.getElementById('ooCountLbl').textContent='מציג '+rows.length+' שיחות';
   const tb=document.getElementById('tbodyOO');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="nores">לא נמצאו שיחות</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="nores">לא נמצאו שיחות</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>
     '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
@@ -1118,7 +1210,8 @@ function renderOneToOne(){
       '<td>'+esc(r.topics)+'</td>'+
       '<td>'+esc(r.followUp)+'</td>'+
       '<td>'+esc(r.createdBy)+'</td>'+
-      '<td><button class="act-btn" title="ערוך" onclick="editOneToOne(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteOneToOne(\''+r.id+'\')">🗑️</button></td>'+
+      '<td>'+recordSignCellHtml(r)+'</td>'+
+      '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'o\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editOneToOne(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteOneToOne(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>'
   ).join('');
 }
