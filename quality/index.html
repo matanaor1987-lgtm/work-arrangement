@@ -812,19 +812,33 @@ async function confirmSendSign(){
   showSaving(false);
 
   const linksBox=document.getElementById('sendLinksBox');
-  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">שלח את הקישור לכל עובד במייל (אם קיימת כתובת) — אחרת העתק ושלח ידנית:</div>'+
+  window.SEND_EMAIL_PACKAGES = window.SEND_EMAIL_PACKAGES || [];
+  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">שלח את הקישור לכל עובד במייל (אם קיימת כתובת) — אם "מייל" לא פותח את תוכנת המייל אצלך (למשל אין ברירת מחדל מוגדרת), השתמש ב"העתק תוכן" והדבק ידנית ב-Outlook/Gmail:</div>'+
     recipients.map(n=>{
       const link=buildSignLink(procId, n);
       const contact=EMP_DATA_MAP[n]||{};
+      const subject='נוהל לאישור קריאה: '+p.name;
       const msg='שלום '+n+', מצורף נוהל לאישור קריאה: '+p.name+'\n'+link;
       let sendBtns='';
-      if(contact.email) sendBtns += '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent('נוהל לאישור קריאה: '+p.name)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>';
+      if(contact.email){
+        sendBtns += '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>';
+        const pkgIdx=window.SEND_EMAIL_PACKAGES.length;
+        window.SEND_EMAIL_PACKAGES.push({to:contact.email, subject, body:msg});
+        sendBtns += '<button class="act-btn" title="העתק תוכן מייל" onclick="copyEmailPackage('+pkgIdx+')">📋 העתק תוכן</button>';
+      }
       return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
         '<span>'+esc(n)+'</span>'+
         '<span>'+sendBtns+
-        '<button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">📋</button></span>'+
+        '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button></span>'+
         '</div>';
     }).join('');
+}
+
+function copyEmailPackage(idx){
+  const pkg=window.SEND_EMAIL_PACKAGES[idx];
+  if(!pkg) return;
+  const text='אל: '+pkg.to+'\nנושא: '+pkg.subject+'\n\n'+pkg.body;
+  navigator.clipboard.writeText(text).then(()=>alert('הועתק! אפשר להדביק במייל חדש ב-Outlook/Gmail.'));
 }
 
 function openSignDetails(procId){
