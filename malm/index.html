@@ -1883,47 +1883,49 @@ async function dedupRecords(sheet) {
     </div>
   </div>
   <!-- NEW DEV TASK MODAL -->
-  <div id="newDevModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:480px;direction:rtl">
-      <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:#1a1a2e">משימה חדשה לבדיקה</div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מספר משימה</label>
-        <input id="ndtId" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+
+</div>
+
+<!-- NEW DEV TASK MODAL (top-level, so it's visible from any tab) -->
+<div id="newDevModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:480px;direction:rtl">
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:#1a1a2e">משימה חדשה לבדיקה</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מספר משימה</label>
+      <input id="ndtId" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מפתח</label>
+      <input id="ndtDev" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">תאור משימה *</label>
+      <textarea id="ndtDesc" rows="3" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">רכיב</label>
+        <input id="ndtComp" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
       </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">מפתח</label>
-        <input id="ndtDev" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">תאור משימה *</label>
-        <textarea id="ndtDesc" rows="3" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <div style="flex:1">
-          <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">רכיב</label>
-          <input id="ndtComp" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">גרסה</label>
-          <input id="ndtVer" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">ממשק</label>
-        <input id="ndtIface" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">הערות</label>
-        <textarea id="ndtNotes" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
-      </div>
-      <div class="saving" id="newDevMsg" style="margin-bottom:6px"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-        <button onclick="closeNewDevModal()" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial;background:#fff">ביטול</button>
-        <button onclick="saveNewDevTask()" style="padding:8px 16px;background:#D40511;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">שמור</button>
+      <div style="flex:1">
+        <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">גרסה</label>
+        <input id="ndtVer" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
       </div>
     </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">ממשק</label>
+      <input id="ndtIface" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:ltr;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:3px">הערות</label>
+      <textarea id="ndtNotes" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:Arial;direction:rtl;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+    <div id="newDevMsg" style="margin-bottom:6px;font-size:12px;font-weight:700"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button onclick="closeNewDevModal()" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;font-family:Arial;background:#fff">ביטול</button>
+      <button onclick="saveNewDevTask()" style="padding:8px 16px;background:#D40511;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:Arial">שמור</button>
+    </div>
   </div>
-
 </div>
 </body>
 </html>
