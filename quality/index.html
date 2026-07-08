@@ -305,6 +305,15 @@ a.doc-link:hover{text-decoration:underline}
     <div class="form-row"><label>נושא</label><input type="text" id="fbSubject"></div>
     <div class="form-row"><label>פירוט</label><textarea id="fbDetails"></textarea></div>
     <div class="form-row"><label>ניתן ע"י</label><input type="text" id="fbGivenBy"></div>
+    <div class="form-row">
+      <label>קובץ מצורף (מייל/מסמך המשוב)</label>
+      <div id="fbDropZone" class="drop-zone" onclick="document.getElementById('fbFileInput').click()">
+        📎 גרור קובץ לכאן או לחץ לבחירה
+      </div>
+      <input type="file" id="fbFileInput" style="display:none" multiple onchange="handleFbFiles(this.files)">
+      <div id="fbUploadStatus"></div>
+      <div id="fbAttachmentsBox" class="attachments"></div>
+    </div>
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal('fbModalBg')">ביטול</button>
       <button class="btn btn-save" onclick="saveFeedback()">שמור</button>
@@ -419,6 +428,7 @@ let userName='';
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof emailjs!=='undefined') emailjs.init(EMAIL_PUBLIC);
   initDropZone();
+  initFbDropZone();
   const saved=localStorage.getItem('quality_user');
   if(saved){ userName=saved; showApp(); }
 });
@@ -484,6 +494,46 @@ function renderAttachmentsBox(){
   if(!pendingAttachments.length){ el.innerHTML=''; return; }
   el.innerHTML=pendingAttachments.map((f,i)=>
     '<div class="att-item">📎 <a href="'+esc(f.url)+'" target="_blank">'+esc(f.name)+'</a><span class="att-size">'+esc(f.size)+'</span><span style="cursor:pointer;color:#999" onclick="pendingAttachments.splice('+i+',1);renderAttachmentsBox()">✕</span></div>'
+  ).join('');
+}
+
+/* ===== קבצים מצורפים למשוב ===== */
+let pendingFbAttachments=[];
+
+function initFbDropZone(){
+  const dz=document.getElementById('fbDropZone');
+  if(!dz) return;
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    handleFbFiles(e.dataTransfer.files);
+  });
+}
+
+async function handleFbFiles(files){
+  const status=document.getElementById('fbUploadStatus');
+  for(const file of files){
+    status.innerHTML='<div class="uploading">⏳ מעלה: '+esc(file.name)+'...</div>';
+    try{
+      const url=await uploadFile(file);
+      pendingFbAttachments.push({name:file.name, url, size:formatSize(file.size)});
+      renderFbAttachmentsBox();
+      status.innerHTML='';
+    }catch(e){
+      status.innerHTML='<div class="uploading" style="color:#c62828">❌ שגיאה: '+esc(e.message)+'</div>';
+      setTimeout(()=>status.innerHTML='',3000);
+    }
+  }
+  document.getElementById('fbFileInput').value='';
+}
+
+function renderFbAttachmentsBox(){
+  const el=document.getElementById('fbAttachmentsBox');
+  if(!pendingFbAttachments.length){ el.innerHTML=''; return; }
+  el.innerHTML=pendingFbAttachments.map((f,i)=>
+    '<div class="att-item">📎 <a href="'+esc(f.url)+'" target="_blank">'+esc(f.name)+'</a><span class="att-size">'+esc(f.size)+'</span><span style="cursor:pointer;color:#999" onclick="pendingFbAttachments.splice('+i+',1);renderFbAttachmentsBox()">✕</span></div>'
   ).join('');
 }
 
@@ -578,6 +628,11 @@ function docCellHtml(r){
     html += '<div><span class="doc-link" style="cursor:pointer;font-size:11px" onclick="openVersionHistory(\''+r.id+'\')">📜 '+r.versionHistory.length+' גרסאות קודמות</span></div>';
   }
   return html;
+}
+
+function feedbackAttachmentsHtml(r){
+  if(!(r.attachments||[]).length) return '';
+  return '<div style="margin-top:4px">'+r.attachments.map(a=>'<a class="doc-link" href="'+esc(a.url)+'" target="_blank" style="font-size:11px">📎 '+esc(a.name)+'</a>').join('<br>')+'</div>';
 }
 
 function signCellHtml(r){
@@ -1257,7 +1312,7 @@ function renderFeedback(){
   const typeSel=document.getElementById('fbTypeFilter').value;
   let rows=Object.keys(FEEDBACK).map(id=>{
     const f=FEEDBACK[id];
-    return {id, date:f.date||'', employee:f.employee||'', type:f.type||'', subject:f.subject||'', details:f.details||'', givenBy:f.givenBy||'', signature:f.signature||null, signSentAt:f.signSentAt||null};
+    return {id, date:f.date||'', employee:f.employee||'', type:f.type||'', subject:f.subject||'', details:f.details||'', givenBy:f.givenBy||'', attachments:f.attachments||[], signature:f.signature||null, signSentAt:f.signSentAt||null};
   });
 
   document.getElementById('fbAll').textContent=rows.length;
@@ -1285,7 +1340,7 @@ function renderFeedback(){
       '<td>'+esc(r.employee)+'</td>'+
       '<td><span class="badge '+(typeClass[r.type]||'')+'">'+esc(r.type)+'</span></td>'+
       '<td>'+esc(r.subject)+'</td>'+
-      '<td>'+esc(r.details)+'</td>'+
+      '<td>'+esc(r.details)+feedbackAttachmentsHtml(r)+'</td>'+
       '<td>'+esc(r.givenBy)+'</td>'+
       '<td>'+recordSignCellHtml(r)+'</td>'+
       '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'f\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editFeedback(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteFeedback(\''+r.id+'\')">🗑️</button></td>'+
@@ -1302,6 +1357,8 @@ function openNewFeedback(){
   document.getElementById('fbSubject').value='';
   document.getElementById('fbDetails').value='';
   document.getElementById('fbGivenBy').value=userName;
+  pendingFbAttachments=[];
+  renderFbAttachmentsBox();
   document.getElementById('fbModalBg').classList.add('open');
 }
 function editFeedback(id){
@@ -1314,6 +1371,8 @@ function editFeedback(id){
   document.getElementById('fbSubject').value=f.subject||'';
   document.getElementById('fbDetails').value=f.details||'';
   document.getElementById('fbGivenBy').value=f.givenBy||'';
+  pendingFbAttachments=(f.attachments||[]).slice();
+  renderFbAttachmentsBox();
   document.getElementById('fbModalBg').classList.add('open');
 }
 async function saveFeedback(){
@@ -1325,6 +1384,7 @@ async function saveFeedback(){
     subject:document.getElementById('fbSubject').value.trim(),
     details:document.getElementById('fbDetails').value.trim(),
     givenBy:document.getElementById('fbGivenBy').value.trim(),
+    attachments:pendingFbAttachments.slice(),
     updatedAt:new Date().toISOString()
   };
   if(!rec.employee){ alert('נא להזין שם עובד'); return; }
