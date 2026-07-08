@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#FECC02">
-<title>אישור קריאת נוהל</title>
+<title>אישור קריאה</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:14px;padding:20px}
@@ -21,6 +21,7 @@ h2{font-size:17px;margin-bottom:6px}
 .done{background:#e8f5e9;color:#2e7d32;padding:16px;border-radius:8px;font-weight:700;margin-top:10px}
 .err{background:#fde8e8;color:#c62828;padding:16px;border-radius:8px}
 .loading{color:#999;padding:30px}
+.box{background:#f9f9f9;border-radius:8px;padding:14px;margin-bottom:16px;text-align:right;font-size:13px;color:#444;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -33,59 +34,43 @@ h2{font-size:17px;margin-bottom:6px}
 <script>
 const DB='https://malm-focus-default-rtdb.firebaseio.com';
 const params=new URLSearchParams(location.search);
+const type=params.get('t')||'p';
 const procId=params.get('p');
+const recId=params.get('id');
 const empName=params.get('e');
 
 function sigKey(name){ return (name||'').trim().replace(/[.#$\[\]\/\s]/g,'_'); }
 function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-async function init(){
+async function initProcedure(){
   const card=document.getElementById('card');
-  if(!procId || !empName){
-    card.innerHTML='<div class="logo">DHL</div><div class="err">קישור לא תקין</div>';
-    return;
-  }
+  if(!procId || !empName){ card.innerHTML='<div class="logo">DHL</div><div class="err">קישור לא תקין</div>'; return; }
   let proc;
   try{
     const r=await fetch(DB+'/nahalim/'+procId+'.json?t='+Date.now());
     proc=await r.json();
-  }catch(e){
-    card.innerHTML='<div class="logo">DHL</div><div class="err">שגיאה בטעינת הנתונים, נסה שוב</div>';
-    return;
-  }
-  if(!proc){
-    card.innerHTML='<div class="logo">DHL</div><div class="err">הנוהל לא נמצא</div>';
-    return;
-  }
+  }catch(e){ card.innerHTML='<div class="logo">DHL</div><div class="err">שגיאה בטעינת הנתונים, נסה שוב</div>'; return; }
+  if(!proc){ card.innerHTML='<div class="logo">DHL</div><div class="err">הנוהל לא נמצא</div>'; return; }
+
   const already = proc.signatures && proc.signatures[sigKey(empName)];
   let docHtml='';
   (proc.attachments||[]).forEach(a=> docHtml += '<div><a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 פתח את המסמך</a></div>');
   if(proc.link) docHtml += '<div><a class="doc-link" href="'+esc(proc.link)+'" target="_blank">🔗 קישור למסמך</a></div>';
 
   if(already){
-    card.innerHTML='<div class="logo">DHL</div>'+
-      '<h2>'+esc(proc.name)+'</h2>'+
-      '<div class="sub">שלום '+esc(empName)+'</div>'+
-      docHtml+
+    card.innerHTML='<div class="logo">DHL</div><h2>'+esc(proc.name)+'</h2><div class="sub">שלום '+esc(empName)+'</div>'+docHtml+
       '<div class="done">✔ כבר אישרת שקראת נוהל זה ב-'+esc((already.date||'').slice(0,10))+'</div>';
     return;
   }
 
-  card.innerHTML='<div class="logo">DHL</div>'+
-    '<h2>'+esc(proc.name)+'</h2>'+
-    '<div class="sub">שלום '+esc(empName)+', אנא קרא/י את הנוהל ואשר/י</div>'+
-    docHtml+
-    '<button class="btn btn-confirm" id="confirmBtn">קראתי ואני מאשר/ת</button>'+
-    '<div id="resultArea"></div>';
+  card.innerHTML='<div class="logo">DHL</div><h2>'+esc(proc.name)+'</h2><div class="sub">שלום '+esc(empName)+', אנא קרא/י את הנוהל ואשר/י</div>'+docHtml+
+    '<button class="btn btn-confirm" id="confirmBtn">קראתי ואני מאשר/ת</button><div id="resultArea"></div>';
 
   document.getElementById('confirmBtn').addEventListener('click', async ()=>{
     const btn=document.getElementById('confirmBtn');
     btn.disabled=true; btn.textContent='שומר...';
     try{
-      await fetch(DB+'/nahalim/'+procId+'/signatures/'+sigKey(empName)+'.json',{
-        method:'PUT',
-        body:JSON.stringify({name:empName, date:new Date().toISOString()})
-      });
+      await fetch(DB+'/nahalim/'+procId+'/signatures/'+sigKey(empName)+'.json',{method:'PUT',body:JSON.stringify({name:empName, date:new Date().toISOString()})});
       btn.style.display='none';
       document.getElementById('resultArea').innerHTML='<div class="done">✔ תודה, האישור נקלט בהצלחה</div>';
     }catch(e){
@@ -93,6 +78,52 @@ async function init(){
       document.getElementById('resultArea').innerHTML='<div class="err">שגיאה בשמירה, נסה שוב</div>';
     }
   });
+}
+
+async function initRecord(node, label, subjectField, bodyField){
+  const card=document.getElementById('card');
+  if(!recId){ card.innerHTML='<div class="logo">DHL</div><div class="err">קישור לא תקין</div>'; return; }
+  let rec;
+  try{
+    const r=await fetch(DB+'/'+node+'/'+recId+'.json?t='+Date.now());
+    rec=await r.json();
+  }catch(e){ card.innerHTML='<div class="logo">DHL</div><div class="err">שגיאה בטעינת הנתונים, נסה שוב</div>'; return; }
+  if(!rec){ card.innerHTML='<div class="logo">DHL</div><div class="err">הרשומה לא נמצאה</div>'; return; }
+
+  const empDisplay = rec.employee || '';
+  const title = label+(rec[subjectField]?(' — '+rec[subjectField]):'');
+  let bodyText='';
+  if(bodyField && rec[bodyField]) bodyText = rec[bodyField];
+
+  if(rec.signature){
+    card.innerHTML='<div class="logo">DHL</div><h2>'+esc(title)+'</h2><div class="sub">שלום '+esc(empDisplay)+'</div>'+
+      (bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
+      '<div class="done">✔ כבר אישרת קריאה ב-'+esc((rec.signature.date||'').slice(0,10))+'</div>';
+    return;
+  }
+
+  card.innerHTML='<div class="logo">DHL</div><h2>'+esc(title)+'</h2><div class="sub">שלום '+esc(empDisplay)+', אנא אשר/י שקראת</div>'+
+    (bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
+    '<button class="btn btn-confirm" id="confirmBtn">קראתי ואני מאשר/ת</button><div id="resultArea"></div>';
+
+  document.getElementById('confirmBtn').addEventListener('click', async ()=>{
+    const btn=document.getElementById('confirmBtn');
+    btn.disabled=true; btn.textContent='שומר...';
+    try{
+      await fetch(DB+'/'+node+'/'+recId+'/signature.json',{method:'PUT',body:JSON.stringify({date:new Date().toISOString()})});
+      btn.style.display='none';
+      document.getElementById('resultArea').innerHTML='<div class="done">✔ תודה, האישור נקלט בהצלחה</div>';
+    }catch(e){
+      btn.disabled=false; btn.textContent='קראתי ואני מאשר/ת';
+      document.getElementById('resultArea').innerHTML='<div class="err">שגיאה בשמירה, נסה שוב</div>';
+    }
+  });
+}
+
+function init(){
+  if(type==='f') initRecord('feedback','משוב','subject','details');
+  else if(type==='o') initRecord('oneToOne','שיחה אישית','topics','notes');
+  else initProcedure();
 }
 init();
 </script>
