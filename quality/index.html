@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="נהלי איכות">
 <title>ניהול איכות המחלקה</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="config.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;direction:rtl;font-size:13px}
@@ -73,6 +74,15 @@ tr:hover td{background:#fffbf0}
 .small-note{font-size:11px;color:#999;margin-top:6px}
 a.doc-link{color:#1565c0;font-weight:600;text-decoration:none}
 a.doc-link:hover{text-decoration:underline}
+.drop-zone{border:2px dashed #ddd;border-radius:8px;padding:14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;transition:all .2s;margin-bottom:8px}
+.drop-zone.drag-over{border-color:#D40511;background:#fff5f5;color:#D40511}
+.drop-zone:hover{border-color:#bbb;color:#888}
+.attachments{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.att-item{display:flex;align-items:center;gap:6px;background:#f0f7ff;border:1px solid #b3d4f5;border-radius:6px;padding:4px 10px;font-size:11px}
+.att-item a{color:#1565c0;text-decoration:none;font-weight:600}
+.att-item a:hover{text-decoration:underline}
+.att-size{color:#999;font-size:10px}
+.uploading{color:#e65100;font-size:11px;padding:4px 0}
 </style>
 </head>
 <body>
@@ -251,7 +261,16 @@ a.doc-link:hover{text-decoration:underline}
       <div class="form-row"><label>תאריך פרסום/עדכון</label><input type="date" id="fPub"></div>
     </div>
     <div class="form-row"><label>תוקף עד (תאריך פקיעה)</label><input type="date" id="fExp"></div>
-    <div class="form-row"><label>קישור למסמך (SharePoint / Drive / Focus)</label><input type="text" id="fLink" placeholder="https://..."></div>
+    <div class="form-row">
+      <label>מסמך הנוהל</label>
+      <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        📎 גרור קובץ לכאן או לחץ לבחירה
+      </div>
+      <input type="file" id="fileInput" style="display:none" multiple onchange="handleFiles(this.files)">
+      <div id="uploadStatus"></div>
+      <div id="attachmentsBox" class="attachments"></div>
+      <input type="text" id="fLink" placeholder="או הדבק קישור חיצוני (SharePoint / Drive / Focus)" style="margin-top:4px">
+    </div>
     <div class="form-row"><label>הערות</label><textarea id="fNotes"></textarea></div>
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal('procModalBg')">ביטול</button>
@@ -321,9 +340,74 @@ let userName='';
 
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof emailjs!=='undefined') emailjs.init(EMAIL_PUBLIC);
+  initDropZone();
   const saved=localStorage.getItem('quality_user');
   if(saved){ userName=saved; showApp(); }
 });
+
+/* ===== File upload (drag & drop) ===== */
+let pendingAttachments=[];
+
+function initDropZone(){
+  const dz=document.getElementById('dropZone');
+  if(!dz) return;
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+}
+
+async function handleFiles(files){
+  const status=document.getElementById('uploadStatus');
+  for(const file of files){
+    status.innerHTML='<div class="uploading">⏳ מעלה: '+esc(file.name)+'...</div>';
+    try{
+      const url=await uploadFile(file);
+      pendingAttachments.push({name:file.name, url, size:formatSize(file.size)});
+      renderAttachmentsBox();
+      status.innerHTML='';
+    }catch(e){
+      status.innerHTML='<div class="uploading" style="color:#c62828">❌ שגיאה: '+esc(e.message)+'</div>';
+      setTimeout(()=>status.innerHTML='',3000);
+    }
+  }
+  document.getElementById('fileInput').value='';
+}
+
+function formatSize(bytes){
+  if(bytes<1024) return bytes+'B';
+  if(bytes<1024*1024) return Math.round(bytes/1024)+'KB';
+  return (bytes/1024/1024).toFixed(1)+'MB';
+}
+
+async function uploadFile(file){
+  const OWNER=window.APP_CONFIG.owner, REPO=window.APP_CONFIG.repo, TOKEN=window.APP_CONFIG.token;
+  const path='quality/attachments/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._\-\u0590-\u05ff]/g,'_');
+  const content=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+  const resp=await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+path,{
+    method:'PUT',
+    headers:{Authorization:'token '+TOKEN,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    body:JSON.stringify({message:'Upload attachment: '+file.name, content})
+  });
+  if(!resp.ok){ const e=await resp.json(); throw new Error(e.message||resp.status); }
+  return 'https://github.com/'+OWNER+'/'+REPO+'/raw/main/'+path;
+}
+
+function renderAttachmentsBox(){
+  const el=document.getElementById('attachmentsBox');
+  if(!pendingAttachments.length){ el.innerHTML=''; return; }
+  el.innerHTML=pendingAttachments.map((f,i)=>
+    '<div class="att-item">📎 <a href="'+esc(f.url)+'" target="_blank">'+esc(f.name)+'</a><span class="att-size">'+esc(f.size)+'</span><span style="cursor:pointer;color:#999" onclick="pendingAttachments.splice('+i+',1);renderAttachmentsBox()">✕</span></div>'
+  ).join('');
+}
 
 function doLogin(){
   const n=document.getElementById('loginName').value.trim();
@@ -348,6 +432,13 @@ function openTab(name, el){
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function showSaving(on){ document.getElementById('savingMsg').style.display=on?'block':'none'; }
 function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function docCellHtml(r){
+  const parts=[];
+  (r.attachments||[]).forEach(a=> parts.push('<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>'));
+  if(r.link) parts.push('<a class="doc-link" href="'+esc(r.link)+'" target="_blank">🔗 קישור</a>');
+  return parts.length ? parts.join('<br>') : '<span class="muted">—</span>';
+}
 
 async function loadAll(){
   try{
@@ -397,7 +488,7 @@ function renderProcs(){
   const cat=document.getElementById('catFilter').value;
   let rows=Object.keys(PROCS).map(id=>{
     const p=PROCS[id];
-    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', notes:p.notes||'', status:statusOf(p.expiry)};
+    return {id, num:p.num||'', name:p.name||'', cat:p.cat||'', owner:p.owner||'', published:p.published||'', expiry:p.expiry||'', link:p.link||'', attachments:p.attachments||[], notes:p.notes||'', status:statusOf(p.expiry)};
   });
 
   document.getElementById('stAll').textContent=rows.length;
@@ -441,7 +532,7 @@ function renderProcs(){
       '<td>'+esc(r.published)+'</td>'+
       '<td>'+esc(r.expiry)+'</td>'+
       '<td><span class="badge '+statusClass(r.status)+'">'+statusLabel(r.status)+'</span>'+(daysTxt?'<div style="font-size:10px;color:#999;margin-top:2px">'+daysTxt+'</div>':'')+'</td>'+
-      '<td>'+(r.link?'<a class="doc-link" href="'+esc(r.link)+'" target="_blank">פתח</a>':'<span class="muted">—</span>')+'</td>'+
+      '<td>'+docCellHtml(r)+'</td>'+
       '<td><button class="act-btn" title="ערוך" onclick="editProc(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteProc(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
@@ -458,6 +549,8 @@ function openNewProc(){
   document.getElementById('fExp').value='';
   document.getElementById('fLink').value='';
   document.getElementById('fNotes').value='';
+  pendingAttachments=[];
+  renderAttachmentsBox();
   document.getElementById('procModalBg').classList.add('open');
 }
 function editProc(id){
@@ -472,6 +565,8 @@ function editProc(id){
   document.getElementById('fExp').value=p.expiry||'';
   document.getElementById('fLink').value=p.link||'';
   document.getElementById('fNotes').value=p.notes||'';
+  pendingAttachments = (p.attachments||[]).slice();
+  renderAttachmentsBox();
   document.getElementById('procModalBg').classList.add('open');
 }
 async function saveProc(){
@@ -485,6 +580,7 @@ async function saveProc(){
     expiry:document.getElementById('fExp').value,
     link:document.getElementById('fLink').value.trim(),
     notes:document.getElementById('fNotes').value.trim(),
+    attachments:pendingAttachments.slice(),
     updatedBy:userName,
     updatedAt:new Date().toISOString()
   };
