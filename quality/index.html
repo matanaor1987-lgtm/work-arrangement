@@ -116,6 +116,7 @@ a.doc-link:hover{text-decoration:underline}
   <div class="pane active" id="pane-nahalim">
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
       <button class="btn btn-mail" onclick="openEmpMgr()">👥 ניהול עובדים</button>
+      <button class="btn btn-mail" onclick="openEmpCard()">👤 כרטיס עובד</button>
       <button class="btn btn-add" onclick="openNewProc()">+ נוהל חדש</button>
     </div>
     <div id="alertBanner"></div>
@@ -348,6 +349,22 @@ a.doc-link:hover{text-decoration:underline}
     <div class="form-actions">
       <button class="btn btn-cancel" onclick="closeModal('ooModalBg')">ביטול</button>
       <button class="btn btn-save" onclick="saveOneToOne()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- מודל כרטיס עובד -->
+<div class="modal-bg" id="empCardModalBg">
+  <div class="modal" style="max-width:680px">
+    <h3>כרטיס עובד</h3>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <select id="empCardSelect" style="flex:1" onchange="renderEmpCard(this.value)">
+        <option value="">בחר עובד...</option>
+      </select>
+    </div>
+    <div id="empCardBox"></div>
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('empCardModalBg')">סגור</button>
     </div>
   </div>
 </div>
@@ -1138,6 +1155,66 @@ async function sendQuickSignEmail(pkgKey, btn){
 /* ===== ניהול עובדים ===== */
 let EDITING_EMP_KEY=null;
 
+/* ===== כרטיס עובד ===== */
+async function openEmpCard(prefillName){
+  await ensureEmpDataMap();
+  const namesSet=new Set(Object.keys(EMP_DATA_MAP));
+  Object.values(PROCS).forEach(p=>(p.signRequired||[]).forEach(n=>namesSet.add(n)));
+  Object.values(FEEDBACK).forEach(f=>{ if(f.employee) namesSet.add(f.employee); });
+  Object.values(ONETOONE).forEach(o=>{ if(o.employee) namesSet.add(o.employee); });
+  const names=Array.from(namesSet).sort((a,b)=>a.localeCompare(b,'he'));
+  const sel=document.getElementById('empCardSelect');
+  sel.innerHTML='<option value="">בחר עובד...</option>'+names.map(n=>'<option value="'+esc(n)+'"'+(n===prefillName?' selected':'')+'>'+esc(n)+'</option>').join('');
+  document.getElementById('empCardBox').innerHTML='';
+  document.getElementById('empCardModalBg').classList.add('open');
+  if(prefillName) renderEmpCard(prefillName);
+}
+
+function renderEmpCard(name){
+  const box=document.getElementById('empCardBox');
+  if(!name){ box.innerHTML=''; return; }
+
+  const procRows=Object.keys(PROCS).map(id=>PROCS[id]).filter(p=>(p.signRequired||[]).includes(name));
+  const fbRows=Object.values(FEEDBACK).filter(f=>f.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const ooRows=Object.values(ONETOONE).filter(o=>o.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  let html='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">📋 נהלים ('+procRows.length+')</h4>';
+  if(!procRows.length) html+='<div class="muted" style="font-size:12px">אין נהלים ששויכו לעובד זה</div>';
+  else html+=procRows.map(p=>{
+    const s=(p.signatures||{})[sigKey(name)];
+    return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+      '<span>'+esc(p.name)+'</span>'+
+      (s ? '<span class="badge s-ok">✔ '+esc((s.date||'').slice(0,10))+'</span>' : '<span class="badge s-soon">⏳ ממתין</span>')+
+      '</div>';
+  }).join('');
+
+  html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">💬 משובים ('+fbRows.length+')</h4>';
+  if(!fbRows.length) html+='<div class="muted" style="font-size:12px">אין משובים לעובד זה</div>';
+  else html+=fbRows.map(f=>{
+    const typeClass={'שנתי':'s-pos','התפתחותי':'s-con','מוטיבציוני':'s-disc'}[f.type]||'';
+    return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+      '<span>'+esc(f.date)+' — '+esc(f.subject||'')+'</span>'+
+      '<span class="badge '+typeClass+'">'+esc(f.type||'')+'</span>'+
+      '</div>';
+  }).join('');
+
+  html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">🗣️ שיחות אישיות ('+ooRows.length+')</h4>';
+  if(!ooRows.length) html+='<div class="muted" style="font-size:12px">אין שיחות אישיות לעובד זה</div>';
+  else html+=ooRows.map(o=>{
+    let followBadge='';
+    if(o.followUpDue){
+      followBadge = o.followUpDone ? '<span class="badge s-ok">✔ בוצע</span>' :
+        (daysUntil(o.followUpDue)<0 ? '<span class="badge s-expired">באיחור</span>' : '<span class="badge s-soon">פתוח</span>');
+    }
+    return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+      '<span>'+esc(o.date)+' — '+esc((o.topics||'').slice(0,50))+'</span>'+
+      followBadge+
+      '</div>';
+  }).join('');
+
+  box.innerHTML=html;
+}
+
 async function openEmpMgr(){
   EDITING_EMP_KEY=null;
   document.getElementById('newEmpName').value='';
@@ -1366,7 +1443,7 @@ function renderFeedback(){
   tb.innerHTML=rows.map(r=>
     '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
-      '<td>'+esc(r.employee)+'</td>'+
+      '<td><span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(r.employee).replace(/'/g,"\\'")+'\')">'+esc(r.employee)+'</span></td>'+
       '<td><span class="badge '+(typeClass[r.type]||'')+'">'+esc(r.type)+'</span></td>'+
       '<td>'+esc(r.subject)+'</td>'+
       '<td>'+esc(r.details)+feedbackAttachmentsHtml(r)+'</td>'+
@@ -1487,7 +1564,7 @@ function renderOneToOne(){
   tb.innerHTML=rows.map(r=>
     '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
-      '<td>'+esc(r.employee)+'</td>'+
+      '<td><span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(r.employee).replace(/'/g,"\\'")+'\')">'+esc(r.employee)+'</span></td>'+
       '<td>'+esc(r.topics)+'</td>'+
       '<td>'+esc(r.followUp)+'</td>'+
       '<td>'+followUpDueCellHtml(r)+'</td>'+
