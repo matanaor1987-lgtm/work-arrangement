@@ -1036,33 +1036,40 @@ async function confirmSendSign(){
   showSaving(false);
 
   const linksBox=document.getElementById('sendLinksBox');
-  window.SEND_EMAIL_PACKAGES = window.SEND_EMAIL_PACKAGES || [];
-  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">שלח את הקישור לכל עובד במייל (אם קיימת כתובת) — אם "מייל" לא פותח את תוכנת המייל אצלך (למשל אין ברירת מחדל מוגדרת), השתמש ב"העתק תוכן" והדבק ידנית ב-Outlook/Gmail:</div>'+
+  window.SEND_PACKAGES = window.SEND_PACKAGES || {};
+  linksBox.innerHTML='<div style="margin-top:10px;font-size:11px;color:#666">שליחה אוטומטית במייל (בלחיצה אחת, בלי לפתוח תוכנת מייל):</div>'+
     recipients.map(n=>{
       const link=buildSignLink(procId, n);
       const contact=EMP_DATA_MAP[n]||{};
-      const subject='נוהל לאישור קריאה: '+p.name;
-      const msg='שלום '+n+', מצורף נוהל לאישור קריאה: '+p.name+'\n'+link;
-      let sendBtns='';
-      if(contact.email){
-        sendBtns += '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>';
-        const pkgIdx=window.SEND_EMAIL_PACKAGES.length;
-        window.SEND_EMAIL_PACKAGES.push({to:contact.email, subject, body:msg});
-        sendBtns += '<button class="act-btn" title="העתק תוכן מייל" onclick="copyEmailPackage('+pkgIdx+')">📋 העתק תוכן</button>';
-      }
+      const pkgKey='p_'+n.replace(/[^א-תa-zA-Z0-9]/g,'_');
+      window.SEND_PACKAGES[pkgKey]={
+        email: contact.email||'',
+        name: n,
+        subject: 'נוהל לאישור קריאה: '+p.name,
+        message: 'שלום '+n+', מצורף נוהל לאישור קריאה: '+p.name+'\n'+link
+      };
+      const sendBtn = contact.email
+        ? '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendDirectFromPackage(\''+pkgKey+'\', this)">📧 שלח מייל</button>'
+        : '<span class="muted" style="font-size:11px">אין מייל</span>';
       return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
         '<span>'+esc(n)+'</span>'+
-        '<span>'+sendBtns+
-        '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button></span>'+
+        '<span>'+sendBtn+
+        ' <button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button></span>'+
         '</div>';
     }).join('');
 }
 
-function copyEmailPackage(idx){
-  const pkg=window.SEND_EMAIL_PACKAGES[idx];
-  if(!pkg) return;
-  const text='אל: '+pkg.to+'\nנושא: '+pkg.subject+'\n\n'+pkg.body;
-  navigator.clipboard.writeText(text).then(()=>alert('הועתק! אפשר להדביק במייל חדש ב-Outlook/Gmail.'));
+async function sendDirectFromPackage(pkgKey, btn){
+  const pkg=window.SEND_PACKAGES && window.SEND_PACKAGES[pkgKey];
+  if(!pkg || !pkg.email) return;
+  btn.disabled=true; btn.textContent='שולח...';
+  try{
+    await sendReminderEmail(pkg.email, pkg.name, pkg.subject, pkg.message);
+    btn.textContent='✓ נשלח';
+    btn.style.background='#2e7d32';
+  }catch(e){
+    btn.disabled=false; btn.textContent='📧 שלח שוב';
+  }
 }
 
 /* ===== חתימה מהירה למשוב / שיחה אישית (נמען יחיד) ===== */
@@ -1097,26 +1104,35 @@ async function openQuickSign(type, id){
   const subject = info.label+' לאישור קריאה';
   const msg='שלום '+rec.employee+', מצורף '+info.label+' לאישור קריאה.\n'+link;
 
-  // mark as sent
-  try{
-    await fetch(DB+'/'+info.node+'/'+id+'/signSentAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
-    rec.signSentAt=new Date().toISOString();
-    if(type==='f') renderFeedback(); else renderOneToOne();
-  }catch(e){}
-
-  window.SEND_EMAIL_PACKAGES = window.SEND_EMAIL_PACKAGES || [];
-  const pkgIdx=window.SEND_EMAIL_PACKAGES.length;
-  window.SEND_EMAIL_PACKAGES.push({to:contact.email, subject, body:msg});
+  window.SEND_PACKAGES = window.SEND_PACKAGES || {};
+  const pkgKey='q_'+type+'_'+id;
+  window.SEND_PACKAGES[pkgKey]={email:contact.email, name:rec.employee, subject, message:msg, node:info.node, recId:id, recType:type};
 
   box.innerHTML='<div style="margin-bottom:10px">'+title+'</div>'+
     '<div class="att-item" style="width:100%;justify-content:space-between">'+
     '<span>'+esc(rec.employee)+' — '+esc(contact.email)+'</span>'+
     '<span>'+
-    '<a href="mailto:'+esc(contact.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" class="doc-link" style="margin-left:6px">✉️ מייל</a>'+
-    '<button class="act-btn" title="העתק תוכן מייל" onclick="copyEmailPackage('+pkgIdx+')">📋 העתק תוכן</button>'+
+    '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendQuickSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button> '+
     '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
     '</span></div>';
   document.getElementById('quickSignModalBg').classList.add('open');
+}
+
+async function sendQuickSignEmail(pkgKey, btn){
+  const pkg=window.SEND_PACKAGES && window.SEND_PACKAGES[pkgKey];
+  if(!pkg || !pkg.email) return;
+  btn.disabled=true; btn.textContent='שולח...';
+  try{
+    await sendReminderEmail(pkg.email, pkg.name, pkg.subject, pkg.message);
+    await fetch(DB+'/'+pkg.node+'/'+pkg.recId+'/signSentAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
+    const store = pkg.recType==='f' ? FEEDBACK : ONETOONE;
+    if(store[pkg.recId]) store[pkg.recId].signSentAt=new Date().toISOString();
+    if(pkg.recType==='f') renderFeedback(); else renderOneToOne();
+    btn.textContent='✓ נשלח';
+    btn.style.background='#2e7d32';
+  }catch(e){
+    btn.disabled=false; btn.textContent='📧 שלח שוב';
+  }
 }
 
 /* ===== ניהול עובדים ===== */
@@ -1249,12 +1265,12 @@ function sendDigestNow(){
 
 /* ===== תזכורות אוטומטיות לחתימה שלא הושלמה ===== */
 function sendReminderEmail(toEmail, toName, subject, message){
-  if(typeof emailjs==='undefined') return Promise.resolve();
+  if(typeof emailjs==='undefined') return Promise.reject(new Error('emailjs not loaded'));
   const now=new Date();
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   return emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
     to_email:toEmail, to_name:toName, subject, message, task_title:subject, status:'תזכורת לחתימה', time
-  }).catch(()=>{});
+  });
 }
 
 async function checkSignatureReminders(){
@@ -1279,10 +1295,12 @@ async function checkSignatureReminders(){
         const contact=EMP_DATA_MAP[name];
         if(contact && contact.email){
           const link=buildSignLink(id, name);
-          await sendReminderEmail(contact.email, name, 'תזכורת: נוהל ממתין לאישור קריאה - '+p.name,
-            'שלום '+name+', זו תזכורת שהנוהל "'+p.name+'" עדיין ממתין לאישור הקריאה שלך.\n'+link);
-          reminded[name]=new Date().toISOString();
-          changed=true;
+          try{
+            await sendReminderEmail(contact.email, name, 'תזכורת: נוהל ממתין לאישור קריאה - '+p.name,
+              'שלום '+name+', זו תזכורת שהנוהל "'+p.name+'" עדיין ממתין לאישור הקריאה שלך.\n'+link);
+            reminded[name]=new Date().toISOString();
+            changed=true;
+          }catch(e){}
         }
       }
     }
@@ -1302,9 +1320,9 @@ async function checkSignatureReminders(){
         const contact=EMP_DATA_MAP[rec.employee];
         if(contact && contact.email){
           const link=buildRecordSignLink(node==='feedback'?'f':'o', id);
-          await sendReminderEmail(contact.email, rec.employee, 'תזכורת: '+label+' ממתין לאישור קריאה',
-            'שלום '+rec.employee+', זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
           try{
+            await sendReminderEmail(contact.email, rec.employee, 'תזכורת: '+label+' ממתין לאישור קריאה',
+              'שלום '+rec.employee+', זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
             await fetch(DB+'/'+node+'/'+id+'/signRemindedAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
             rec.signRemindedAt=new Date().toISOString();
           }catch(e){}
