@@ -2218,9 +2218,14 @@ function buildVacationMgr(){
     const L=live&&live[r.empId];
     return (L&&L.matched)?L.projectedYearEnd:r.newBalance;
   };
+  const throughJanHoursOf=r=>{
+    const L=live&&live[r.empId];
+    if(!(L&&L.matched))return r.newBalance;
+    return L.projectedYearEnd-(L.januaryHours||0);
+  };
   const forfeitHoursOf=r=>{
     const L=live&&live[r.empId];
-    const base=(L&&L.matched)?L.projectedYearEnd:r.newBalance;
+    const base=throughJanHoursOf(r);
     return Math.max(0,base-CAP_HOURS);
   };
   const sortVal=(r,key)=>{
@@ -2229,6 +2234,7 @@ function buildVacationMgr(){
       case 'name':return (r.firstName||'')+(r.lastName||'');
       case 'now':return nowHoursOf(r);
       case 'yearend':return yearEndHoursOf(r);
+      case 'throughjan':return throughJanHoursOf(r);
       case 'forfeit':return forfeitHoursOf(r);
       default:return 0;
     }
@@ -2247,7 +2253,7 @@ function buildVacationMgr(){
     return `<th onclick="setVacationSort('${key}')" style="padding:6px 8px;text-align:${align||'center'};border-bottom:2px solid #eee;cursor:pointer;user-select:none" title="לחץ למיון">${label}${arrow}</th>`;
   };
   return `<div class="emp-mgr" onclick="if(event.target===this)closeVacationMgr()">
-    <div class="emp-mgr-box" style="width:min(700px,95vw)">
+    <div class="emp-mgr-box" style="width:min(820px,96vw)">
       <h2>🏖️ ימי חופש</h2>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026</button>`:""}
@@ -2260,6 +2266,7 @@ function buildVacationMgr(){
               ${th('name','שם','right')}
               ${th('now','ימי חופש עכשיו')}
               ${th('yearend','ימי חופש בסוף שנה')}
+              ${th('throughjan','ימי חופש עד סוף ינואר')}
               ${th('forfeit','ימים לניצול (מעל 3)')}
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
@@ -2267,7 +2274,7 @@ function buildVacationMgr(){
           <tbody>
             ${records.map(r=>{
               const L=live&&live[r.empId];
-              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),forfH=forfeitHoursOf(r);
+              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),janH=throughJanHoursOf(r),forfH=forfeitHoursOf(r);
               const atRisk=forfH>0;
               const unmatched=live&&!(L&&L.matched);
               const rowBg=nowH<0?'#fff0f0':(atRisk?'#f8f0ff':'#fff');
@@ -2276,6 +2283,7 @@ function buildVacationMgr(){
                 <td style="padding:7px 8px;font-weight:700">${fullName}${unmatched?' <span title="לא מקושר לעובד בסידור" style="color:#c00;font-size:11px">🔗</span>':''}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${nowH<0?'#c00':'#1e7a3a'}">${fmtD(nowH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}">${fmtD(yearH)}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:700;color:${janH<0?'#c00':'#333'}">${fmtD(janH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
                 <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
