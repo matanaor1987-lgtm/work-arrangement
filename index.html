@@ -924,6 +924,7 @@ function buildApp(){
     ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openDailyDist()" style="background:rgba(255,204,0,0.3);margin-left:6px">☀️ חלוקה יומית</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
+    ${state.mode==="admin"?`<button class="sign-btn" onclick="fixRamMilitary()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="להחליף את ראם מחופש למילואים 13.7-29.9.2026">🪖 מילואים ראם</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openVacationMgr()" style="background:rgba(255,204,0,0.3);margin-left:6px" title="ניהול יתרות חופשה">🏖️ ניהול חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportToPDF()" style="background:rgba(255,255,255,0.18);margin-left:6px" title="ייצא סידור ל-PDF">🖨️ PDF</button>`:""}
@@ -2082,6 +2083,27 @@ window.importVacationData = async function(){
 };
 // ===== END VACATION IMPORT =====
 
+// ===== ONE-OFF: RAM RESERVE DUTY (13.7-29.9.2026) =====
+window.fixRamMilitary=async function(){
+  if(!db){alert('אין חיבור ל-Firebase');return;}
+  if(!confirm('לשנות את ראם מ-13.7.2026 עד 29.9.2026 מ"חופש" ל"מילואים"?\nזה ידרוס כל מה שרשום לו בטווח הזה.'))return;
+  const ranges=[{m:6,start:13,end:31},{m:7,start:1,end:31},{m:8,start:1,end:29}]; // July, Aug, Sep 2026 (0-indexed months)
+  let count=0;
+  for(const {m,start,end} of ranges){
+    const key=`seder_2026_${m}`;
+    const snap=await get(ref(db,key));
+    const existing=snap.val()||{};
+    const sched=Object.assign({},existing.schedule||{});
+    for(let d=start;d<=end;d++){
+      sched['ראם|'+d]='MIL';
+      count++;
+    }
+    await set(ref(db,key),Object.assign({},existing,{schedule:sched}));
+  }
+  showToast('✅ ראם עודכן למילואים ('+count+' ימים, 13.7-29.9)');
+};
+// ===== END ONE-OFF =====
+
 // ===== VACATION BALANCE MANAGEMENT =====
 const VACATION_SEED_2026_06=[
   {empId:"10359",firstName:"גיא",lastName:"רון",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:21.05,accruedRight:108.00,usedAccrued:89.60,monthlyHours:18.00,newBalance:39.45},
@@ -2227,7 +2249,6 @@ function buildVacationMgr(){
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026</button>`:""}
         ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">🔄 חשב מחדש</button>`:""}
-        ${live?`<span style="font-size:11px;color:#888">${matchedCount}/${records.length} מקושרים</span>`:""}
       </div>
       ${records.length?`<div style="max-height:400px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
