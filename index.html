@@ -2287,7 +2287,7 @@ function buildVacationMgr(){
               return `<tr style="background:${rowBg};border-bottom:1px solid #f0f0f0">
                 <td style="padding:7px 8px;font-weight:700">${fullName}${unmatched?' <span title="לא מקושר לעובד בסידור" style="color:#c00;font-size:11px">🔗</span>':''}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${nowH<0?'#c00':'#1e7a3a'}">${fmtD(nowH)}</td>
-                <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}">${fmtD(yearH)}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}" title="${L&&L.matched?'נוצל מאז הדוח: '+fmtD(L.usedHoursSinceReport||0)+' י׳ | מתוכנן קדימה (השנה): '+fmtD(((L.futureHours||0)))+' י׳ | ינואר: '+fmtD(L.januaryHours||0)+' י׳':'לא מקושר'}">${fmtD(yearH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:#555">${schedDays>0?fmtD(schedDays):'—'}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
                 <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
