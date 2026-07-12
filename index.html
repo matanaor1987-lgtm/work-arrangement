@@ -924,7 +924,6 @@ function buildApp(){
     ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openDailyDist()" style="background:rgba(255,204,0,0.3);margin-left:6px">☀️ חלוקה יומית</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
-    ${state.mode==="admin"?`<button class="sign-btn" onclick="fixRamMilitary()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="להחליף את ראם מחופש למילואים 13.7-29.9.2026">🪖 מילואים ראם</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openVacationMgr()" style="background:rgba(255,204,0,0.3);margin-left:6px" title="ניהול יתרות חופשה">🏖️ ניהול חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportToPDF()" style="background:rgba(255,255,255,0.18);margin-left:6px" title="ייצא סידור ל-PDF">🖨️ PDF</button>`:""}
@@ -2082,27 +2081,6 @@ window.importVacationData = async function(){
   alert('✅ יובאו '+done+' ימי חופש בהצלחה!');
 };
 // ===== END VACATION IMPORT =====
-
-// ===== ONE-OFF: RAM RESERVE DUTY (13.7-29.9.2026) =====
-window.fixRamMilitary=async function(){
-  if(!db){alert('אין חיבור ל-Firebase');return;}
-  if(!confirm('לשנות את ראם מ-13.7.2026 עד 29.9.2026 מ"חופש" ל"מילואים"?\nזה ידרוס כל מה שרשום לו בטווח הזה.'))return;
-  const ranges=[{m:6,start:13,end:31},{m:7,start:1,end:31},{m:8,start:1,end:29}]; // July, Aug, Sep 2026 (0-indexed months)
-  let count=0;
-  for(const {m,start,end} of ranges){
-    const key=`seder_2026_${m}`;
-    const snap=await get(ref(db,key));
-    const existing=snap.val()||{};
-    const sched=Object.assign({},existing.schedule||{});
-    for(let d=start;d<=end;d++){
-      sched['ראם|'+d]='MIL';
-      count++;
-    }
-    await set(ref(db,key),Object.assign({},existing,{schedule:sched}));
-  }
-  showToast('✅ ראם עודכן למילואים ('+count+' ימים, 13.7-29.9)');
-};
-// ===== END ONE-OFF =====
 
 // ===== VACATION BALANCE MANAGEMENT =====
 const VACATION_SEED_2026_06=[
