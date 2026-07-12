@@ -427,7 +427,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationSortKey:'live',vacationSortDir:'asc'};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationNextJanHours:{},vacationSortKey:'live',vacationSortDir:'asc'};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -602,11 +602,14 @@ function computeMonthHours(schedObj,vacYear,m){
 
 // Sets up persistent real-time listeners on all 12 months of the given year's schedule,
 // so vacation balances recalculate automatically the moment anything changes in the schedule.
+// Also listens to January of the FOLLOWING year — since contracts run monthly, employees can still
+// use up this year's leftover vacation in January before the 3-day carryover cap is actually enforced.
 function ensureVacationYearListeners(vacYear){
   if(!db)return;
   if(state.vacationScheduleYear===vacYear)return; // already listening to this year
   state.vacationScheduleYear=vacYear;
   state.vacationYearSchedule={};
+  state.vacationNextJanHours={};
   for(let m=0;m<12;m++){
     onValue(ref(db,`seder_${vacYear}_${m}`),(snap)=>{
       const data=snap.val()||{};
@@ -615,6 +618,12 @@ function ensureVacationYearListeners(vacYear){
       render();
     });
   }
+  onValue(ref(db,`seder_${vacYear+1}_0`),(snap)=>{
+    const data=snap.val()||{};
+    state.vacationNextJanHours=computeMonthHours(data.schedule||{},vacYear+1,0);
+    recalcVacationLive();
+    render();
+  });
 }
 
 // Pure (synchronous) recalculation of live vacation balances from whatever is currently cached
@@ -667,9 +676,13 @@ function recalcVacationLive(){
     const monthsToYearEnd=Math.max(0,11-baselineMonthIdx);
     const newBalanceLive=baseline+monthlyRate*monthsSinceReport-elapsedHoursSinceReport;
     const projectedYearEnd=baseline+monthlyRate*monthsToYearEnd-(elapsedHoursSinceReport+futureHours);
+    // Contracts run monthly, so this year's leftover balance can still be used up in January
+    // before the 3-day carryover cap is actually enforced — net out whatever's already scheduled there.
+    const nextJanMap=(state.vacationNextJanHours&&state.vacationNextJanHours[name])||{};
+    const januaryHours=Object.values(nextJanMap).reduce((s,h)=>s+h,0);
     const CAP_HOURS=27; // 3 days carryover, at the standard 9h/day
-    const forfeitAtYearEnd=Math.max(0,projectedYearEnd-CAP_HOURS);
-    live[r.empId]={matched:true,name,usedHoursSinceReport:elapsedHoursSinceReport,futureHours,newBalanceLive,projectedYearEnd,forfeitAtYearEnd};
+    const forfeitAtYearEnd=Math.max(0,projectedYearEnd-januaryHours-CAP_HOURS);
+    live[r.empId]={matched:true,name,usedHoursSinceReport:elapsedHoursSinceReport,futureHours,januaryHours,newBalanceLive,projectedYearEnd,forfeitAtYearEnd};
   });
   state.vacationLive=live;
 }
