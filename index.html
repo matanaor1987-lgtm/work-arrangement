@@ -2194,34 +2194,34 @@ window.setVacationSort=function(key){
 
 function buildVacationMgr(){
   let records=Object.values(state.vacationData||{});
-  const fmt=n=>Number(n||0).toFixed(2);
-  const CARRYOVER_CAP_HOURS=27; // 3 days x 9h standard workday
+  const fmtD=hours=>(Number(hours||0)/9).toFixed(1); // hours -> days, at the standard 9h/day
+  const CAP_HOURS=27; // 3 days x 9h
   const live=state.vacationLive||null;
-  const effBalanceOf=r=>{
+  const nowHoursOf=r=>{
     const L=live&&live[r.empId];
     return (L&&L.matched)?L.newBalanceLive:r.newBalance;
   };
-  const forfeitOf=r=>{
+  const yearEndHoursOf=r=>{
     const L=live&&live[r.empId];
-    if(L&&L.matched) return L.forfeitAtYearEnd;
-    return Math.max(0,r.newBalance-CARRYOVER_CAP_HOURS);
+    return (L&&L.matched)?L.projectedYearEnd:r.newBalance;
+  };
+  const forfeitHoursOf=r=>{
+    const L=live&&live[r.empId];
+    const base=(L&&L.matched)?L.projectedYearEnd:r.newBalance;
+    return Math.max(0,base-CAP_HOURS);
   };
   const sortVal=(r,key)=>{
-    const L=live&&live[r.empId];
     switch(key){
       case 'empId':return r.empId;
       case 'name':return (r.firstName||'')+(r.lastName||'');
-      case 'quota':return Number(r.annualQuota)||0;
-      case 'opening':return Number(r.openingBalance)||0;
-      case 'imported':return Number(r.newBalance)||0;
-      case 'live':return effBalanceOf(r);
-      case 'future':return (L&&L.matched)?L.futureHours:-Infinity;
-      case 'projected':return (L&&L.matched)?L.projectedYearEnd:-Infinity;
-      case 'forfeit':return forfeitOf(r);
+      case 'now':return nowHoursOf(r);
+      case 'yearend':return yearEndHoursOf(r);
+      case 'forfeit':return forfeitHoursOf(r);
       default:return 0;
     }
   };
-  const sk=state.vacationSortKey,sd=state.vacationSortDir;
+  const sk=state.vacationSortKey==='live'?'now':state.vacationSortKey; // migrate old default key
+  const sd=state.vacationSortDir;
   records=records.slice().sort((a,b)=>{
     const va=sortVal(a,sk),vb=sortVal(b,sk);
     let cmp;
@@ -2229,30 +2229,24 @@ function buildVacationMgr(){
     else cmp=va-vb;
     return sd==='asc'?cmp:-cmp;
   });
-  const matchedCount=live?records.filter(r=>live[r.empId]&&live[r.empId].matched).length:0;
   const th=(key,label,align)=>{
-    const arrow=state.vacationSortKey===key?(state.vacationSortDir==='asc'?' ▲':' ▼'):'';
+    const arrow=sk===key?(sd==='asc'?' ▲':' ▼'):'';
     return `<th onclick="setVacationSort('${key}')" style="padding:6px 8px;text-align:${align||'center'};border-bottom:2px solid #eee;cursor:pointer;user-select:none" title="לחץ למיון">${label}${arrow}</th>`;
   };
   return `<div class="emp-mgr" onclick="if(event.target===this)closeVacationMgr()">
-    <div class="emp-mgr-box" style="width:min(1100px,97vw)">
-      <h2>🏖️ ניהול יתרות חופשה</h2>
+    <div class="emp-mgr-box" style="width:min(700px,95vw)">
+      <h2>🏖️ ימי חופש</h2>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026</button>`:""}
         ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">🔄 חשב מחדש</button>`:""}
       </div>
-      ${records.length?`<div style="max-height:400px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
+      ${records.length?`<div style="max-height:420px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
           <thead style="position:sticky;top:0;background:#fafafa;z-index:1">
             <tr>
-              ${th('empId',"מס' עובד",'right')}
               ${th('name','שם','right')}
-              ${th('quota','מכסה שנתית')}
-              ${th('opening','יתרה ת. שנה')}
-              ${th('imported','יתרה מיובאת')}
-              ${th('live','יתרה חיה')}
-              ${th('future','מתוכנן קדימה')}
-              ${th('projected','צפי סוף שנה')}
+              ${th('now','ימי חופש עכשיו')}
+              ${th('yearend','ימי חופש בסוף שנה')}
               ${th('forfeit','ימים לניצול (מעל 3)')}
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
@@ -2260,27 +2254,17 @@ function buildVacationMgr(){
           <tbody>
             ${records.map(r=>{
               const L=live&&live[r.empId];
-              const eff=effBalanceOf(r);
-              const neg=eff<0;
-              const low=!neg&&eff<20;
-              const excessHours=forfeitOf(r);
-              const atRisk=excessHours>0;
-              const rowBg=neg?'#fff0f0':(atRisk?'#f8f0ff':(low?'#FFFBEA':'#fff'));
+              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),forfH=forfeitHoursOf(r);
+              const atRisk=forfH>0;
+              const unmatched=live&&!(L&&L.matched);
+              const rowBg=nowH<0?'#fff0f0':(atRisk?'#f8f0ff':'#fff');
               const fullName=(r.firstName||'')+' '+(r.lastName||'');
-              const liveCell=!live?'<span style="color:#bbb">—</span>':(L&&L.matched?`<b style="color:${L.newBalanceLive<0?'#c00':'#1e7a3a'}">${fmt(L.newBalanceLive)}</b>`:'<span title="לא נמצא קישור לעובד — הוסף מספר עובד בניהול עובדים" style="color:#c00">🔗 לא מקושר</span>');
-              const futureCell=(L&&L.matched)?fmt(L.futureHours)+' ש\'':'—';
-              const projCell=(L&&L.matched)?`<b style="color:${L.projectedYearEnd<0?'#c00':'#333'}">${fmt(L.projectedYearEnd)}</b>`:'—';
               return `<tr style="background:${rowBg};border-bottom:1px solid #f0f0f0">
-                <td style="padding:6px 8px">${r.empId}</td>
-                <td style="padding:6px 8px;font-weight:700">${fullName}</td>
-                <td style="padding:6px 8px;text-align:center">${fmt(r.annualQuota)}</td>
-                <td style="padding:6px 8px;text-align:center">${fmt(r.openingBalance)}</td>
-                <td style="padding:6px 8px;text-align:center;color:#888">${fmt(r.newBalance)}</td>
-                <td style="padding:6px 8px;text-align:center">${liveCell}</td>
-                <td style="padding:6px 8px;text-align:center">${futureCell}</td>
-                <td style="padding:6px 8px;text-align:center">${projCell}</td>
-                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours/9)+' ימים':'—'}</td>
-                <td style="padding:6px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
+                <td style="padding:7px 8px;font-weight:700">${fullName}${unmatched?' <span title="לא מקושר לעובד בסידור" style="color:#c00;font-size:11px">🔗</span>':''}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:800;color:${nowH<0?'#c00':'#1e7a3a'}">${fmtD(nowH)}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}">${fmtD(yearH)}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
+                <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
             }).join('')}
           </tbody>
