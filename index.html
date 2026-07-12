@@ -686,7 +686,8 @@ function recalcVacationLive(){
     const januaryHours=Object.values(nextJanMap).reduce((s,h)=>s+h,0);
     const CAP_HOURS=27; // 3 days carryover, at the standard 9h/day
     const forfeitAtYearEnd=Math.max(0,projectedYearEnd-januaryHours-CAP_HOURS);
-    live[r.empId]={matched:true,name,usedHoursSinceReport:elapsedHoursSinceReport,futureHours,januaryHours,newBalanceLive,projectedYearEnd,forfeitAtYearEnd};
+    live[r.empId]={matched:true,name,usedHoursSinceReport:elapsedHoursSinceReport,futureHours,januaryHours,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,
+      _debug:{baseline,monthlyRate,baselineMonthIdx,baselineDay,realMonthIdx,realDay,monthsSinceReport,monthsToYearEnd,importDateStr:importDate.toString()}};
   });
   state.vacationLive=live;
 }
@@ -2162,6 +2163,27 @@ window.syncVacationFromSchedule=function(){
   render();
 };
 
+window.debugVacationRow=function(empId){
+  const L=state.vacationLive&&state.vacationLive[empId];
+  if(!L){alert('אין נתוני live עבור עובד '+empId);return;}
+  const d=L._debug||{};
+  const msg=
+    'שם בסידור: '+L.matched+' / '+L.name+'\n'+
+    'baseline (יתרה מיובאת, שעות): '+d.baseline+'\n'+
+    'monthlyRate (שעות לחודש): '+d.monthlyRate+'\n'+
+    'baselineMonthIdx (0-11): '+d.baselineMonthIdx+' | baselineDay: '+d.baselineDay+'\n'+
+    'realMonthIdx (0-11): '+d.realMonthIdx+' | realDay: '+d.realDay+'\n'+
+    'importDate: '+d.importDateStr+'\n'+
+    'monthsSinceReport: '+d.monthsSinceReport+' | monthsToYearEnd: '+d.monthsToYearEnd+'\n'+
+    'usedHoursSinceReport (elapsed): '+L.usedHoursSinceReport+'\n'+
+    'futureHours: '+L.futureHours+'\n'+
+    'januaryHours: '+L.januaryHours+'\n'+
+    'newBalanceLive: '+L.newBalanceLive+'\n'+
+    'projectedYearEnd: '+L.projectedYearEnd+'\n'+
+    'forfeitAtYearEnd: '+L.forfeitAtYearEnd;
+  alert(msg);
+};
+
 window.delVacationRecord=async function(empId,name){
   if(!db)return;
   if(!confirm('למחוק את רשומת החופשה של '+name+' (מספר עובד '+empId+')?'))return;
@@ -2295,7 +2317,7 @@ function buildVacationMgr(){
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}" title="${L&&L.matched?'נוצל מאז הדוח: '+fmtD(L.usedHoursSinceReport||0)+' י׳ | מתוכנן קדימה (השנה): '+fmtD(((L.futureHours||0)))+' י׳ | ינואר: '+fmtD(L.januaryHours||0)+' י׳':'לא מקושר'}">${fmtD(yearH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:#555">${schedDays>0?fmtD(schedDays):'—'}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
-                <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
+                <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button> <button onclick='debugVacationRow(${JSON.stringify(r.empId)})' style="background:#eef;border:1px solid #99c;border-radius:4px;color:#339;cursor:pointer;padding:2px 6px;font-size:11px" title="הצג נתוני חישוב גולמיים">🐛</button></td>
               </tr>`;
             }).join('')}
           </tbody>
