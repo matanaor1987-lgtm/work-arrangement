@@ -585,7 +585,7 @@ function listenToData(){
 function hoursForDow(dow){return dow===2?8:(dow===5||dow===6)?0:9;}
 
 function computeMonthHours(schedObj,vacYear,m){
-  const hoursMap={};
+  const map={}; // name -> {day: hours}
   Object.entries(schedObj||{}).forEach(([key,val])=>{
     if(val!=='OFF')return;
     const [name,dayStr]=key.split('|');
@@ -594,9 +594,10 @@ function computeMonthHours(schedObj,vacYear,m){
     const dow=new Date(vacYear,m,day).getDay();
     const h=hoursForDow(dow);
     if(h<=0)return; // Friday/Saturday never deduct from balance
-    hoursMap[name]=(hoursMap[name]||0)+h;
+    if(!map[name])map[name]={};
+    map[name][day]=(map[name][day]||0)+h;
   });
-  return hoursMap;
+  return map;
 }
 
 // Sets up persistent real-time listeners on all 12 months of the given year's schedule,
@@ -621,8 +622,8 @@ function ensureVacationYearListeners(vacYear){
 function recalcVacationLive(){
   const records=Object.values(state.vacationData||{});
   if(records.length===0){state.vacationLive=null;return;}
-  const monthHours=state.vacationYearSchedule||{};
-  if(Object.keys(monthHours).length===0){state.vacationLive=null;return;} // schedule not loaded yet
+  const monthData=state.vacationYearSchedule||{}; // monthData[m] = {name:{day:hours}}
+  if(Object.keys(monthData).length===0){state.vacationLive=null;return;} // schedule not loaded yet
 
   const VACATION_NAME_ALIAS={"אדן":"אילנה","מירי":"מירית"};
   const vacYear=state.vacationScheduleYear;
@@ -633,22 +634,34 @@ function recalcVacationLive(){
   const today=new Date();
   const realYear=today.getFullYear();
   const realMonthIdx=(realYear===vacYear)?today.getMonth():11;
+  const realDay=(realYear===vacYear)?today.getDate():31;
 
   const live={};
   records.forEach(r=>{
     const name=empIdToName[r.empId]||VACATION_NAME_ALIAS[r.firstName]||null;
     const monthlyRate=Number(r.monthlyHours)||0;
     const baseline=Number(r.newBalance)||0;
-    let baselineMonthIdx=-1;
-    if(r.month&&r.month.includes('/')) baselineMonthIdx=(parseInt(r.month.split('/')[0])||1)-1;
+    // Anchor on the exact moment this row was imported (day-precision), not just the report's stated month.
+    // This is critical: the report is "correct as of the moment it was pulled" — so days on/before that
+    // moment must NOT be recounted from the schedule, or they'd be subtracted twice.
+    const importDate=r.updatedAt?new Date(r.updatedAt):today;
+    const sameYear=importDate.getFullYear()===vacYear;
+    const baselineMonthIdx=sameYear?importDate.getMonth():-1;
+    const baselineDay=sameYear?importDate.getDate():31;
     if(!name){
       live[r.empId]={matched:false};
       return;
     }
     let elapsedHoursSinceReport=0,futureHours=0;
-    for(let m=baselineMonthIdx+1;m<12;m++){
-      const h=(monthHours[m]&&monthHours[m][name])||0;
-      if(m<=realMonthIdx) elapsedHoursSinceReport+=h; else futureHours+=h;
+    for(let m=Math.max(0,baselineMonthIdx);m<12;m++){
+      const dayMap=(monthData[m]&&monthData[m][name])||{};
+      Object.entries(dayMap).forEach(([dayStr,h])=>{
+        const day=parseInt(dayStr);
+        // Skip anything on/before the exact import moment — already reflected in the imported balance
+        if(m===baselineMonthIdx&&day<=baselineDay)return;
+        const isPastOrToday=(m<realMonthIdx)||(m===realMonthIdx&&day<=realDay);
+        if(isPastOrToday) elapsedHoursSinceReport+=h; else futureHours+=h;
+      });
     }
     const monthsSinceReport=Math.max(0,realMonthIdx-baselineMonthIdx);
     const monthsToYearEnd=Math.max(0,11-baselineMonthIdx);
