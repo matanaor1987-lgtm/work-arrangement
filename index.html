@@ -647,9 +647,8 @@ function recalcVacationLive(){
   employees.forEach(e=>{if(e.empId)empIdToName[e.empId]=e.name;});
 
   const today=new Date();
-  const realYear=today.getFullYear();
-  const realMonthIdx=(realYear===vacYear)?today.getMonth():11;
-  const realDay=(realYear===vacYear)?today.getDate():31;
+  const realMonthIdx=today.getMonth();
+  const realDay=today.getDate();
 
   const live={};
   records.forEach(r=>{
@@ -660,9 +659,8 @@ function recalcVacationLive(){
     // This is critical: the report is "correct as of the moment it was pulled" — so days on/before that
     // moment must NOT be recounted from the schedule, or they'd be subtracted twice.
     const importDate=r.updatedAt?new Date(r.updatedAt):today;
-    const sameYear=importDate.getFullYear()===vacYear;
-    const baselineMonthIdx=sameYear?importDate.getMonth():-1;
-    const baselineDay=sameYear?importDate.getDate():31;
+    const baselineMonthIdx=importDate.getMonth();
+    const baselineDay=importDate.getDate();
     if(!name){
       live[r.empId]={matched:false};
       return;
