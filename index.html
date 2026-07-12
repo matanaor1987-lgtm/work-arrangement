@@ -427,7 +427,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -548,10 +548,17 @@ function listenToData(){
     const data=snap.val();
     if(data&&Array.isArray(data)&&data.length>0){employees=mergeBirthdays(data);}
     else{employees=mergeBirthdays(JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT)));}
+    recalcVacationLive();render();
   });
   listenToRequests();
   onValue(ref(db,'vacationBalance'),(snap)=>{
     state.vacationData=snap.val()||{};
+    // Figure out which year's schedule this report refers to, and make sure we're listening to it
+    const records=Object.values(state.vacationData||{});
+    const sample=records.find(r=>r.month&&r.month.includes('/'));
+    const vacYear=sample?(parseInt(sample.month.split('/')[1])||state.year):state.year;
+    ensureVacationYearListeners(vacYear);
+    recalcVacationLive();
     render();
   });
   onValue(ref(db,'teamMsg'),(snap)=>{
@@ -572,6 +579,87 @@ function listenToData(){
     state.cellNotes=data.cellNotes||{};
     render();
   });
+}
+
+// Hours deducted per vacation day, by day-of-week: Tue=8h, Fri/Sat=0h (not workdays), else=9h
+function hoursForDow(dow){return dow===2?8:(dow===5||dow===6)?0:9;}
+
+function computeMonthHours(schedObj,vacYear,m){
+  const hoursMap={};
+  Object.entries(schedObj||{}).forEach(([key,val])=>{
+    if(val!=='OFF')return;
+    const [name,dayStr]=key.split('|');
+    const day=parseInt(dayStr);
+    if(!day)return;
+    const dow=new Date(vacYear,m,day).getDay();
+    const h=hoursForDow(dow);
+    if(h<=0)return; // Friday/Saturday never deduct from balance
+    hoursMap[name]=(hoursMap[name]||0)+h;
+  });
+  return hoursMap;
+}
+
+// Sets up persistent real-time listeners on all 12 months of the given year's schedule,
+// so vacation balances recalculate automatically the moment anything changes in the schedule.
+function ensureVacationYearListeners(vacYear){
+  if(!db)return;
+  if(state.vacationScheduleYear===vacYear)return; // already listening to this year
+  state.vacationScheduleYear=vacYear;
+  state.vacationYearSchedule={};
+  for(let m=0;m<12;m++){
+    onValue(ref(db,`seder_${vacYear}_${m}`),(snap)=>{
+      const data=snap.val()||{};
+      state.vacationYearSchedule[m]=computeMonthHours(data.schedule||{},vacYear,m);
+      recalcVacationLive();
+      render();
+    });
+  }
+}
+
+// Pure (synchronous) recalculation of live vacation balances from whatever is currently cached
+// (state.vacationData, state.vacationYearSchedule, employees). Called automatically on any change.
+function recalcVacationLive(){
+  const records=Object.values(state.vacationData||{});
+  if(records.length===0){state.vacationLive=null;return;}
+  const monthHours=state.vacationYearSchedule||{};
+  if(Object.keys(monthHours).length===0){state.vacationLive=null;return;} // schedule not loaded yet
+
+  const VACATION_NAME_ALIAS={"אדן":"אילנה","מירי":"מירית"};
+  const vacYear=state.vacationScheduleYear;
+
+  const empIdToName={};
+  employees.forEach(e=>{if(e.empId)empIdToName[e.empId]=e.name;});
+
+  const today=new Date();
+  const realYear=today.getFullYear();
+  const realMonthIdx=(realYear===vacYear)?today.getMonth():11;
+
+  const live={};
+  records.forEach(r=>{
+    const name=empIdToName[r.empId]||VACATION_NAME_ALIAS[r.firstName]||null;
+    const monthlyRate=Number(r.monthlyHours)||0;
+    const baseline=Number(r.newBalance)||0;
+    let baselineMonthIdx=-1;
+    if(r.month&&r.month.includes('/')) baselineMonthIdx=(parseInt(r.month.split('/')[0])||1)-1;
+    if(!name){
+      live[r.empId]={matched:false};
+      return;
+    }
+    let elapsedHoursSinceReport=0,futureHours=0;
+    for(let m=baselineMonthIdx+1;m<12;m++){
+      const h=(monthHours[m]&&monthHours[m][name])||0;
+      if(m<=realMonthIdx) elapsedHoursSinceReport+=h; else futureHours+=h;
+    }
+    const monthsSinceReport=Math.max(0,realMonthIdx-baselineMonthIdx);
+    const monthsToYearEnd=Math.max(0,11-baselineMonthIdx);
+    const newBalanceLive=baseline+monthlyRate*monthsSinceReport-elapsedHoursSinceReport;
+    const projectedYearEnd=baseline+monthlyRate*monthsToYearEnd-(elapsedHoursSinceReport+futureHours);
+    const dailyHrs=Number(r.dailyHours)>0?Number(r.dailyHours):9;
+    const cap=dailyHrs*3;
+    const forfeitAtYearEnd=Math.max(0,projectedYearEnd-cap);
+    live[r.empId]={matched:true,name,usedSoFarDays:elapsedHoursSinceReport/dailyHrs,futureDays:futureHours/dailyHrs,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,dailyHrs};
+  });
+  state.vacationLive=live;
 }
 
 function saveToCloud(){
@@ -2038,90 +2126,18 @@ window.setVacationDailyHours=async function(empId,val){
   await update(ref(db,'vacationBalance/'+empId),{dailyHours:n});
 };
 
-window.syncVacationFromSchedule=async function(){
+window.syncVacationFromSchedule=function(){
+  // The tool listens to the schedule in real time now and recalculates automatically on every
+  // change (new/edited/deleted OFF days, employee empId links, etc). This button just forces
+  // an instant recompute + toast, useful right after loading/pasting new vacation data.
   if(!db){alert('אין חיבור ל-Firebase');return;}
-  state.vacationSyncing=true;render();
-  try{
-    const records=Object.values(state.vacationData||{});
-    if(records.length===0){alert('אין נתוני חופשה טעונים לסנכרון. טען קודם דוח או את נתוני יוני 2026.');state.vacationSyncing=false;render();return;}
-
-    // Manual name aliases: HR report name -> name actually used in the work schedule
-    const VACATION_NAME_ALIAS={"אדן":"אילנה","מירי":"מירית"};
-
-    // Hours deducted per vacation day, by day-of-week: Tue=8h, Fri/Sat=0h (not workdays), else=9h
-    const hoursForDow=dow=>dow===2?8:(dow===5||dow===6)?0:9;
-
-    // Determine which year's schedule to read (from the report's own month field, e.g. "06/2026")
-    let vacYear=state.year;
-    const sample=records.find(r=>r.month&&r.month.includes('/'));
-    if(sample) vacYear=parseInt(sample.month.split('/')[1])||vacYear;
-
-    // Pull all 12 months of that year's schedule, tally OFF-day HOURS per employee name, per month
-    const monthHours=[]; // monthHours[m] = {name: hoursThatMonth}
-    for(let m=0;m<12;m++){
-      const snap=await get(ref(db,`seder_${vacYear}_${m}`));
-      const data=snap.val()||{};
-      const sched=data.schedule||{};
-      const hoursMap={};
-      Object.entries(sched).forEach(([key,val])=>{
-        if(val!=='OFF')return;
-        const [name,dayStr]=key.split('|');
-        const day=parseInt(dayStr);
-        if(!day)return;
-        const dow=new Date(vacYear,m,day).getDay();
-        const h=hoursForDow(dow);
-        if(h<=0)return; // Friday/Saturday never deduct from balance
-        hoursMap[name]=(hoursMap[name]||0)+h;
-      });
-      monthHours.push(hoursMap);
-    }
-
-    const empIdToName={};
-    employees.forEach(e=>{if(e.empId)empIdToName[e.empId]=e.name;});
-
-    const today=new Date();
-    const realYear=today.getFullYear();
-    const realMonthIdx=(realYear===vacYear)?today.getMonth():11; // if report year isn't this real year, treat "today" as year-end
-
-    const live={};
-    records.forEach(r=>{
-      // Prefer an explicit empId link set in ניהול עובדים; fall back to the known name alias
-      const name=empIdToName[r.empId]||VACATION_NAME_ALIAS[r.firstName]||null;
-      const monthlyRate=Number(r.monthlyHours)||0;
-      const baseline=Number(r.newBalance)||0; // the imported balance, already correct as-of the report's month
-      // Parse the report's own reference month (e.g. "06/2026" -> index 5). Everything from here on is forward-only.
-      let baselineMonthIdx=-1;
-      if(r.month&&r.month.includes('/')) baselineMonthIdx=(parseInt(r.month.split('/')[0])||1)-1;
-      if(!name){
-        live[r.empId]={matched:false};
-        return;
-      }
-      // Hours already scheduled in months strictly AFTER the report's reference month, up to today (real, elapsed)
-      let elapsedHoursSinceReport=0, futureHours=0;
-      for(let m=baselineMonthIdx+1;m<12;m++){
-        const h=(monthHours[m]&&monthHours[m][name])||0;
-        if(m<=realMonthIdx) elapsedHoursSinceReport+=h; else futureHours+=h;
-      }
-      const monthsSinceReport=Math.max(0,realMonthIdx-baselineMonthIdx);
-      const monthsToYearEnd=Math.max(0,11-baselineMonthIdx);
-      const newBalanceLive=baseline+monthlyRate*monthsSinceReport-elapsedHoursSinceReport;
-      const projectedYearEnd=baseline+monthlyRate*monthsToYearEnd-(elapsedHoursSinceReport+futureHours);
-      const dailyHrs=Number(r.dailyHours)>0?Number(r.dailyHours):9; // used only for the 3-day carryover cap
-      const cap=dailyHrs*3;
-      const forfeitAtYearEnd=Math.max(0,projectedYearEnd-cap);
-      live[r.empId]={matched:true,name,usedSoFarDays:elapsedHoursSinceReport/dailyHrs,futureDays:futureHours/dailyHrs,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,dailyHrs};
-    });
-
-    state.vacationLive=live;
-    state.vacationSyncing=false;
-    showToast('🔄 סונכרן מול הסידור בפועל (מרגע הדוח קדימה)');
-    render();
-  }catch(e){
-    console.error(e);
-    state.vacationSyncing=false;
-    alert('שגיאה בסנכרון: '+e.message);
-    render();
+  recalcVacationLive();
+  if(!state.vacationLive){
+    alert('עדיין טוען את נתוני הסידור... נסה שוב בעוד רגע.');
+    return;
   }
+  showToast('🔄 מחושב אוטומטית מהסידור (מרגע הדוח קדימה)');
+  render();
 };
 
 window.delVacationRecord=async function(empId,name){
@@ -2194,7 +2210,7 @@ function buildVacationMgr(){
       <div style="background:#FFF3CC;border:1.5px solid var(--dhl-yellow);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#6b5400;margin-bottom:12px">
         📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>${CARRYOVER_DAYS} ימים</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה.
         <br>🗓️ <b>חישוב היתרה החיה:</b> לפי יום בשבוע — יום חופש רגיל מוריד <b>9 שעות</b>, יום שלישי מוריד <b>8 שעות</b>, ושישי-שבת לא מורידים כלל מהיתרה.
-        ${live?`<br>🔄 <b>סונכרן עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים. החישוב מתחיל מה"יתרה חדשה" המיובאת (נכונה לחודש הדוח) ומוסיף/מוריד רק מה שקורה <b>מחודש הדוח קדימה</b> — לא בונה מחדש את מה שקרה לפני כן.`:''}
+        ${live?`<br>🔄 <b>מסונכרן אוטומטית עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים. היתרה מתעדכנת לבד בכל שינוי בסידור (הוספה/מחיקה של יום חופש). החישוב מתחיל מה"יתרה חדשה" המיובאת (נכונה לחודש הדוח) ומוסיף/מוריד רק מה שקורה <b>מחודש הדוח קדימה</b> — לא בונה מחדש את מה שקרה לפני כן.`:''}
       </div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <div style="background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#333">👥 סה"כ: ${records.length}</div>
@@ -2202,7 +2218,7 @@ function buildVacationMgr(){
         <div style="background:#FFF8E1;border:1.5px solid #FFCC00;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#8a6d00">🟡 יתרה מתחת ל-20 ש': ${lowCount}</div>
         <div style="background:#f3e8ff;border:1.5px solid #b98cf5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#6b21a8">⚠️ צפויים לאבד ימים: ${atRiskCount}</div>
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026 (22 עובדים)</button>`:""}
-        ${records.length>0?`<button onclick="syncVacationFromSchedule()" ${state.vacationSyncing?'disabled':''} style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">${state.vacationSyncing?'⏳ מסנכרן...':'🔄 סנכרן עם הסידור בפועל'}</button>`:""}
+        ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800" title="הנתונים מתעדכנים אוטומטית בכל שינוי בסידור — זה רק כפתור לחישוב מיידי">🔄 חשב מחדש עכשיו</button>`:""}
       </div>
       ${records.length?`<div style="max-height:380px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
@@ -2254,7 +2270,7 @@ function buildVacationMgr(){
       </div>`:`<div style="text-align:center;padding:24px;color:#888;font-size:13px;border:1px dashed #ddd;border-radius:8px;margin-bottom:16px">אין עדיין נתוני חופשה שמורים. לחץ למעלה כדי לטעון את נתוני יוני 2026, או הדבק דוח משלך למטה.</div>`}
       <div style="border-top:1px solid #eee;padding-top:12px">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#333">📥 עדכון פרופיל / מכסות מדוח פוקוס (הדבק ישירות מאקסל/דוח SQL — כולל טאבים בין העמודות)</div>
-        <div style="font-size:11px;color:#888;margin-bottom:6px">סדר עמודות: מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה. לאחר ייבוא, לחץ "סנכרן עם הסידור" כדי לחשב את היתרה החיה.</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px">סדר עמודות: מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה. לאחר ייבוא, היתרה החיה תחושב אוטומטית.</div>
         <textarea id="vac-paste" rows="6" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן את הטבלה מפוקוס..."></textarea>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="emp-mgr-cancel" onclick="closeVacationMgr()">סגור</button>
