@@ -2223,6 +2223,11 @@ function buildVacationMgr(){
     if(!(L&&L.matched))return r.newBalance;
     return L.projectedYearEnd-(L.januaryHours||0);
   };
+  const scheduledUpcomingDaysOf=r=>{
+    const L=live&&live[r.empId];
+    if(!(L&&L.matched))return 0;
+    return ((L.futureHours||0)+(L.januaryHours||0))/9;
+  };
   const forfeitHoursOf=r=>{
     const L=live&&live[r.empId];
     const base=throughJanHoursOf(r);
@@ -2234,7 +2239,7 @@ function buildVacationMgr(){
       case 'name':return (r.firstName||'')+(r.lastName||'');
       case 'now':return nowHoursOf(r);
       case 'yearend':return yearEndHoursOf(r);
-      case 'throughjan':return throughJanHoursOf(r);
+      case 'throughjan':return scheduledUpcomingDaysOf(r);
       case 'forfeit':return forfeitHoursOf(r);
       default:return 0;
     }
@@ -2266,7 +2271,7 @@ function buildVacationMgr(){
               ${th('name','שם','right')}
               ${th('now','ימי חופש עכשיו')}
               ${th('yearend','ימי חופש בסוף שנה')}
-              ${th('throughjan','ימי חופש עד סוף ינואר')}
+              ${th('throughjan','ימי חופש מתוכננים (עד ינואר)')}
               ${th('forfeit','ימים לניצול (מעל 3)')}
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
@@ -2274,7 +2279,7 @@ function buildVacationMgr(){
           <tbody>
             ${records.map(r=>{
               const L=live&&live[r.empId];
-              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),janH=throughJanHoursOf(r),forfH=forfeitHoursOf(r);
+              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),schedDays=scheduledUpcomingDaysOf(r),forfH=forfeitHoursOf(r);
               const atRisk=forfH>0;
               const unmatched=live&&!(L&&L.matched);
               const rowBg=nowH<0?'#fff0f0':(atRisk?'#f8f0ff':'#fff');
@@ -2283,7 +2288,7 @@ function buildVacationMgr(){
                 <td style="padding:7px 8px;font-weight:700">${fullName}${unmatched?' <span title="לא מקושר לעובד בסידור" style="color:#c00;font-size:11px">🔗</span>':''}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${nowH<0?'#c00':'#1e7a3a'}">${fmtD(nowH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}">${fmtD(yearH)}</td>
-                <td style="padding:7px 8px;text-align:center;font-weight:700;color:${janH<0?'#c00':'#333'}">${fmtD(janH)}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:700;color:#555">${schedDays>0?fmtD(schedDays):'—'}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
                 <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
