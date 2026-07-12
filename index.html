@@ -654,10 +654,9 @@ function recalcVacationLive(){
     const monthsToYearEnd=Math.max(0,11-baselineMonthIdx);
     const newBalanceLive=baseline+monthlyRate*monthsSinceReport-elapsedHoursSinceReport;
     const projectedYearEnd=baseline+monthlyRate*monthsToYearEnd-(elapsedHoursSinceReport+futureHours);
-    const dailyHrs=Number(r.dailyHours)>0?Number(r.dailyHours):9;
-    const cap=dailyHrs*3;
-    const forfeitAtYearEnd=Math.max(0,projectedYearEnd-cap);
-    live[r.empId]={matched:true,name,usedSoFarDays:elapsedHoursSinceReport/dailyHrs,futureDays:futureHours/dailyHrs,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,dailyHrs};
+    const CAP_HOURS=27; // 3 days carryover, at the standard 9h/day
+    const forfeitAtYearEnd=Math.max(0,projectedYearEnd-CAP_HOURS);
+    live[r.empId]={matched:true,name,usedHoursSinceReport:elapsedHoursSinceReport,futureHours,newBalanceLive,projectedYearEnd,forfeitAtYearEnd};
   });
   state.vacationLive=live;
 }
@@ -2119,13 +2118,6 @@ window.seedVacationJune2026=async function(){
   showToast('✅ נטענו נתוני יוני 2026 עבור '+VACATION_SEED_2026_06.length+' עובדים');
 };
 
-window.setVacationDailyHours=async function(empId,val){
-  if(!db)return;
-  const n=parseFloat(val);
-  if(isNaN(n)||n<=0)return;
-  await update(ref(db,'vacationBalance/'+empId),{dailyHours:n});
-};
-
 window.syncVacationFromSchedule=function(){
   // The tool listens to the schedule in real time now and recalculates automatically on every
   // change (new/edited/deleted OFF days, employee empId links, etc). This button just forces
@@ -2186,9 +2178,8 @@ function buildVacationMgr(){
   const negCount=records.filter(r=>r.newBalance<0).length;
   const lowCount=records.filter(r=>r.newBalance>=0&&r.newBalance<20).length;
   const fmt=n=>Number(n||0).toFixed(2);
-  const CARRYOVER_DAYS=3;
+  const CARRYOVER_CAP_HOURS=27; // 3 days x 9h standard workday
   const live=state.vacationLive||null;
-  const dailyOf=r=>Number(r.dailyHours)>0?Number(r.dailyHours):9;
   // "effective" balance = live calc from actual schedule if synced+matched, else the static imported figure
   const effBalanceOf=r=>{
     const L=live&&live[r.empId];
@@ -2196,27 +2187,25 @@ function buildVacationMgr(){
   };
   const forfeitOf=r=>{
     const L=live&&live[r.empId];
-    if(L&&L.matched) return {excessHours:L.forfeitAtYearEnd,excessDays:L.forfeitAtYearEnd/dailyOf(r)};
-    const cap=dailyOf(r)*CARRYOVER_DAYS;
-    const excessHours=Math.max(0,r.newBalance-cap);
-    return {excessHours,excessDays:excessHours/dailyOf(r)};
+    if(L&&L.matched) return L.forfeitAtYearEnd;
+    return Math.max(0,r.newBalance-CARRYOVER_CAP_HOURS);
   };
-  const atRiskCount=records.filter(r=>forfeitOf(r).excessHours>0).length;
+  const atRiskCount=records.filter(r=>forfeitOf(r)>0).length;
   const matchedCount=live?records.filter(r=>live[r.empId]&&live[r.empId].matched).length:0;
   return `<div class="emp-mgr" onclick="if(event.target===this)closeVacationMgr()">
-    <div class="emp-mgr-box" style="width:min(1180px,97vw)">
+    <div class="emp-mgr-box" style="width:min(1100px,97vw)">
       <h2>🏖️ ניהול יתרות חופשה</h2>
-      <div style="margin-bottom:10px;font-size:12px;color:#888">נתוני יתרת חופשה לפי עובד. אפשר לעדכן ידנית מדוח פוקוס, או ללחוץ "סנכרן עם הסידור" כדי לחשב יתרה חיה לפי ימי החופש שכבר רשומים בסידור העבודה בפועל.</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#888">נתוני יתרת חופשה לפי עובד. אפשר לעדכן ידנית מדוח פוקוס, או לתת לכלי לחשב אוטומטית לפי ימי החופש שכבר רשומים בסידור העבודה בפועל.</div>
       <div style="background:#FFF3CC;border:1.5px solid var(--dhl-yellow);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#6b5400;margin-bottom:12px">
-        📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>${CARRYOVER_DAYS} ימים</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה.
-        <br>🗓️ <b>חישוב היתרה החיה:</b> לפי יום בשבוע — יום חופש רגיל מוריד <b>9 שעות</b>, יום שלישי מוריד <b>8 שעות</b>, ושישי-שבת לא מורידים כלל מהיתרה.
-        ${live?`<br>🔄 <b>מסונכרן אוטומטית עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים. היתרה מתעדכנת לבד בכל שינוי בסידור (הוספה/מחיקה של יום חופש). החישוב מתחיל מה"יתרה חדשה" המיובאת (נכונה לחודש הדוח) ומוסיף/מוריד רק מה שקורה <b>מחודש הדוח קדימה</b> — לא בונה מחדש את מה שקרה לפני כן.`:''}
+        📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>3 ימים (27 שעות)</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה.
+        <br>🗓️ <b>חישוב היתרה:</b> לפי יום בשבוע — יום חופש רגיל מוריד <b>9 שעות</b>, יום שלישי מוריד <b>8 שעות</b>, ושישי-שבת לא נחשבים ולא מורידים כלל מהיתרה.
+        ${live?`<br>🔄 <b>מסונכרן אוטומטית עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים. היתרה מתעדכנת לבד בכל שינוי בסידור. החישוב מתחיל מה"יתרה חדשה" המיובאת (נכונה לחודש הדוח) ומוסיף/מוריד רק מה שקורה <b>מחודש הדוח קדימה</b> — לא בונה מחדש את מה שקרה לפני כן.`:''}
       </div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <div style="background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#333">👥 סה"כ: ${records.length}</div>
         <div style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#c00">🔴 יתרה שלילית: ${negCount}</div>
         <div style="background:#FFF8E1;border:1.5px solid #FFCC00;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#8a6d00">🟡 יתרה מתחת ל-20 ש': ${lowCount}</div>
-        <div style="background:#f3e8ff;border:1.5px solid #b98cf5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#6b21a8">⚠️ צפויים לאבד ימים: ${atRiskCount}</div>
+        <div style="background:#f3e8ff;border:1.5px solid #b98cf5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#6b21a8">⚠️ צפויים לאבד שעות: ${atRiskCount}</div>
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026 (22 עובדים)</button>`:""}
         ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800" title="הנתונים מתעדכנים אוטומטית בכל שינוי בסידור — זה רק כפתור לחישוב מיידי">🔄 חשב מחדש עכשיו</button>`:""}
       </div>
@@ -2232,8 +2221,7 @@ function buildVacationMgr(){
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חיה (מהסידור)</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מתוכנן קדימה</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">צפי סוף שנה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee" title="משמש רק לחישוב תקרת הגלגול (3 ימים) — הניכוי בפועל מחושב לפי יום בשבוע">שעות ליום (לתקרה)</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יימחקו (מעל ${CARRYOVER_DAYS} ימים)</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יימחקו (מעל 27 ש')</th>
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
           </thead>
@@ -2243,13 +2231,12 @@ function buildVacationMgr(){
               const eff=effBalanceOf(r);
               const neg=eff<0;
               const low=!neg&&eff<20;
-              const {excessHours,excessDays}=forfeitOf(r);
+              const excessHours=forfeitOf(r);
               const atRisk=excessHours>0;
               const rowBg=neg?'#fff0f0':(atRisk?'#f8f0ff':(low?'#FFFBEA':'#fff'));
-              const balColor=neg?'#c00':(low?'#8a6d00':'#1e7a3a');
               const fullName=(r.firstName||'')+' '+(r.lastName||'');
               const liveCell=!live?'<span style="color:#bbb">לא סונכרן</span>':(L&&L.matched?`<b style="color:${L.newBalanceLive<0?'#c00':'#1e7a3a'}">${fmt(L.newBalanceLive)}</b>`:'<span title="לא נמצא קישור לעובד — הוסף מספר עובד בניהול עובדים" style="color:#c00">🔗 לא מקושר</span>');
-              const futureCell=(L&&L.matched)?fmt(L.futureDays)+' ימים':'—';
+              const futureCell=(L&&L.matched)?fmt(L.futureHours)+' ש\'':'—';
               const projCell=(L&&L.matched)?`<b style="color:${L.projectedYearEnd<0?'#c00':'#333'}">${fmt(L.projectedYearEnd)}</b>`:'—';
               return `<tr style="background:${rowBg};border-bottom:1px solid #f0f0f0">
                 <td style="padding:6px 8px">${r.empId}</td>
@@ -2260,8 +2247,7 @@ function buildVacationMgr(){
                 <td style="padding:6px 8px;text-align:center">${liveCell}</td>
                 <td style="padding:6px 8px;text-align:center">${futureCell}</td>
                 <td style="padding:6px 8px;text-align:center">${projCell}</td>
-                <td style="padding:6px 8px;text-align:center"><input type="number" step="0.5" min="1" value="${dailyOf(r)}" onchange="setVacationDailyHours('${r.empId}',this.value)" style="width:48px;padding:3px;font-size:11px;border:1px solid #ddd;border-radius:4px;text-align:center;font-family:inherit"></td>
-                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessDays)+' ימים':'—'}</td>
+                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours)+' ש\'':'—'}</td>
                 <td style="padding:6px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
             }).join('')}
