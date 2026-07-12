@@ -2221,7 +2221,7 @@ function buildVacationMgr(){
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חיה (מהסידור)</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מתוכנן קדימה</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">צפי סוף שנה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יימחקו (מעל 27 ש')</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">ימים לניצול (מעל 3 ימים)</th>
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
           </thead>
@@ -2247,7 +2247,7 @@ function buildVacationMgr(){
                 <td style="padding:6px 8px;text-align:center">${liveCell}</td>
                 <td style="padding:6px 8px;text-align:center">${futureCell}</td>
                 <td style="padding:6px 8px;text-align:center">${projCell}</td>
-                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours)+' ש\'':'—'}</td>
+                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours/9)+' ימים ('+fmt(excessHours)+" ש')":'—'}</td>
                 <td style="padding:6px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
             }).join('')}
