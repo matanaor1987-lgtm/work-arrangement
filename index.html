@@ -2017,8 +2017,7 @@ const VACATION_SEED_2026_06=[
   {empId:"13853",firstName:"ראם",lastName:"סמואל",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:3.90,accruedRight:54.00,usedAccrued:28.00,monthlyHours:9.00,newBalance:29.90},
   {empId:"14187",firstName:"צאלה",lastName:"סבן",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:0.00,accruedRight:53.13,usedAccrued:64.00,monthlyHours:9.00,newBalance:-10.87},
   {empId:"14207",firstName:"חיים",lastName:"מן",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:0.00,accruedRight:44.04,usedAccrued:58.00,monthlyHours:9.00,newBalance:-13.96},
-  {empId:"20035",firstName:"מירי",lastName:"דבוש שיינח",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:29.00,accruedRight:108.00,usedAccrued:27.00,monthlyHours:18.00,newBalance:110.00},
-  {empId:"20103",firstName:"משה",lastName:"גולן",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:1.80,accruedRight:18.00,usedAccrued:0.00,monthlyHours:18.00,newBalance:19.80}
+  {empId:"20035",firstName:"מירי",lastName:"דבוש שיינח",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:29.00,accruedRight:108.00,usedAccrued:27.00,monthlyHours:18.00,newBalance:110.00}
 ];
 
 window.openVacationMgr=function(){state.showVacationMgr=true;render();};
@@ -2046,24 +2045,35 @@ window.syncVacationFromSchedule=async function(){
     const records=Object.values(state.vacationData||{});
     if(records.length===0){alert('אין נתוני חופשה טעונים לסנכרון. טען קודם דוח או את נתוני יוני 2026.');state.vacationSyncing=false;render();return;}
 
+    // Manual name aliases: HR report name -> name actually used in the work schedule
+    const VACATION_NAME_ALIAS={"אדן":"אילנה","מירי":"מירית"};
+
     // Figure out which calendar year the vacation report refers to
     let vacYear=state.year;
     const sample=records.find(r=>r.month&&r.month.includes('/'));
     if(sample) vacYear=parseInt(sample.month.split('/')[1])||vacYear;
 
-    // Pull all 12 months of that year's schedule
-    const monthCounts=[]; // monthCounts[m] = {name: offDayCount}
+    // Hours deducted per vacation day, by day-of-week: Tue=8h, Fri/Sat=0h (not workdays), else=9h
+    const hoursForDow=dow=>dow===2?8:(dow===5||dow===6)?0:9;
+
+    // Pull all 12 months of that year's schedule, tally OFF-day HOURS (not just day-count) per employee name
+    const monthHours=[]; // monthHours[m] = {name: hoursUsedThatMonth}
     for(let m=0;m<12;m++){
       const snap=await get(ref(db,`seder_${vacYear}_${m}`));
       const data=snap.val()||{};
       const sched=data.schedule||{};
-      const counts={};
+      const hoursMap={};
       Object.entries(sched).forEach(([key,val])=>{
         if(val!=='OFF')return;
-        const name=key.split('|')[0];
-        counts[name]=(counts[name]||0)+1;
+        const [name,dayStr]=key.split('|');
+        const day=parseInt(dayStr);
+        if(!day)return;
+        const dow=new Date(vacYear,m,day).getDay();
+        const h=hoursForDow(dow);
+        if(h<=0)return; // Friday/Saturday never deduct from balance
+        hoursMap[name]=(hoursMap[name]||0)+h;
       });
-      monthCounts.push(counts);
+      monthHours.push(hoursMap);
     }
 
     const empIdToName={};
@@ -2078,25 +2088,26 @@ window.syncVacationFromSchedule=async function(){
 
     const live={};
     records.forEach(r=>{
-      const name=empIdToName[r.empId];
-      const dailyHrs=Number(r.dailyHours)>0?Number(r.dailyHours):8;
+      // Prefer an explicit empId link set in ניהול עובדים; fall back to the known name alias
+      const name=empIdToName[r.empId]||VACATION_NAME_ALIAS[r.firstName]||null;
       const monthlyRate=Number(r.monthlyHours)||0;
       const opening=Number(r.openingBalance)||0;
       if(!name){
         live[r.empId]={matched:false};
         return;
       }
-      let usedSoFarDays=0,futureDays=0;
-      monthCounts.forEach((counts,m)=>{
-        const c=counts[name]||0;
-        if(m<=upToIdx) usedSoFarDays+=c; else futureDays+=c;
+      let usedSoFarHours=0,futureHours=0;
+      monthHours.forEach((hoursMap,m)=>{
+        const h=hoursMap[name]||0;
+        if(m<=upToIdx) usedSoFarHours+=h; else futureHours+=h;
       });
       const accruedRightLive=monthlyRate*monthsElapsed;
-      const newBalanceLive=opening+accruedRightLive-(usedSoFarDays*dailyHrs);
-      const projectedYearEnd=opening+monthlyRate*12-((usedSoFarDays+futureDays)*dailyHrs);
+      const newBalanceLive=opening+accruedRightLive-usedSoFarHours;
+      const projectedYearEnd=opening+monthlyRate*12-(usedSoFarHours+futureHours);
+      const dailyHrs=Number(r.dailyHours)>0?Number(r.dailyHours):9; // used only for the 3-day carryover cap
       const cap=dailyHrs*3;
       const forfeitAtYearEnd=Math.max(0,projectedYearEnd-cap);
-      live[r.empId]={matched:true,name,usedSoFarDays,futureDays,accruedRightLive,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,dailyHrs};
+      live[r.empId]={matched:true,name,usedSoFarDays:usedSoFarHours/dailyHrs,futureDays:futureHours/dailyHrs,accruedRightLive,newBalanceLive,projectedYearEnd,forfeitAtYearEnd,dailyHrs};
     });
 
     state.vacationLive=live;
@@ -2159,7 +2170,7 @@ function buildVacationMgr(){
   const fmt=n=>Number(n||0).toFixed(2);
   const CARRYOVER_DAYS=3;
   const live=state.vacationLive||null;
-  const dailyOf=r=>Number(r.dailyHours)>0?Number(r.dailyHours):8;
+  const dailyOf=r=>Number(r.dailyHours)>0?Number(r.dailyHours):9;
   // "effective" balance = live calc from actual schedule if synced+matched, else the static imported figure
   const effBalanceOf=r=>{
     const L=live&&live[r.empId];
@@ -2180,7 +2191,8 @@ function buildVacationMgr(){
       <div style="margin-bottom:10px;font-size:12px;color:#888">נתוני יתרת חופשה לפי עובד. אפשר לעדכן ידנית מדוח פוקוס, או ללחוץ "סנכרן עם הסידור" כדי לחשב יתרה חיה לפי ימי החופש שכבר רשומים בסידור העבודה בפועל.</div>
       <div style="background:#FFF3CC;border:1.5px solid var(--dhl-yellow);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#6b5400;margin-bottom:12px">
         📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>${CARRYOVER_DAYS} ימים</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה.
-        ${live?`<br>🔄 <b>סונכרן עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים (לפי מספר עובד שהוגדר בניהול עובדים). עובד שלא מקושר יוצג לפי הנתון היבוא הידני בלבד.`:''}
+        <br>🗓️ <b>חישוב היתרה החיה:</b> לפי יום בשבוע — יום חופש רגיל מוריד <b>9 שעות</b>, יום שלישי מוריד <b>8 שעות</b>, ושישי-שבת לא מורידים כלל מהיתרה.
+        ${live?`<br>🔄 <b>סונכרן עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים (לפי מספר עובד ב"ניהול עובדים", או לפי שם חלופי ידוע). עובד שלא מקושר יוצג לפי הנתון היבוא הידני בלבד.`:''}
       </div>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <div style="background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#333">👥 סה"כ: ${records.length}</div>
@@ -2202,7 +2214,7 @@ function buildVacationMgr(){
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חיה (מהסידור)</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מתוכנן קדימה</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">צפי סוף שנה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">שעות ליום</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee" title="משמש רק לחישוב תקרת הגלגול (3 ימים) — הניכוי בפועל מחושב לפי יום בשבוע">שעות ליום (לתקרה)</th>
               <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יימחקו (מעל ${CARRYOVER_DAYS} ימים)</th>
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
