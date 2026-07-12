@@ -610,19 +610,25 @@ function ensureVacationYearListeners(vacYear){
   state.vacationScheduleYear=vacYear;
   state.vacationYearSchedule={};
   state.vacationNextJanHours={};
+  state.vacationScheduleLoadedKeys=new Set();
+  const TOTAL_PIECES=13; // 12 months + January of the following year
+  const markLoaded=(key)=>{
+    state.vacationScheduleLoadedKeys.add(key);
+  };
+  const isFullyLoaded=()=>state.vacationScheduleLoadedKeys.size>=TOTAL_PIECES;
   for(let m=0;m<12;m++){
     onValue(ref(db,`seder_${vacYear}_${m}`),(snap)=>{
       const data=snap.val()||{};
       state.vacationYearSchedule[m]=computeMonthHours(data.schedule||{},vacYear,m);
-      recalcVacationLive();
-      render();
+      markLoaded('m'+m);
+      if(isFullyLoaded()){recalcVacationLive();render();}
     });
   }
   onValue(ref(db,`seder_${vacYear+1}_0`),(snap)=>{
     const data=snap.val()||{};
     state.vacationNextJanHours=computeMonthHours(data.schedule||{},vacYear+1,0);
-    recalcVacationLive();
-    render();
+    markLoaded('jan');
+    if(isFullyLoaded()){recalcVacationLive();render();}
   });
 }
 
@@ -632,7 +638,7 @@ function recalcVacationLive(){
   const records=Object.values(state.vacationData||{});
   if(records.length===0){state.vacationLive=null;return;}
   const monthData=state.vacationYearSchedule||{}; // monthData[m] = {name:{day:hours}}
-  if(Object.keys(monthData).length===0){state.vacationLive=null;return;} // schedule not loaded yet
+  if(!state.vacationScheduleLoadedKeys||state.vacationScheduleLoadedKeys.size<13){state.vacationLive=null;return;} // not fully loaded yet
 
   const VACATION_NAME_ALIAS={"אדן":"אילנה","מירי":"מירית"};
   const vacYear=state.vacationScheduleYear;
@@ -2263,6 +2269,7 @@ function buildVacationMgr(){
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026</button>`:""}
         ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">🔄 חשב מחדש</button>`:""}
+        ${records.length>0&&!live?`<span style="font-size:11px;color:#c00">⏳ טוען נתוני סידור מלאים... המספרים למטה זמניים</span>`:""}
       </div>
       ${records.length?`<div style="max-height:420px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap">
