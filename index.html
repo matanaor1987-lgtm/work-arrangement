@@ -2249,10 +2249,10 @@ function buildVacationMgr(){
     if(!(L&&L.matched))return r.newBalance;
     return L.projectedYearEnd-(L.januaryHours||0);
   };
-  const scheduledUpcomingDaysOf=r=>{
+  const scheduledUpcomingHoursOf=r=>{
     const L=live&&live[r.empId];
     if(!(L&&L.matched))return 0;
-    return ((L.futureHours||0)+(L.januaryHours||0))/9;
+    return (L.futureHours||0)+(L.januaryHours||0);
   };
   const forfeitHoursOf=r=>{
     const L=live&&live[r.empId];
@@ -2265,7 +2265,7 @@ function buildVacationMgr(){
       case 'name':return (r.firstName||'')+(r.lastName||'');
       case 'now':return nowHoursOf(r);
       case 'yearend':return yearEndHoursOf(r);
-      case 'throughjan':return scheduledUpcomingDaysOf(r);
+      case 'throughjan':return scheduledUpcomingHoursOf(r);
       case 'forfeit':return forfeitHoursOf(r);
       default:return 0;
     }
@@ -2306,7 +2306,7 @@ function buildVacationMgr(){
           <tbody>
             ${records.map(r=>{
               const L=live&&live[r.empId];
-              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),schedDays=scheduledUpcomingDaysOf(r),forfH=forfeitHoursOf(r);
+              const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),schedHours=scheduledUpcomingHoursOf(r),forfH=forfeitHoursOf(r);
               const atRisk=forfH>0;
               const unmatched=live&&!(L&&L.matched);
               const rowBg=nowH<0?'#fff0f0':(atRisk?'#f8f0ff':'#fff');
@@ -2315,7 +2315,7 @@ function buildVacationMgr(){
                 <td style="padding:7px 8px;font-weight:700">${fullName}${unmatched?' <span title="לא מקושר לעובד בסידור" style="color:#c00;font-size:11px">🔗</span>':''}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${nowH<0?'#c00':'#1e7a3a'}">${fmtD(nowH)}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:700;color:${yearH<0?'#c00':'#333'}" title="${L&&L.matched?'נוצל מאז הדוח: '+fmtD(L.usedHoursSinceReport||0)+' י׳ | מתוכנן קדימה (השנה): '+fmtD(((L.futureHours||0)))+' י׳ | ינואר: '+fmtD(L.januaryHours||0)+' י׳':'לא מקושר'}">${fmtD(yearH)}</td>
-                <td style="padding:7px 8px;text-align:center;font-weight:700;color:#555">${schedDays>0?fmtD(schedDays):'—'}</td>
+                <td style="padding:7px 8px;text-align:center;font-weight:700;color:#555">${schedHours>0?fmtD(schedHours):'—'}</td>
                 <td style="padding:7px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmtD(forfH):'—'}</td>
                 <td style="padding:7px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button> <button onclick='debugVacationRow(${JSON.stringify(r.empId)})' style="background:#eef;border:1px solid #99c;border-radius:4px;color:#339;cursor:pointer;padding:2px 6px;font-size:11px" title="הצג נתוני חישוב גולמיים">🐛</button></td>
               </tr>`;
