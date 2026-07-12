@@ -427,7 +427,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationSortKey:'live',vacationSortDir:'asc'};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -2173,14 +2173,17 @@ window.saveVacationImport=async function(){
   if(ta)ta.value='';
 };
 
+window.setVacationSort=function(key){
+  if(state.vacationSortKey===key){state.vacationSortDir=state.vacationSortDir==='asc'?'desc':'asc';}
+  else{state.vacationSortKey=key;state.vacationSortDir='asc';}
+  render();
+};
+
 function buildVacationMgr(){
-  const records=Object.values(state.vacationData||{}).sort((a,b)=>a.newBalance-b.newBalance);
-  const negCount=records.filter(r=>r.newBalance<0).length;
-  const lowCount=records.filter(r=>r.newBalance>=0&&r.newBalance<20).length;
+  let records=Object.values(state.vacationData||{});
   const fmt=n=>Number(n||0).toFixed(2);
   const CARRYOVER_CAP_HOURS=27; // 3 days x 9h standard workday
   const live=state.vacationLive||null;
-  // "effective" balance = live calc from actual schedule if synced+matched, else the static imported figure
   const effBalanceOf=r=>{
     const L=live&&live[r.empId];
     return (L&&L.matched)?L.newBalanceLive:r.newBalance;
@@ -2190,38 +2193,55 @@ function buildVacationMgr(){
     if(L&&L.matched) return L.forfeitAtYearEnd;
     return Math.max(0,r.newBalance-CARRYOVER_CAP_HOURS);
   };
-  const atRiskCount=records.filter(r=>forfeitOf(r)>0).length;
+  const sortVal=(r,key)=>{
+    const L=live&&live[r.empId];
+    switch(key){
+      case 'empId':return r.empId;
+      case 'name':return (r.firstName||'')+(r.lastName||'');
+      case 'quota':return Number(r.annualQuota)||0;
+      case 'opening':return Number(r.openingBalance)||0;
+      case 'imported':return Number(r.newBalance)||0;
+      case 'live':return effBalanceOf(r);
+      case 'future':return (L&&L.matched)?L.futureHours:-Infinity;
+      case 'projected':return (L&&L.matched)?L.projectedYearEnd:-Infinity;
+      case 'forfeit':return forfeitOf(r);
+      default:return 0;
+    }
+  };
+  const sk=state.vacationSortKey,sd=state.vacationSortDir;
+  records=records.slice().sort((a,b)=>{
+    const va=sortVal(a,sk),vb=sortVal(b,sk);
+    let cmp;
+    if(typeof va==='string') cmp=va.localeCompare(vb,'he');
+    else cmp=va-vb;
+    return sd==='asc'?cmp:-cmp;
+  });
   const matchedCount=live?records.filter(r=>live[r.empId]&&live[r.empId].matched).length:0;
+  const th=(key,label,align)=>{
+    const arrow=state.vacationSortKey===key?(state.vacationSortDir==='asc'?' ▲':' ▼'):'';
+    return `<th onclick="setVacationSort('${key}')" style="padding:6px 8px;text-align:${align||'center'};border-bottom:2px solid #eee;cursor:pointer;user-select:none" title="לחץ למיון">${label}${arrow}</th>`;
+  };
   return `<div class="emp-mgr" onclick="if(event.target===this)closeVacationMgr()">
     <div class="emp-mgr-box" style="width:min(1100px,97vw)">
       <h2>🏖️ ניהול יתרות חופשה</h2>
-      <div style="margin-bottom:10px;font-size:12px;color:#888">נתוני יתרת חופשה לפי עובד. אפשר לעדכן ידנית מדוח פוקוס, או לתת לכלי לחשב אוטומטית לפי ימי החופש שכבר רשומים בסידור העבודה בפועל.</div>
-      <div style="background:#FFF3CC;border:1.5px solid var(--dhl-yellow);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#6b5400;margin-bottom:12px">
-        📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>3 ימים (27 שעות)</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה.
-        <br>🗓️ <b>חישוב היתרה:</b> לפי יום בשבוע — יום חופש רגיל מוריד <b>9 שעות</b>, יום שלישי מוריד <b>8 שעות</b>, ושישי-שבת לא נחשבים ולא מורידים כלל מהיתרה.
-        ${live?`<br>🔄 <b>מסונכרן אוטומטית עם הסידור:</b> ${matchedCount}/${records.length} עובדים מקושרים. היתרה מתעדכנת לבד בכל שינוי בסידור. החישוב מתחיל מה"יתרה חדשה" המיובאת (נכונה לחודש הדוח) ומוסיף/מוריד רק מה שקורה <b>מחודש הדוח קדימה</b> — לא בונה מחדש את מה שקרה לפני כן.`:''}
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026</button>`:""}
+        ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">🔄 חשב מחדש</button>`:""}
+        ${live?`<span style="font-size:11px;color:#888">${matchedCount}/${records.length} מקושרים</span>`:""}
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-        <div style="background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#333">👥 סה"כ: ${records.length}</div>
-        <div style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#c00">🔴 יתרה שלילית: ${negCount}</div>
-        <div style="background:#FFF8E1;border:1.5px solid #FFCC00;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#8a6d00">🟡 יתרה מתחת ל-20 ש': ${lowCount}</div>
-        <div style="background:#f3e8ff;border:1.5px solid #b98cf5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#6b21a8">⚠️ צפויים לאבד שעות: ${atRiskCount}</div>
-        ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026 (22 עובדים)</button>`:""}
-        ${records.length>0?`<button onclick="syncVacationFromSchedule()" style="padding:8px 14px;font-size:12px;background:#1e7a3a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800" title="הנתונים מתעדכנים אוטומטית בכל שינוי בסידור — זה רק כפתור לחישוב מיידי">🔄 חשב מחדש עכשיו</button>`:""}
-      </div>
-      ${records.length?`<div style="max-height:380px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
+      ${records.length?`<div style="max-height:400px;overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
           <thead style="position:sticky;top:0;background:#fafafa;z-index:1">
             <tr>
-              <th style="padding:6px 8px;text-align:right;border-bottom:2px solid #eee">מס' עובד</th>
-              <th style="padding:6px 8px;text-align:right;border-bottom:2px solid #eee">שם</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מכסה שנתית</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה ת. שנה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חדשה (מיובאת · ${(records[0]&&records[0].month)||''})</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חיה (מהסידור)</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מתוכנן קדימה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">צפי סוף שנה</th>
-              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">ימים לניצול (מעל 3 ימים)</th>
+              ${th('empId',"מס' עובד",'right')}
+              ${th('name','שם','right')}
+              ${th('quota','מכסה שנתית')}
+              ${th('opening','יתרה ת. שנה')}
+              ${th('imported','יתרה מיובאת')}
+              ${th('live','יתרה חיה')}
+              ${th('future','מתוכנן קדימה')}
+              ${th('projected','צפי סוף שנה')}
+              ${th('forfeit','ימים לניצול (מעל 3)')}
               <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
             </tr>
           </thead>
@@ -2235,7 +2255,7 @@ function buildVacationMgr(){
               const atRisk=excessHours>0;
               const rowBg=neg?'#fff0f0':(atRisk?'#f8f0ff':(low?'#FFFBEA':'#fff'));
               const fullName=(r.firstName||'')+' '+(r.lastName||'');
-              const liveCell=!live?'<span style="color:#bbb">לא סונכרן</span>':(L&&L.matched?`<b style="color:${L.newBalanceLive<0?'#c00':'#1e7a3a'}">${fmt(L.newBalanceLive)}</b>`:'<span title="לא נמצא קישור לעובד — הוסף מספר עובד בניהול עובדים" style="color:#c00">🔗 לא מקושר</span>');
+              const liveCell=!live?'<span style="color:#bbb">—</span>':(L&&L.matched?`<b style="color:${L.newBalanceLive<0?'#c00':'#1e7a3a'}">${fmt(L.newBalanceLive)}</b>`:'<span title="לא נמצא קישור לעובד — הוסף מספר עובד בניהול עובדים" style="color:#c00">🔗 לא מקושר</span>');
               const futureCell=(L&&L.matched)?fmt(L.futureHours)+' ש\'':'—';
               const projCell=(L&&L.matched)?`<b style="color:${L.projectedYearEnd<0?'#c00':'#333'}">${fmt(L.projectedYearEnd)}</b>`:'—';
               return `<tr style="background:${rowBg};border-bottom:1px solid #f0f0f0">
@@ -2247,20 +2267,18 @@ function buildVacationMgr(){
                 <td style="padding:6px 8px;text-align:center">${liveCell}</td>
                 <td style="padding:6px 8px;text-align:center">${futureCell}</td>
                 <td style="padding:6px 8px;text-align:center">${projCell}</td>
-                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours/9)+' ימים ('+fmt(excessHours)+" ש')":'—'}</td>
+                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessHours/9)+' ימים':'—'}</td>
                 <td style="padding:6px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
-      </div>`:`<div style="text-align:center;padding:24px;color:#888;font-size:13px;border:1px dashed #ddd;border-radius:8px;margin-bottom:16px">אין עדיין נתוני חופשה שמורים. לחץ למעלה כדי לטעון את נתוני יוני 2026, או הדבק דוח משלך למטה.</div>`}
+      </div>`:`<div style="text-align:center;padding:24px;color:#888;font-size:13px;border:1px dashed #ddd;border-radius:8px;margin-bottom:16px">אין נתוני חופשה. טען נתוני יוני 2026 או הדבק דוח למטה.</div>`}
       <div style="border-top:1px solid #eee;padding-top:12px">
-        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#333">📥 עדכון פרופיל / מכסות מדוח פוקוס (הדבק ישירות מאקסל/דוח SQL — כולל טאבים בין העמודות)</div>
-        <div style="font-size:11px;color:#888;margin-bottom:6px">סדר עמודות: מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה. לאחר ייבוא, היתרה החיה תחושב אוטומטית.</div>
-        <textarea id="vac-paste" rows="6" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן את הטבלה מפוקוס..."></textarea>
+        <textarea id="vac-paste" rows="5" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן דוח חדש מפוקוס (מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה)"></textarea>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="emp-mgr-cancel" onclick="closeVacationMgr()">סגור</button>
-          <button class="emp-mgr-save" onclick="saveVacationImport()">💾 ייבא / עדכן נתונים</button>
+          <button class="emp-mgr-save" onclick="saveVacationImport()">💾 ייבא / עדכן</button>
         </div>
       </div>
     </div>
