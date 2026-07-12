@@ -427,7 +427,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:''};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{}};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -550,6 +550,10 @@ function listenToData(){
     else{employees=mergeBirthdays(JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT)));}
   });
   listenToRequests();
+  onValue(ref(db,'vacationBalance'),(snap)=>{
+    state.vacationData=snap.val()||{};
+    render();
+  });
   onValue(ref(db,'teamMsg'),(snap)=>{
     state.teamMsg=snap.val()||'';
     render();
@@ -834,6 +838,7 @@ function buildApp(){
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openDailyDist()" style="background:rgba(255,204,0,0.3);margin-left:6px">☀️ חלוקה יומית</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
+    ${state.mode==="admin"?`<button class="sign-btn" onclick="openVacationMgr()" style="background:rgba(255,204,0,0.3);margin-left:6px" title="ניהול יתרות חופשה">🏖️ ניהול חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportToPDF()" style="background:rgba(255,255,255,0.18);margin-left:6px" title="ייצא סידור ל-PDF">🖨️ PDF</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="backupNow()" style="background:rgba(255,204,0,0.3);color:#fff;margin-left:6px" title="גבה סידור למייל">💾 גבה עכשיו</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportBackupJSON()" style="background:rgba(0,200,100,0.35);color:#fff;margin-left:6px" title="ייצא גיבוי JSON מלא">📦 גיבוי JSON</button>`:""}
@@ -879,7 +884,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
@@ -1989,6 +1994,177 @@ window.importVacationData = async function(){
   alert('✅ יובאו '+done+' ימי חופש בהצלחה!');
 };
 // ===== END VACATION IMPORT =====
+
+// ===== VACATION BALANCE MANAGEMENT =====
+const VACATION_SEED_2026_06=[
+  {empId:"10359",firstName:"גיא",lastName:"רון",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:21.05,accruedRight:108.00,usedAccrued:89.60,monthlyHours:18.00,newBalance:39.45},
+  {empId:"10390",firstName:"דלית",lastName:"ליבמן",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:-0.05,accruedRight:108.00,usedAccrued:87.91,monthlyHours:18.00,newBalance:20.04},
+  {empId:"10677",firstName:"אהובה",lastName:"שמשוני",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:-3.33,accruedRight:108.00,usedAccrued:93.08,monthlyHours:18.00,newBalance:11.59},
+  {empId:"11123",firstName:"חגי",lastName:"שפונגין",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:49.00,accruedRight:108.00,usedAccrued:55.00,monthlyHours:18.00,newBalance:102.00},
+  {empId:"11450",firstName:"אייל",lastName:"ארדיטי",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:32.55,accruedRight:108.00,usedAccrued:71.30,monthlyHours:18.00,newBalance:69.25},
+  {empId:"11467",firstName:"איילה",lastName:"גבריאלי",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:51.10,accruedRight:108.00,usedAccrued:106.88,monthlyHours:18.00,newBalance:52.22},
+  {empId:"11708",firstName:"ליאור",lastName:"קוניק",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:30.50,accruedRight:108.00,usedAccrued:47.43,monthlyHours:18.00,newBalance:91.07},
+  {empId:"11816",firstName:"מזל",lastName:"מבשב",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:88.21,accruedRight:108.00,usedAccrued:90.09,monthlyHours:18.00,newBalance:106.12},
+  {empId:"11909",firstName:"אבבה",lastName:"אינגדה",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:47.17,accruedRight:108.00,usedAccrued:95.15,monthlyHours:18.00,newBalance:60.02},
+  {empId:"11997",firstName:"רועי",lastName:"קושנירוב",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:46.70,accruedRight:108.00,usedAccrued:118.10,monthlyHours:18.00,newBalance:36.60},
+  {empId:"12211",firstName:"ייטב",lastName:"גינגיס",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:49.67,accruedRight:108.00,usedAccrued:71.42,monthlyHours:18.00,newBalance:86.25},
+  {empId:"12447",firstName:"אור",lastName:"אניץ",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:3.80,accruedRight:108.00,usedAccrued:106.80,monthlyHours:18.00,newBalance:5.00},
+  {empId:"12707",firstName:"סתיו",lastName:"ברלב",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:47.56,accruedRight:108.00,usedAccrued:83.01,monthlyHours:18.00,newBalance:72.55},
+  {empId:"12713",firstName:"עידן",lastName:"נועם",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:13.92,accruedRight:54.00,usedAccrued:83.65,monthlyHours:9.00,newBalance:-15.73},
+  {empId:"12779",firstName:"ניר",lastName:"מזרחי",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:-54.00,accruedRight:108.00,usedAccrued:95.80,monthlyHours:18.00,newBalance:-41.80},
+  {empId:"13080",firstName:"אדן",lastName:"רובינשטיין",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:17.25,accruedRight:94.50,usedAccrued:116.89,monthlyHours:18.00,newBalance:-5.14},
+  {empId:"13582",firstName:"שניר",lastName:"קב",absenceType:"חופשה",month:"06/2026",annualQuota:86.00,openingBalance:14.16,accruedRight:43.20,usedAccrued:21.60,monthlyHours:7.20,newBalance:35.76},
+  {empId:"13853",firstName:"ראם",lastName:"סמואל",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:3.90,accruedRight:54.00,usedAccrued:28.00,monthlyHours:9.00,newBalance:29.90},
+  {empId:"14187",firstName:"צאלה",lastName:"סבן",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:0.00,accruedRight:53.13,usedAccrued:64.00,monthlyHours:9.00,newBalance:-10.87},
+  {empId:"14207",firstName:"חיים",lastName:"מן",absenceType:"חופשה",month:"06/2026",annualQuota:108.00,openingBalance:0.00,accruedRight:44.04,usedAccrued:58.00,monthlyHours:9.00,newBalance:-13.96},
+  {empId:"20035",firstName:"מירי",lastName:"דבוש שיינח",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:29.00,accruedRight:108.00,usedAccrued:27.00,monthlyHours:18.00,newBalance:110.00},
+  {empId:"20103",firstName:"משה",lastName:"גולן",absenceType:"חופשה",month:"06/2026",annualQuota:216.00,openingBalance:1.80,accruedRight:18.00,usedAccrued:0.00,monthlyHours:18.00,newBalance:19.80}
+];
+
+window.openVacationMgr=function(){state.showVacationMgr=true;render();};
+window.closeVacationMgr=function(){state.showVacationMgr=false;render();};
+
+window.seedVacationJune2026=async function(){
+  if(!db){alert('אין חיבור ל-Firebase');return;}
+  const updates={};
+  VACATION_SEED_2026_06.forEach(r=>{updates[r.empId]={...r,updatedAt:Date.now()};});
+  await update(ref(db,'vacationBalance'),updates);
+  showToast('✅ נטענו נתוני יוני 2026 עבור '+VACATION_SEED_2026_06.length+' עובדים');
+};
+
+window.setVacationDailyHours=async function(empId,val){
+  if(!db)return;
+  const n=parseFloat(val);
+  if(isNaN(n)||n<=0)return;
+  await update(ref(db,'vacationBalance/'+empId),{dailyHours:n});
+};
+
+window.delVacationRecord=async function(empId,name){
+  if(!db)return;
+  if(!confirm('למחוק את רשומת החופשה של '+name+' (מספר עובד '+empId+')?'))return;
+  await remove(ref(db,'vacationBalance/'+empId));
+  showToast('🗑️ הרשומה נמחקה');
+};
+
+function parseVacationPaste(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+  const records=[];
+  for(const line of lines){
+    let cols=line.split('\t').map(c=>c.trim());
+    if(cols.length<11) cols=line.split(/\s{2,}/).map(c=>c.trim());
+    cols=cols.filter(c=>c!=='');
+    if(cols.length<11) continue;
+    const [empId,first,last,type,month,quota,opening,accrued,used,monthly,newBal]=cols;
+    if(!/^\d+$/.test(empId)) continue; // skip header row / junk
+    const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n;};
+    records.push({
+      empId,firstName:first,lastName:last,absenceType:type,month,
+      annualQuota:num(quota),openingBalance:num(opening),accruedRight:num(accrued),
+      usedAccrued:num(used),monthlyHours:num(monthly),newBalance:num(newBal),
+      updatedAt:Date.now()
+    });
+  }
+  return records;
+}
+
+window.saveVacationImport=async function(){
+  const ta=document.getElementById('vac-paste');
+  const text=ta?ta.value:'';
+  const records=parseVacationPaste(text);
+  if(records.length===0){alert('לא זוהו שורות תקינות. ודא שהעמודות מופרדות בטאבים (הדבקה ישירה מאקסל/פוקוס) ושמספר העובד הוא העמודה הראשונה.');return;}
+  if(!db){alert('אין חיבור ל-Firebase');return;}
+  const updates={};
+  records.forEach(r=>{updates[r.empId]=r;});
+  await update(ref(db,'vacationBalance'),updates);
+  showToast('✅ עודכנו '+records.length+' רשומות חופשה');
+  if(ta)ta.value='';
+};
+
+function buildVacationMgr(){
+  const records=Object.values(state.vacationData||{}).sort((a,b)=>a.newBalance-b.newBalance);
+  const negCount=records.filter(r=>r.newBalance<0).length;
+  const lowCount=records.filter(r=>r.newBalance>=0&&r.newBalance<20).length;
+  const fmt=n=>Number(n||0).toFixed(2);
+  const CARRYOVER_DAYS=3;
+  const dailyOf=r=>Number(r.dailyHours)>0?Number(r.dailyHours):8;
+  const forfeitOf=r=>{
+    const cap=dailyOf(r)*CARRYOVER_DAYS;
+    const excessHours=Math.max(0,r.newBalance-cap);
+    return {excessHours,excessDays:excessHours/dailyOf(r)};
+  };
+  const atRiskCount=records.filter(r=>forfeitOf(r).excessHours>0).length;
+  return `<div class="emp-mgr" onclick="if(event.target===this)closeVacationMgr()">
+    <div class="emp-mgr-box" style="width:min(1040px,96vw)">
+      <h2>🏖️ ניהול יתרות חופשה</h2>
+      <div style="margin-bottom:10px;font-size:12px;color:#888">נתוני יתרת חופשה עדכניים לפי עובד. הדבק דוח חדש בכל פעם שיש עדכון מפוקוס כדי לרענן את היתרות.</div>
+      <div style="background:#FFF3CC;border:1.5px solid var(--dhl-yellow);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#6b5400;margin-bottom:12px">
+        📌 <b>מדיניות גלגול:</b> מותר להעביר לשנה הבאה עד <b>${CARRYOVER_DAYS} ימים</b> בלבד — כל יתרה מעבר לכך <b>נמחקת</b> אם לא נוצלה. עמודת "שעות ליום" קובעת את חישוב הימים לכל עובד (ניתן לעריכה).
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#333">👥 סה"כ: ${records.length}</div>
+        <div style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#c00">🔴 יתרה שלילית: ${negCount}</div>
+        <div style="background:#FFF8E1;border:1.5px solid #FFCC00;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#8a6d00">🟡 יתרה מתחת ל-20 ש': ${lowCount}</div>
+        <div style="background:#f3e8ff;border:1.5px solid #b98cf5;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#6b21a8">⚠️ יאבדו ימים מעל התקרה: ${atRiskCount}</div>
+        ${records.length===0?`<button onclick="seedVacationJune2026()" style="padding:8px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800">📥 טען נתוני יוני 2026 (22 עובדים)</button>`:""}
+      </div>
+      ${records.length?`<div style="max-height:380px;overflow-y:auto;border:1px solid #eee;border-radius:8px;margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
+          <thead style="position:sticky;top:0;background:#fafafa;z-index:1">
+            <tr>
+              <th style="padding:6px 8px;text-align:right;border-bottom:2px solid #eee">מס' עובד</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:2px solid #eee">שם</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">חודש</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">מכסה שנתית</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה ת. שנה</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">זכות מצטברת</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">ניצול מצטבר</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">שעות/חודש</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יתרה חדשה</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">שעות ליום</th>
+              <th style="padding:6px 8px;text-align:center;border-bottom:2px solid #eee">יימחקו (מעל ${CARRYOVER_DAYS} ימים)</th>
+              <th style="padding:6px 8px;border-bottom:2px solid #eee"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${records.map(r=>{
+              const neg=r.newBalance<0;
+              const low=!neg&&r.newBalance<20;
+              const {excessHours,excessDays}=forfeitOf(r);
+              const atRisk=excessHours>0;
+              const rowBg=neg?'#fff0f0':(atRisk?'#f8f0ff':(low?'#FFFBEA':'#fff'));
+              const balColor=neg?'#c00':(low?'#8a6d00':'#1e7a3a');
+              const fullName=(r.firstName||'')+' '+(r.lastName||'');
+              return `<tr style="background:${rowBg};border-bottom:1px solid #f0f0f0">
+                <td style="padding:6px 8px">${r.empId}</td>
+                <td style="padding:6px 8px;font-weight:700">${fullName}</td>
+                <td style="padding:6px 8px;text-align:center">${r.month||''}</td>
+                <td style="padding:6px 8px;text-align:center">${fmt(r.annualQuota)}</td>
+                <td style="padding:6px 8px;text-align:center">${fmt(r.openingBalance)}</td>
+                <td style="padding:6px 8px;text-align:center">${fmt(r.accruedRight)}</td>
+                <td style="padding:6px 8px;text-align:center">${fmt(r.usedAccrued)}</td>
+                <td style="padding:6px 8px;text-align:center">${fmt(r.monthlyHours)}</td>
+                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${balColor}">${fmt(r.newBalance)}</td>
+                <td style="padding:6px 8px;text-align:center"><input type="number" step="0.5" min="1" value="${dailyOf(r)}" onchange="setVacationDailyHours('${r.empId}',this.value)" style="width:48px;padding:3px;font-size:11px;border:1px solid #ddd;border-radius:4px;text-align:center;font-family:inherit"></td>
+                <td style="padding:6px 8px;text-align:center;font-weight:800;color:${atRisk?'#6b21a8':'#999'}">${atRisk?fmt(excessDays)+' ימים ('+fmt(excessHours)+' שעות)':'—'}</td>
+                <td style="padding:6px 8px;text-align:center"><button onclick="delVacationRecord('${r.empId}','${fullName.replace(/'/g,"\\'")}')" style="background:#fff0f0;border:1px solid #ffb0b0;border-radius:4px;color:#c00;cursor:pointer;padding:2px 7px;font-size:11px">✕</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`:`<div style="text-align:center;padding:24px;color:#888;font-size:13px;border:1px dashed #ddd;border-radius:8px;margin-bottom:16px">אין עדיין נתוני חופשה שמורים. לחץ למעלה כדי לטעון את נתוני יוני 2026, או הדבק דוח משלך למטה.</div>`}
+      <div style="border-top:1px solid #eee;padding-top:12px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#333">📥 עדכון מדוח פוקוס (הדבק ישירות מאקסל/דוח SQL — כולל טאבים בין העמודות)</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px">סדר עמודות: מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה</div>
+        <textarea id="vac-paste" rows="6" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן את הטבלה מפוקוס..."></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="emp-mgr-cancel" onclick="closeVacationMgr()">סגור</button>
+          <button class="emp-mgr-save" onclick="saveVacationImport()">💾 ייבא / עדכן נתונים</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+// ===== END VACATION BALANCE MANAGEMENT =====
 
 // ===== BACKUP NOW =====
 window.backupNow = function(){
