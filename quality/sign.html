@@ -120,10 +120,50 @@ async function initRecord(node, label, subjectField, bodyField){
   });
 }
 
+async function initBackupSign(){
+  const card=document.getElementById('card');
+  if(!recId){ card.innerHTML='<div class="logo">DHL</div><div class="err">קישור לא תקין</div>'; return; }
+  let rec;
+  try{
+    const r=await fetch(DB+'/roleDefinitions/'+recId+'.json?t='+Date.now());
+    rec=await r.json();
+  }catch(e){ card.innerHTML='<div class="logo">DHL</div><div class="err">שגיאה בטעינת הנתונים, נסה שוב</div>'; return; }
+  if(!rec){ card.innerHTML='<div class="logo">DHL</div><div class="err">הרשומה לא נמצאה</div>'; return; }
+
+  const backupName = rec.backupPrimary || '';
+  const title = 'אישור תפקיד גיבוי — '+rec.roleName;
+  const bodyText = 'עובד: '+(rec.employee||'')+(rec.responsibilities ? ('\n\nתחומי אחריות עיקריים:\n'+rec.responsibilities) : '');
+
+  if(rec.backupSignature){
+    card.innerHTML='<div class="logo">DHL</div><h2>'+esc(title)+'</h2><div class="sub">שלום '+esc(backupName)+'</div>'+
+      '<div class="box">'+esc(bodyText)+'</div>'+
+      '<div class="done">✔ כבר אישרת שאתה מודע לתפקיד הגיבוי ב-'+esc((rec.backupSignature.date||'').slice(0,10))+'</div>';
+    return;
+  }
+
+  card.innerHTML='<div class="logo">DHL</div><h2>'+esc(title)+'</h2><div class="sub">שלום '+esc(backupName)+', הוגדרת כגיבוי לתפקיד זה. אנא אשר/י שאת/ה מודע/ת</div>'+
+    '<div class="box">'+esc(bodyText)+'</div>'+
+    '<button class="btn btn-confirm" id="confirmBtn">מאשר/ת שאני מודע/ת ומוכן/ה לגבות</button><div id="resultArea"></div>';
+
+  document.getElementById('confirmBtn').addEventListener('click', async ()=>{
+    const btn=document.getElementById('confirmBtn');
+    btn.disabled=true; btn.textContent='שומר...';
+    try{
+      await fetch(DB+'/roleDefinitions/'+recId+'/backupSignature.json',{method:'PUT',body:JSON.stringify({date:new Date().toISOString()})});
+      btn.style.display='none';
+      document.getElementById('resultArea').innerHTML='<div class="done">✔ תודה, האישור נקלט בהצלחה</div>';
+    }catch(e){
+      btn.disabled=false; btn.textContent='מאשר/ת שאני מודע/ת ומוכן/ה לגבות';
+      document.getElementById('resultArea').innerHTML='<div class="err">שגיאה בשמירה, נסה שוב</div>';
+    }
+  });
+}
+
 function init(){
   if(type==='f') initRecord('feedback','משוב','subject','details');
   else if(type==='o') initRecord('oneToOne','שיחה אישית','topics','notes');
   else if(type==='r') initRecord('roleDefinitions','הגדרת תפקיד','roleName','responsibilities');
+  else if(type==='rb') initBackupSign();
   else initProcedure();
 }
 init();
