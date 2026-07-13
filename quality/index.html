@@ -1774,7 +1774,7 @@ function sendEmailDigest(msg){
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
     to_email: NOTIFY_TO, to_name: 'מתן', subject: 'התראת תוקף נהלים — איכות המחלקה',
-    message: msg, task_title: 'נהלי איכות', status: 'התראת תוקף', time: time
+    message: msg, task_title: 'מסמכים לחתימה — איכות המחלקה', status: 'התראת תוקף', time: time
   });
 }
 async function checkDailyDigest(){
@@ -1802,7 +1802,7 @@ function sendReminderEmail(toEmail, toName, subject, message){
   const now=new Date();
   const time=now.toLocaleDateString('he-IL')+' '+now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   return emailjs.send(EMAIL_SERVICE, EMAIL_TEMPLATE, {
-    to_email:toEmail, to_name:toName, subject, message, task_title:subject, status:'תזכורת לחתימה', time
+    to_email:toEmail, to_name:toName, subject, message, task_title:'מסמכים לחתימה', status:'תזכורת לחתימה', time
   });
 }
 
