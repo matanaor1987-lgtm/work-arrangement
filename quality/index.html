@@ -731,7 +731,7 @@ function renderRoles(){
   const search=(document.getElementById('roleSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
-    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
@@ -775,7 +775,7 @@ function renderRoles(){
       '<td>'+backupCellHtml(r)+'</td>'+
       '<td>'+docHtml+'</td>'+
       '<td>'+recordSignCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="שלח לחתימה לעובד" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -794,9 +794,16 @@ function backupCellHtml(r){
   const primTag = backupTypeLabel(r.backupPrimaryType);
   const secTag = r.backupSecondary ? (esc(r.backupSecondary)+(backupTypeLabel(r.backupSecondaryType)?' ('+backupTypeLabel(r.backupSecondaryType)+')':'')) : '';
   const title = secTag ? (' title="גיבוי משני: '+secTag+'"') : '';
+  let backupSignBadge='';
+  if(r.backupPrimary){
+    backupSignBadge = r.backupSignature
+      ? '<span class="badge s-ok" title="המגבה אישר קריאה ב-'+esc((r.backupSignature.date||'').slice(0,10))+'">🛡️✔ מגבה אישר</span>'
+      : (r.backupSignSentAt ? '<span class="badge s-soon" title="נשלח למגבה ב-'+esc((r.backupSignSentAt||'').slice(0,10))+'">🛡️⏳ ממתין למגבה</span>' : '<span class="muted" style="font-size:10px">🛡️ מגבה לא אישר</span>');
+  }
   return '<span'+title+'>'+(r.backupPrimary?esc(r.backupPrimary):'<span class="muted">—</span>')+(primTag?' <span style="font-size:10px;color:#888">'+primTag+'</span>':'')+'</span>'+
     '<div style="margin-top:2px"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
-    (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '');
+    (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '')+
+    (backupSignBadge ? '<div style="margin-top:3px">'+backupSignBadge+'</div>' : '');
 }
 
 function toggleBackupInput(fieldId){
@@ -1501,6 +1508,72 @@ async function sendQuickSignEmail(pkgKey, btn){
     const store = pkg.recType==='f' ? FEEDBACK : (pkg.recType==='o' ? ONETOONE : ROLES);
     if(store[pkg.recId]) store[pkg.recId].signSentAt=new Date().toISOString();
     if(pkg.recType==='f') renderFeedback(); else if(pkg.recType==='o') renderOneToOne(); else renderRoles();
+    btn.textContent='✓ נשלח';
+    btn.style.background='#2e7d32';
+  }catch(e){
+    btn.disabled=false; btn.textContent='📧 שלח שוב';
+  }
+}
+
+/* ===== חתימת מגבה (Backup) על הגדרת תפקיד ===== */
+async function openBackupSign(id){
+  await ensureEmpDataMap();
+  const rec=ROLES[id];
+  const box=document.getElementById('quickSignBox');
+  if(!rec){ box.innerHTML='<div class="err">רשומה לא נמצאה</div>'; document.getElementById('quickSignModalBg').classList.add('open'); return; }
+  if(!rec.backupPrimary){
+    box.innerHTML='<div class="err" style="padding:10px;border-radius:8px">לא הוגדר גיבוי ראשי לתפקיד זה עדיין.</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+  const title='אישור מגבה — '+esc(rec.roleName)+' (מגבה: '+esc(rec.backupPrimary)+')';
+
+  if(rec.backupSignature){
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px">✔ '+esc(rec.backupPrimary)+' כבר אישר/ה שהוא/היא מודע/ת לתפקיד הגיבוי ב-'+esc((rec.backupSignature.date||'').slice(0,10))+'</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+
+  if((rec.backupPrimaryType||'internal')!=='internal'){
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">חתימה דיגיטלית זמינה כרגע רק לגיבוי מסוג "עובד פנימי" עם כתובת מייל במערכת.</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+
+  const contact=EMP_DATA_MAP[rec.backupPrimary];
+  if(!contact || !contact.email){
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא נמצאה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>';
+    document.getElementById('quickSignModalBg').classList.add('open');
+    return;
+  }
+
+  const link=buildRecordSignLink('rb', id);
+  const subject='אישור תפקיד גיבוי — '+rec.roleName;
+  const msg='שלום '+rec.backupPrimary+', הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
+
+  window.SEND_PACKAGES = window.SEND_PACKAGES || {};
+  const pkgKey='qb_r_'+id;
+  window.SEND_PACKAGES[pkgKey]={email:contact.email, name:rec.backupPrimary, subject, message:msg, node:'roleDefinitions', recId:id, recType:'rb'};
+
+  box.innerHTML='<div style="margin-bottom:10px">'+title+'</div>'+
+    '<div class="att-item" style="width:100%;justify-content:space-between">'+
+    '<span>'+esc(rec.backupPrimary)+' — '+esc(contact.email)+'</span>'+
+    '<span>'+
+    '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendBackupSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button> '+
+    '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
+    '</span></div>';
+  document.getElementById('quickSignModalBg').classList.add('open');
+}
+
+async function sendBackupSignEmail(pkgKey, btn){
+  const pkg=window.SEND_PACKAGES && window.SEND_PACKAGES[pkgKey];
+  if(!pkg || !pkg.email) return;
+  btn.disabled=true; btn.textContent='שולח...';
+  try{
+    await sendReminderEmail(pkg.email, pkg.name, pkg.subject, pkg.message);
+    await fetch(DB+'/roleDefinitions/'+pkg.recId+'/backupSignSentAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
+    if(ROLES[pkg.recId]) ROLES[pkg.recId].backupSignSentAt=new Date().toISOString();
+    renderRoles();
     btn.textContent='✓ נשלח';
     btn.style.background='#2e7d32';
   }catch(e){
