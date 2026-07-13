@@ -111,6 +111,7 @@ a.doc-link:hover{text-decoration:underline}
     <div class="tab" onclick="openTab('feedback',this)">סיכום משובים</div>
     <div class="tab" onclick="openTab('onetoone',this)">שיחות אישיות</div>
     <div class="tab" onclick="openTab('roles',this)">הגדרות תפקיד</div>
+    <div class="tab" onclick="openTab('competency',this)">חפיפה וכשירות</div>
   </div>
 
   <!-- ============ פאנל נהלים ============ -->
@@ -274,6 +275,43 @@ a.doc-link:hover{text-decoration:underline}
           </tr>
         </thead>
         <tbody id="tbodyRoles"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ פאנל חפיפה וכשירות ============ -->
+  <div class="pane" id="pane-competency">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+      <button class="btn btn-add" onclick="openNewCompetency()">+ רשומת חפיפה חדשה</button>
+    </div>
+    <div id="compAlertBanner"></div>
+    <div class="stats">
+      <div class="stat"><div class="n n-all" id="compAll">0</div><div class="l">סה"כ רשומות</div></div>
+      <div class="stat"><div class="n n-ok" id="compApproved">0</div><div class="l">מאושרים לעבודה עצמאית</div></div>
+      <div class="stat"><div class="n n-soon" id="compAwaiting">0</div><div class="l">עברו מבחן, ממתינים לאישור</div></div>
+      <div class="stat"><div class="n n-expired" id="compFailed">0</div><div class="l">לא עברו / בתיקון פערים</div></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="compSearch" placeholder="חיפוש לפי עובד / תפקיד..." oninput="renderCompetency()">
+    </div>
+    <div class="count" id="compCountLbl"></div>
+    <div class="tbl-wrap">
+      <table id="tblCompetency">
+        <thead>
+          <tr>
+            <th onclick="sortCompBy('employee')">עובד</th>
+            <th onclick="sortCompBy('role')">תפקיד</th>
+            <th onclick="sortCompBy('startDate')">תחילת חפיפה</th>
+            <th onclick="sortCompBy('examDate')">מבחן</th>
+            <th>ציון</th>
+            <th>סטטוס</th>
+            <th>אישור כשירות</th>
+            <th>מסמך</th>
+            <th>חתימה</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyCompetency"><tr><td colspan="10" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -468,6 +506,61 @@ a.doc-link:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- מודל חפיפה וכשירות -->
+<div class="modal-bg" id="compModalBg">
+  <div class="modal">
+    <h3 id="compModalTitle">רשומת חפיפה חדשה</h3>
+    <input type="hidden" id="compId">
+    <div class="form-grid">
+      <div class="form-row"><label>עובד</label><input type="text" id="compEmployee" list="empNamesList" placeholder="שם מלא"></div>
+      <div class="form-row"><label>תפקיד</label><input type="text" id="compRole" placeholder="לדוגמה מסווג"></div>
+    </div>
+    <div class="form-row"><label>תאריך תחילת חפיפה</label><input type="date" id="compStartDate"></div>
+
+    <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-top:4px">
+      <label style="font-size:12px;color:#333;margin-bottom:8px">📝 מבחן מסכם</label>
+      <div class="form-grid">
+        <div class="form-row"><label>תאריך מבחן</label><input type="date" id="compExamDate"></div>
+        <div class="form-row"><label>ציון</label><input type="number" id="compExamScore" min="0" max="100" placeholder="0-100"></div>
+      </div>
+      <div class="form-row"><label>רף מעבר</label><input type="number" id="compThreshold" min="0" max="100" value="90"></div>
+    </div>
+
+    <div class="form-row"><label>מעקב השלמת פערים (אם לא עבר בפעם הראשונה)</label><textarea id="compGapNotes" placeholder="מה בוצע, ליווי נוסף, וכו'"></textarea></div>
+
+    <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px">
+      <label style="font-size:12px;color:#333;margin-bottom:8px">🔁 מבחן חוזר (אם נדרש)</label>
+      <div class="form-grid">
+        <div class="form-row"><label>תאריך מבחן חוזר</label><input type="date" id="compRetestDate"></div>
+        <div class="form-row"><label>ציון מבחן חוזר</label><input type="number" id="compRetestScore" min="0" max="100" placeholder="0-100"></div>
+      </div>
+    </div>
+
+    <div class="form-row" style="background:#fff8e1;border-radius:8px;padding:10px 12px;border:1px solid #ffe082">
+      <label style="font-size:12px;color:#7a4a00;margin-bottom:8px">✅ אישור כשירות סופי לעבודה עצמאית</label>
+      <div class="form-grid">
+        <div class="form-row"><label>תאריך אישור</label><input type="date" id="compApprovedDate"></div>
+        <div class="form-row"><label>אושר ע"י</label><input type="text" id="compApprovedBy"></div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>קובץ מצורף (לא חובה)</label>
+      <div id="compDropZone" class="drop-zone" onclick="document.getElementById('compFileInput').click()">
+        📎 גרור קובץ לכאן או לחץ לבחירה
+      </div>
+      <input type="file" id="compFileInput" style="display:none" multiple onchange="handleCompFiles(this.files)">
+      <div id="compUploadStatus"></div>
+      <div id="compAttachmentsBox" class="attachments"></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-cancel" onclick="closeModal('compModalBg')">ביטול</button>
+      <button class="btn btn-save" onclick="saveCompetency()">שמור</button>
+    </div>
+  </div>
+</div>
+
 <!-- מודל כרטיס עובד -->
 <div class="modal-bg" id="empCardModalBg">
   <div class="modal" style="max-width:680px">
@@ -561,7 +654,7 @@ const EMAIL_SERVICE='service_lte5cve', EMAIL_TEMPLATE='template_z7nso6t', EMAIL_
 const NOTIFY_TO='matan.naor@dhl.com';
 const SOON_DAYS=30;
 
-let PROCS={}, FEEDBACK={}, ONETOONE={}, ROLES={};
+let PROCS={}, FEEDBACK={}, ONETOONE={}, ROLES={}, COMPETENCY={};
 let statusFilter='all';
 let sortCol='expiry', sortAsc=true;
 let fbFilter='all', fbSortCol='date', fbSortAsc=false;
@@ -573,6 +666,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initDropZone();
   initFbDropZone();
   initRoleDropZone();
+  initCompDropZone();
   const saved=localStorage.getItem('quality_user');
   if(saved){ userName=saved; showApp(); }
 });
@@ -719,6 +813,193 @@ function renderRoleAttachmentsBox(){
   el.innerHTML=pendingRoleAttachments.map((f,i)=>
     '<div class="att-item">📎 <a href="'+esc(f.url)+'" target="_blank">'+esc(f.name)+'</a><span class="att-size">'+esc(f.size)+'</span><span style="cursor:pointer;color:#999" onclick="pendingRoleAttachments.splice('+i+',1);renderRoleAttachmentsBox()">✕</span></div>'
   ).join('');
+}
+
+/* ===== קבצים מצורפים לחפיפה וכשירות ===== */
+let pendingCompAttachments=[];
+
+function initCompDropZone(){
+  const dz=document.getElementById('compDropZone');
+  if(!dz) return;
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    handleCompFiles(e.dataTransfer.files);
+  });
+}
+
+async function handleCompFiles(files){
+  const status=document.getElementById('compUploadStatus');
+  for(const file of files){
+    status.innerHTML='<div class="uploading">⏳ מעלה: '+esc(file.name)+'...</div>';
+    try{
+      const url=await uploadFile(file);
+      pendingCompAttachments.push({name:file.name, url, size:formatSize(file.size)});
+      renderCompAttachmentsBox();
+      status.innerHTML='';
+    }catch(e){
+      status.innerHTML='<div class="uploading" style="color:#c62828">❌ שגיאה: '+esc(e.message)+'</div>';
+      setTimeout(()=>status.innerHTML='',3000);
+    }
+  }
+  document.getElementById('compFileInput').value='';
+}
+
+function renderCompAttachmentsBox(){
+  const el=document.getElementById('compAttachmentsBox');
+  if(!pendingCompAttachments.length){ el.innerHTML=''; return; }
+  el.innerHTML=pendingCompAttachments.map((f,i)=>
+    '<div class="att-item">📎 <a href="'+esc(f.url)+'" target="_blank">'+esc(f.name)+'</a><span class="att-size">'+esc(f.size)+'</span><span style="cursor:pointer;color:#999" onclick="pendingCompAttachments.splice('+i+',1);renderCompAttachmentsBox()">✕</span></div>'
+  ).join('');
+}
+
+/* ========================= חפיפה וכשירות ========================= */
+let compSortCol='examDate', compSortAsc=false;
+
+function sortCompBy(col){
+  if(compSortCol===col) compSortAsc=!compSortAsc; else { compSortCol=col; compSortAsc=false; }
+  renderCompetency();
+}
+
+function compStatus(r){
+  const score = r.retestScore!=='' && r.retestScore!=null ? Number(r.retestScore) : (r.examScore!=='' && r.examScore!=null ? Number(r.examScore) : null);
+  if(r.approvedDate) return {cls:'s-ok', label:'✔ מאושר לעבודה עצמאית'};
+  if(score===null) return {cls:'muted', label:'ממתין למבחן'};
+  if(score >= (Number(r.threshold)||90)) return {cls:'s-soon', label:'עבר מבחן — ממתין לאישור'};
+  return {cls:'s-expired', label:'לא עבר — בתיקון פערים'};
+}
+
+function renderCompetency(){
+  const search=(document.getElementById('compSearch').value||'').trim().toLowerCase();
+  let rows=Object.keys(COMPETENCY).map(id=>{
+    const r=COMPETENCY[id];
+    return {id, employee:r.employee||'', role:r.role||'', startDate:r.startDate||'', examDate:r.examDate||'', examScore:r.examScore||'', threshold:r.threshold||90, gapNotes:r.gapNotes||'', retestDate:r.retestDate||'', retestScore:r.retestScore||'', approvedDate:r.approvedDate||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+  });
+
+  const all=rows;
+  document.getElementById('compAll').textContent=all.length;
+  document.getElementById('compApproved').textContent=all.filter(r=>r.approvedDate).length;
+  document.getElementById('compAwaiting').textContent=all.filter(r=>{ const st=compStatus(r); return st.label.indexOf('ממתין לאישור')>=0; }).length;
+  document.getElementById('compFailed').textContent=all.filter(r=>compStatus(r).cls==='s-expired').length;
+
+  const awaiting=all.filter(r=>compStatus(r).label.indexOf('ממתין לאישור')>=0);
+  const banner=document.getElementById('compAlertBanner');
+  if(awaiting.length){
+    banner.innerHTML='<div class="alert-banner">⚠️ <b>'+awaiting.length+' עובדים עברו את המבחן המסכם אך אין להם אישור כשירות מתועד</b> — לפי הממצא, הם לא אמורים לעבוד עצמאית עד שיאושר.</div>';
+  } else banner.innerHTML='';
+
+  if(search) rows=rows.filter(r=> (r.employee+' '+r.role).toLowerCase().includes(search));
+
+  rows.sort((a,b)=>{
+    let av=(a[compSortCol]||'').toString().toLowerCase(), bv=(b[compSortCol]||'').toString().toLowerCase();
+    if(av<bv) return compSortAsc?-1:1;
+    if(av>bv) return compSortAsc?1:-1;
+    return 0;
+  });
+
+  document.getElementById('compCountLbl').textContent='מציג '+rows.length+' רשומות';
+  const tb=document.getElementById('tbodyCompetency');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="10" class="nores">לא נמצאו רשומות</td></tr>'; return; }
+  tb.innerHTML=rows.map(r=>{
+    const st=compStatus(r);
+    const docHtml=(r.attachments||[]).length ? r.attachments.map(a=>'<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>').join('<br>') : '<span class="muted">—</span>';
+    const scoreDisplay = r.retestScore ? (esc(r.retestScore)+' (חוזר)') : (r.examScore || '<span class="muted">—</span>');
+    const approvedDisplay = r.approvedDate ? (esc(r.approvedDate)+(r.approvedBy?('<div style="font-size:10px;color:#999">ע"י '+esc(r.approvedBy)+'</div>'):'')) : '<span class="muted">—</span>';
+    return '<tr>'+
+      '<td><span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(r.employee).replace(/'/g,"\\'")+'\')">'+esc(r.employee)+'</span></td>'+
+      '<td>'+esc(r.role)+'</td>'+
+      '<td>'+esc(r.startDate)+'</td>'+
+      '<td>'+esc(r.examDate)+'</td>'+
+      '<td>'+scoreDisplay+'</td>'+
+      '<td><span class="badge '+st.cls+'">'+st.label+'</span></td>'+
+      '<td>'+approvedDisplay+'</td>'+
+      '<td>'+docHtml+'</td>'+
+      '<td>'+recordSignCellHtml(r)+'</td>'+
+      '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'c\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editCompetency(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteCompetency(\''+r.id+'\')">🗑️</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function openNewCompetency(){
+  document.getElementById('compModalTitle').textContent='רשומת חפיפה חדשה';
+  document.getElementById('compId').value='';
+  document.getElementById('compEmployee').value='';
+  document.getElementById('compRole').value='';
+  document.getElementById('compStartDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('compExamDate').value='';
+  document.getElementById('compExamScore').value='';
+  document.getElementById('compThreshold').value='90';
+  document.getElementById('compGapNotes').value='';
+  document.getElementById('compRetestDate').value='';
+  document.getElementById('compRetestScore').value='';
+  document.getElementById('compApprovedDate').value='';
+  document.getElementById('compApprovedBy').value='';
+  pendingCompAttachments=[];
+  renderCompAttachmentsBox();
+  populateEmpNamesList();
+  document.getElementById('compModalBg').classList.add('open');
+}
+function editCompetency(id){
+  const r=COMPETENCY[id];
+  document.getElementById('compModalTitle').textContent='עריכת רשומת חפיפה';
+  document.getElementById('compId').value=id;
+  document.getElementById('compEmployee').value=r.employee||'';
+  document.getElementById('compRole').value=r.role||'';
+  document.getElementById('compStartDate').value=r.startDate||'';
+  document.getElementById('compExamDate').value=r.examDate||'';
+  document.getElementById('compExamScore').value=r.examScore||'';
+  document.getElementById('compThreshold').value=r.threshold||90;
+  document.getElementById('compGapNotes').value=r.gapNotes||'';
+  document.getElementById('compRetestDate').value=r.retestDate||'';
+  document.getElementById('compRetestScore').value=r.retestScore||'';
+  document.getElementById('compApprovedDate').value=r.approvedDate||'';
+  document.getElementById('compApprovedBy').value=r.approvedBy||'';
+  pendingCompAttachments=(r.attachments||[]).slice();
+  renderCompAttachmentsBox();
+  populateEmpNamesList();
+  document.getElementById('compModalBg').classList.add('open');
+}
+async function saveCompetency(){
+  const id=document.getElementById('compId').value || 'c'+Date.now();
+  const existing=COMPETENCY[id];
+  const rec={
+    employee:document.getElementById('compEmployee').value.trim(),
+    role:document.getElementById('compRole').value.trim(),
+    startDate:document.getElementById('compStartDate').value,
+    examDate:document.getElementById('compExamDate').value,
+    examScore:document.getElementById('compExamScore').value,
+    threshold:document.getElementById('compThreshold').value || 90,
+    gapNotes:document.getElementById('compGapNotes').value.trim(),
+    retestDate:document.getElementById('compRetestDate').value,
+    retestScore:document.getElementById('compRetestScore').value,
+    approvedDate:document.getElementById('compApprovedDate').value,
+    approvedBy:document.getElementById('compApprovedBy').value.trim(),
+    attachments:pendingCompAttachments.slice(),
+    signature:(existing && existing.signature)||null,
+    signSentAt:(existing && existing.signSentAt)||null,
+    updatedAt:new Date().toISOString()
+  };
+  if(!rec.employee){ alert('נא להזין שם עובד'); return; }
+  showSaving(true);
+  try{
+    await fetch(DB+'/competency/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    COMPETENCY[id]=rec;
+    closeModal('compModalBg');
+    renderCompetency();
+  }catch(e){ alert('שגיאה בשמירה'); }
+  showSaving(false);
+}
+async function deleteCompetency(id){
+  if(!confirm('למחוק את רשומת החפיפה?')) return;
+  showSaving(true);
+  try{
+    await fetch(DB+'/competency/'+id+'.json',{method:'DELETE'});
+    delete COMPETENCY[id];
+    renderCompetency();
+  }catch(e){ alert('שגיאה במחיקה'); }
+  showSaving(false);
 }
 
 /* ========================= הגדרות תפקיד ========================= */
@@ -1104,17 +1385,19 @@ async function fixExpiryOneYearFromToday(){
 
 async function loadAll(){
   try{
-    const [rp, rf, ro, rr] = await Promise.all([
+    const [rp, rf, ro, rr, rc] = await Promise.all([
       fetch(DB+'/nahalim.json?t='+Date.now()),
       fetch(DB+'/feedback.json?t='+Date.now()),
       fetch(DB+'/oneToOne.json?t='+Date.now()),
-      fetch(DB+'/roleDefinitions.json?t='+Date.now())
+      fetch(DB+'/roleDefinitions.json?t='+Date.now()),
+      fetch(DB+'/competency.json?t='+Date.now())
     ]);
     PROCS = (await rp.json()) || {};
     FEEDBACK = (await rf.json()) || {};
     ONETOONE = (await ro.json()) || {};
     ROLES = (await rr.json()) || {};
-  }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; ROLES={}; }
+    COMPETENCY = (await rc.json()) || {};
+  }catch(e){ PROCS={}; FEEDBACK={}; ONETOONE={}; ROLES={}; COMPETENCY={}; }
   await migrateCanonicalProcs();
   await fixExpiryOneYearFromToday();
   await seedEmployeeEmails();
@@ -1124,6 +1407,7 @@ async function loadAll(){
   renderFeedback();
   renderOneToOne();
   renderRoles();
+  renderCompetency();
   checkDailyDigest();
 }
 
@@ -1463,13 +1747,14 @@ async function sendDirectFromPackage(pkgKey, btn){
 const RECORD_TYPE_INFO={
   f:{store:FEEDBACK, node:'feedback', label:'משוב', subjectField:'subject'},
   o:{store:ONETOONE, node:'oneToOne', label:'שיחה אישית', subjectField:'topics'},
-  r:{store:ROLES, node:'roleDefinitions', label:'הגדרת תפקיד', subjectField:'roleName'}
+  r:{store:ROLES, node:'roleDefinitions', label:'הגדרת תפקיד', subjectField:'roleName'},
+  c:{store:COMPETENCY, node:'competency', label:'חפיפה וכשירות', subjectField:'role'}
 };
 
 async function openQuickSign(type, id){
   await ensureEmpDataMap();
   const info=RECORD_TYPE_INFO[type];
-  const store = type==='f' ? FEEDBACK : (type==='o' ? ONETOONE : ROLES);
+  const store = type==='f' ? FEEDBACK : (type==='o' ? ONETOONE : (type==='c' ? COMPETENCY : ROLES));
   const rec=store[id];
   const box=document.getElementById('quickSignBox');
   if(!rec){ box.innerHTML='<div class="err">רשומה לא נמצאה</div>'; document.getElementById('quickSignModalBg').classList.add('open'); return; }
@@ -1515,9 +1800,9 @@ async function sendQuickSignEmail(pkgKey, btn){
   try{
     await sendReminderEmail(pkg.email, pkg.name, pkg.subject, pkg.message);
     await fetch(DB+'/'+pkg.node+'/'+pkg.recId+'/signSentAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
-    const store = pkg.recType==='f' ? FEEDBACK : (pkg.recType==='o' ? ONETOONE : ROLES);
+    const store = pkg.recType==='f' ? FEEDBACK : (pkg.recType==='o' ? ONETOONE : (pkg.recType==='c' ? COMPETENCY : ROLES));
     if(store[pkg.recId]) store[pkg.recId].signSentAt=new Date().toISOString();
-    if(pkg.recType==='f') renderFeedback(); else if(pkg.recType==='o') renderOneToOne(); else renderRoles();
+    if(pkg.recType==='f') renderFeedback(); else if(pkg.recType==='o') renderOneToOne(); else if(pkg.recType==='c') renderCompetency(); else renderRoles();
     btn.textContent='✓ נשלח';
     btn.style.background='#2e7d32';
   }catch(e){
@@ -1602,6 +1887,7 @@ async function openEmpCard(prefillName){
   Object.values(FEEDBACK).forEach(f=>{ if(f.employee) namesSet.add(f.employee); });
   Object.values(ONETOONE).forEach(o=>{ if(o.employee) namesSet.add(o.employee); });
   Object.values(ROLES).forEach(r=>{ if(r.employee) namesSet.add(r.employee); });
+  Object.values(COMPETENCY).forEach(r=>{ if(r.employee) namesSet.add(r.employee); });
   const names=Array.from(namesSet).sort((a,b)=>a.localeCompare(b,'he'));
   const sel=document.getElementById('empCardSelect');
   sel.innerHTML='<option value="">בחר עובד...</option>'+names.map(n=>'<option value="'+esc(n)+'"'+(n===prefillName?' selected':'')+'>'+esc(n)+'</option>').join('');
@@ -1616,6 +1902,7 @@ function renderEmpCard(name){
 
   const procRows=Object.keys(PROCS).map(id=>PROCS[id]).filter(p=>(p.signRequired||[]).includes(name));
   const roleRows=Object.values(ROLES).filter(r=>r.employee===name);
+  const compRows=Object.values(COMPETENCY).filter(r=>r.employee===name);
   const fbRows=Object.values(FEEDBACK).filter(f=>f.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const ooRows=Object.values(ONETOONE).filter(o=>o.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
@@ -1637,6 +1924,16 @@ function renderEmpCard(name){
       (r.signature ? '<span class="badge s-ok">✔ '+esc((r.signature.date||'').slice(0,10))+'</span>' : '<span class="badge s-soon">⏳ ממתין</span>')+
     '</div>'
   ).join('');
+
+  html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">🎓 חפיפה וכשירות ('+compRows.length+')</h4>';
+  if(!compRows.length) html+='<div class="muted" style="font-size:12px">אין רשומות חפיפה לעובד זה</div>';
+  else html+=compRows.map(r=>{
+    const st=compStatus(r);
+    return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+      '<span>'+esc(r.role||'')+'</span>'+
+      '<span class="badge '+st.cls+'">'+st.label+'</span>'+
+    '</div>';
+  }).join('');
 
   html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">💬 משובים ('+fbRows.length+')</h4>';
   if(!fbRows.length) html+='<div class="muted" style="font-size:12px">אין משובים לעובד זה</div>';
@@ -1837,7 +2134,7 @@ async function checkSignatureReminders(){
     }
   }
 
-  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[ROLES,'roleDefinitions','הגדרת תפקיד']];
+  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[ROLES,'roleDefinitions','הגדרת תפקיד'],[COMPETENCY,'competency','חפיפה וכשירות']];
   for(const [store,node,label] of singleTargets){
     for(const id of Object.keys(store)){
       const rec=store[id];
@@ -1846,7 +2143,7 @@ async function checkSignatureReminders(){
       if(daysSince(rec.signSentAt) >= REMIND_DAYS && daysSince(lastCheck) >= REMIND_DAYS){
         const contact=EMP_DATA_MAP[rec.employee];
         if(contact && contact.email){
-          const link=buildRecordSignLink(node==='feedback'?'f':(node==='oneToOne'?'o':'r'), id);
+          const link=buildRecordSignLink(node==='feedback'?'f':(node==='oneToOne'?'o':(node==='competency'?'c':'r')), id);
           try{
             await sendReminderEmail(contact.email, rec.employee, 'תזכורת: '+label+' ממתין לאישור קריאה',
               'זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
