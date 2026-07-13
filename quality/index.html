@@ -420,6 +420,7 @@ a.doc-link:hover{text-decoration:underline}
             </select>
             <input type="text" id="roleBackupPrimary" list="empNamesList" placeholder="שם מלא" style="flex:1">
           </div>
+          <input type="email" id="roleBackupPrimaryEmail" placeholder="כתובת מייל (לחתימה דיגיטלית)" style="display:none;margin-top:6px">
         </div>
         <div class="form-row">
           <label>גיבוי משני (לא חובה)</label>
@@ -731,7 +732,7 @@ function renderRoles(){
   const search=(document.getElementById('roleSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
-    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupPrimaryEmail:r.backupPrimaryEmail||'', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
@@ -818,6 +819,8 @@ function toggleBackupInput(fieldId){
       : type==='other_dept' ? 'שם + מחלקה (לדוגמה: דנה כהן, מחלקת כספים)'
       : 'הזן שם באופן חופשי';
   }
+  const emailField=document.getElementById(fieldId+'Email');
+  if(emailField) emailField.style.display = type==='internal' ? 'none' : 'block';
 }
 function backupTypeLabel(type){
   return {internal:'', other_dept:'🏢 מחלקה אחרת', contractor:'🔧 קבלן חיצוני', manual:''}[type] || '';
@@ -833,6 +836,7 @@ function openNewRole(){
   document.getElementById('roleGoals').value='';
   document.getElementById('roleBackupPrimary').value='';
   document.getElementById('roleBackupPrimaryType').value='internal';
+  document.getElementById('roleBackupPrimaryEmail').value='';
   document.getElementById('roleBackupSecondary').value='';
   document.getElementById('roleBackupSecondaryType').value='internal';
   toggleBackupInput('roleBackupPrimary');
@@ -857,6 +861,7 @@ function editRole(id){
   document.getElementById('roleGoals').value=r.goals||'';
   document.getElementById('roleBackupPrimary').value=r.backupPrimary||'';
   document.getElementById('roleBackupPrimaryType').value=r.backupPrimaryType||'internal';
+  document.getElementById('roleBackupPrimaryEmail').value=r.backupPrimaryEmail||'';
   document.getElementById('roleBackupSecondary').value=r.backupSecondary||'';
   document.getElementById('roleBackupSecondaryType').value=r.backupSecondaryType||'internal';
   toggleBackupInput('roleBackupPrimary');
@@ -886,6 +891,7 @@ async function saveRole(){
     goals:document.getElementById('roleGoals').value.trim(),
     backupPrimary:document.getElementById('roleBackupPrimary').value.trim(),
     backupPrimaryType:document.getElementById('roleBackupPrimaryType').value,
+    backupPrimaryEmail:document.getElementById('roleBackupPrimaryEmail').value.trim(),
     backupSecondary:document.getElementById('roleBackupSecondary').value.trim(),
     backupSecondaryType:document.getElementById('roleBackupSecondaryType').value,
     backupVerified:document.getElementById('roleBackupVerified').value,
@@ -1535,8 +1541,12 @@ async function openBackupSign(id){
   }
 
   if((rec.backupPrimaryType||'internal')!=='internal'){
-    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">חתימה דיגיטלית זמינה כרגע רק לגיבוי מסוג "עובד פנימי" עם כתובת מייל במערכת.</div>';
-    document.getElementById('quickSignModalBg').classList.add('open');
+    if(!rec.backupPrimaryEmail){
+      box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא הוזנה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". ערוך את הגדרת התפקיד והוסף כתובת מייל בשדה שמופיע מתחת לגיבוי הראשי.</div>';
+      document.getElementById('quickSignModalBg').classList.add('open');
+      return;
+    }
+    sendBackupSignBox(id, rec, rec.backupPrimaryEmail, title);
     return;
   }
 
@@ -1546,18 +1556,22 @@ async function openBackupSign(id){
     document.getElementById('quickSignModalBg').classList.add('open');
     return;
   }
+  sendBackupSignBox(id, rec, contact.email, title);
+}
 
+function sendBackupSignBox(id, rec, email, title){
+  const box=document.getElementById('quickSignBox');
   const link=buildRecordSignLink('rb', id);
   const subject='אישור תפקיד גיבוי — '+rec.roleName;
   const msg='שלום '+rec.backupPrimary+', הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
 
   window.SEND_PACKAGES = window.SEND_PACKAGES || {};
   const pkgKey='qb_r_'+id;
-  window.SEND_PACKAGES[pkgKey]={email:contact.email, name:rec.backupPrimary, subject, message:msg, node:'roleDefinitions', recId:id, recType:'rb'};
+  window.SEND_PACKAGES[pkgKey]={email:email, name:rec.backupPrimary, subject, message:msg, node:'roleDefinitions', recId:id, recType:'rb'};
 
   box.innerHTML='<div style="margin-bottom:10px">'+title+'</div>'+
     '<div class="att-item" style="width:100%;justify-content:space-between">'+
-    '<span>'+esc(rec.backupPrimary)+' — '+esc(contact.email)+'</span>'+
+    '<span>'+esc(rec.backupPrimary)+' — '+esc(email)+'</span>'+
     '<span>'+
     '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendBackupSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button> '+
     '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
