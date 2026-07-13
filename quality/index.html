@@ -268,10 +268,12 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortRolesBy('version')">גרסה</th>
             <th>גיבוי בהיעדרות</th>
             <th>מסמך</th>
+            <th>חתימת עובד</th>
+            <th>חתימת מגבה</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyRoles"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyRoles"><tr><td colspan="9" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -764,7 +766,7 @@ function renderRoles(){
 
   document.getElementById('roleCountLbl').textContent='מציג '+rows.length+' הגדרות תפקיד';
   const tb=document.getElementById('tbodyRoles');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="8" class="nores">לא נמצאו הגדרות תפקיד</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="9" class="nores">לא נמצאו הגדרות תפקיד</td></tr>'; return; }
   tb.innerHTML=rows.map(r=>{
     const docHtml=(r.attachments||[]).length ? r.attachments.map(a=>'<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>').join('<br>') : '<span class="muted">—</span>';
     return '<tr>'+
@@ -774,7 +776,9 @@ function renderRoles(){
       '<td>'+esc(r.version)+'</td>'+
       '<td>'+backupCellHtml(r)+'</td>'+
       '<td>'+docHtml+'</td>'+
-      '<td><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
+      '<td>'+recordSignCellHtml(r)+'</td>'+
+      '<td>'+backupSignCellHtml(r)+'</td>'+
+      '<td><button class="act-btn" title="שלח לחתימה לעובד" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -793,16 +797,16 @@ function backupCellHtml(r){
   const primTag = backupTypeLabel(r.backupPrimaryType);
   const secTag = r.backupSecondary ? (esc(r.backupSecondary)+(backupTypeLabel(r.backupSecondaryType)?' ('+backupTypeLabel(r.backupSecondaryType)+')':'')) : '';
   const title = secTag ? (' title="גיבוי משני: '+secTag+'"') : '';
-  let backupSignBadge='';
-  if(r.backupPrimary){
-    backupSignBadge = r.backupSignature
-      ? '<span class="badge s-ok" title="המגבה אישר קריאה ב-'+esc((r.backupSignature.date||'').slice(0,10))+'">🛡️✔ מגבה אישר</span>'
-      : (r.backupSignSentAt ? '<span class="badge s-soon" title="נשלח למגבה ב-'+esc((r.backupSignSentAt||'').slice(0,10))+'">🛡️⏳ ממתין למגבה</span>' : '<span class="muted" style="font-size:10px">🛡️ מגבה לא אישר</span>');
-  }
   return '<span'+title+'>'+(r.backupPrimary?esc(r.backupPrimary):'<span class="muted">—</span>')+(primTag?' <span style="font-size:10px;color:#888">'+primTag+'</span>':'')+'</span>'+
     '<div style="margin-top:2px"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
-    (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '')+
-    (backupSignBadge ? '<div style="margin-top:3px">'+backupSignBadge+'</div>' : '');
+    (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '');
+}
+
+function backupSignCellHtml(r){
+  if(!r.backupPrimary) return '<span class="muted">—</span>';
+  if(r.backupSignature) return '<span class="badge s-ok">✔ נחתם '+esc((r.backupSignature.date||'').slice(0,10))+'</span>';
+  if(r.backupSignSentAt) return '<span class="badge s-soon">⏳ נשלח '+esc((r.backupSignSentAt||'').slice(0,10))+'</span>';
+  return '<span class="muted">לא נשלח</span>';
 }
 
 function toggleBackupInput(fieldId){
@@ -1839,7 +1843,7 @@ async function checkSignatureReminders(){
     }
   }
 
-  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית']];
+  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[ROLES,'roleDefinitions','הגדרת תפקיד']];
   for(const [store,node,label] of singleTargets){
     for(const id of Object.keys(store)){
       const rec=store[id];
