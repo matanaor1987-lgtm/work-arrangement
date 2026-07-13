@@ -1475,15 +1475,17 @@ async function openQuickSign(type, id){
   if(!rec){ box.innerHTML='<div class="err">רשומה לא נמצאה</div>'; document.getElementById('quickSignModalBg').classList.add('open'); return; }
   const contact=EMP_DATA_MAP[rec.employee];
   const title=info.label+' — '+esc(rec.employee)+(rec[info.subjectField]?(' ('+esc((rec[info.subjectField]||'').slice(0,40))+')'):'');
+  const divider=type==='r' ? '<hr style="margin:16px 0;border:none;border-top:1px solid #eee">' : '';
+  const backupHtml = type==='r' ? await backupSignBlockHtml(id) : '';
 
   if(rec.signature){
-    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px">✔ '+esc(rec.employee)+' כבר אישר/ה קריאה ב-'+esc((rec.signature.date||'').slice(0,10))+'</div>';
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px">✔ '+esc(rec.employee)+' כבר אישר/ה קריאה ב-'+esc((rec.signature.date||'').slice(0,10))+'</div>'+divider+backupHtml;
     document.getElementById('quickSignModalBg').classList.add('open');
     return;
   }
 
   if(!contact || !contact.email){
-    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא נמצאה כתובת מייל עבור "'+esc(rec.employee)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>';
+    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא נמצאה כתובת מייל עבור "'+esc(rec.employee)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>'+divider+backupHtml;
     document.getElementById('quickSignModalBg').classList.add('open');
     return;
   }
@@ -1502,7 +1504,7 @@ async function openQuickSign(type, id){
     '<span>'+
     '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendQuickSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button> '+
     '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
-    '</span></div>';
+    '</span></div>'+divider+backupHtml;
   document.getElementById('quickSignModalBg').classList.add('open');
 }
 
@@ -1524,45 +1526,33 @@ async function sendQuickSignEmail(pkgKey, btn){
 }
 
 /* ===== חתימת מגבה (Backup) על הגדרת תפקיד ===== */
-async function openBackupSign(id){
+async function backupSignBlockHtml(id){
   await ensureEmpDataMap();
   const rec=ROLES[id];
-  const box=document.getElementById('quickSignBox');
-  if(!rec){ box.innerHTML='<div class="err">רשומה לא נמצאה</div>'; document.getElementById('quickSignModalBg').classList.add('open'); return; }
+  if(!rec) return '';
+  const heading='<div style="font-weight:700;margin-bottom:6px;color:#1a1a2e">🛡️ חתימת מגבה'+(rec.backupPrimary?(' — '+esc(rec.backupPrimary)):'')+'</div>';
+
   if(!rec.backupPrimary){
-    box.innerHTML='<div class="err" style="padding:10px;border-radius:8px">לא הוגדר גיבוי ראשי לתפקיד זה עדיין.</div>';
-    document.getElementById('quickSignModalBg').classList.add('open');
-    return;
+    return heading+'<div class="muted" style="font-size:12px">לא הוגדר גיבוי ראשי לתפקיד זה עדיין.</div>';
   }
-  const title='אישור מגבה — '+esc(rec.roleName)+' (מגבה: '+esc(rec.backupPrimary)+')';
-
   if(rec.backupSignature){
-    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px">✔ '+esc(rec.backupPrimary)+' כבר אישר/ה שהוא/היא מודע/ת לתפקיד הגיבוי ב-'+esc((rec.backupSignature.date||'').slice(0,10))+'</div>';
-    document.getElementById('quickSignModalBg').classList.add('open');
-    return;
+    return heading+'<div class="done" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px;font-size:12px">✔ '+esc(rec.backupPrimary)+' כבר אישר/ה שהוא/היא מודע/ת לתפקיד הגיבוי ב-'+esc((rec.backupSignature.date||'').slice(0,10))+'</div>';
   }
 
+  let email=null;
   if((rec.backupPrimaryType||'internal')!=='internal'){
     if(!rec.backupPrimaryEmail){
-      box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא הוזנה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". ערוך את הגדרת התפקיד והוסף כתובת מייל בשדה שמופיע מתחת לגיבוי הראשי.</div>';
-      document.getElementById('quickSignModalBg').classList.add('open');
-      return;
+      return heading+'<div class="err" style="padding:10px;border-radius:8px;font-size:12px">לא הוזנה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". ערוך את הגדרת התפקיד והוסף כתובת מייל בשדה שמופיע מתחת לגיבוי הראשי.</div>';
     }
-    sendBackupSignBox(id, rec, rec.backupPrimaryEmail, title);
-    return;
+    email=rec.backupPrimaryEmail;
+  } else {
+    const contact=EMP_DATA_MAP[rec.backupPrimary];
+    if(!contact || !contact.email){
+      return heading+'<div class="err" style="padding:10px;border-radius:8px;font-size:12px">לא נמצאה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>';
+    }
+    email=contact.email;
   }
 
-  const contact=EMP_DATA_MAP[rec.backupPrimary];
-  if(!contact || !contact.email){
-    box.innerHTML='<div style="margin-bottom:10px">'+title+'</div><div class="err" style="padding:10px;border-radius:8px">לא נמצאה כתובת מייל עבור "'+esc(rec.backupPrimary)+'". הוסף אותו/ה דרך 👥 ניהול עובדים (בטאב הנהלים).</div>';
-    document.getElementById('quickSignModalBg').classList.add('open');
-    return;
-  }
-  sendBackupSignBox(id, rec, contact.email, title);
-}
-
-function sendBackupSignBox(id, rec, email, title){
-  const box=document.getElementById('quickSignBox');
   const link=buildRecordSignLink('rb', id);
   const subject='אישור תפקיד גיבוי — '+rec.roleName;
   const msg='שלום '+rec.backupPrimary+', הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
@@ -1571,13 +1561,17 @@ function sendBackupSignBox(id, rec, email, title){
   const pkgKey='qb_r_'+id;
   window.SEND_PACKAGES[pkgKey]={email:email, name:rec.backupPrimary, subject, message:msg, node:'roleDefinitions', recId:id, recType:'rb'};
 
-  box.innerHTML='<div style="margin-bottom:10px">'+title+'</div>'+
-    '<div class="att-item" style="width:100%;justify-content:space-between">'+
+  return heading+'<div class="att-item" style="width:100%;justify-content:space-between">'+
     '<span>'+esc(rec.backupPrimary)+' — '+esc(email)+'</span>'+
     '<span>'+
     '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendBackupSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button> '+
     '<button class="act-btn" title="העתק קישור בלבד" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button>'+
     '</span></div>';
+}
+
+async function openBackupSign(id){
+  const box=document.getElementById('quickSignBox');
+  box.innerHTML=await backupSignBlockHtml(id);
   document.getElementById('quickSignModalBg').classList.add('open');
 }
 
