@@ -123,6 +123,7 @@ async function initRecord(node, label, subjectField, bodyField){
 function init(){
   if(type==='f') initRecord('feedback','משוב','subject','details');
   else if(type==='o') initRecord('oneToOne','שיחה אישית','topics','notes');
+  else if(type==='r') initRecord('roleDefinitions','הגדרת תפקיד','roleName','responsibilities');
   else initProcedure();
 }
 init();
