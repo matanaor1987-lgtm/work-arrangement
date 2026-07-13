@@ -409,8 +409,30 @@ a.doc-link:hover{text-decoration:underline}
     <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-top:4px">
       <label style="font-size:12px;color:#333;margin-bottom:8px">🔄 מטריצת גיבוי בהיעדרות</label>
       <div class="form-grid">
-        <div class="form-row"><label>גיבוי ראשי</label><input type="text" id="roleBackupPrimary" list="empNamesList" placeholder="שם מלא"></div>
-        <div class="form-row"><label>גיבוי משני (לא חובה)</label><input type="text" id="roleBackupSecondary" list="empNamesList" placeholder="שם מלא"></div>
+        <div class="form-row">
+          <label>גיבוי ראשי</label>
+          <div style="display:flex;gap:6px">
+            <select id="roleBackupPrimaryType" style="width:auto;flex:0 0 130px" onchange="toggleBackupInput('roleBackupPrimary')">
+              <option value="internal">עובד פנימי</option>
+              <option value="other_dept">נציג ממחלקה אחרת</option>
+              <option value="contractor">קבלן חיצוני</option>
+              <option value="manual">אחר (הזנה חופשית)</option>
+            </select>
+            <input type="text" id="roleBackupPrimary" list="empNamesList" placeholder="שם מלא" style="flex:1">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>גיבוי משני (לא חובה)</label>
+          <div style="display:flex;gap:6px">
+            <select id="roleBackupSecondaryType" style="width:auto;flex:0 0 130px" onchange="toggleBackupInput('roleBackupSecondary')">
+              <option value="internal">עובד פנימי</option>
+              <option value="other_dept">נציג ממחלקה אחרת</option>
+              <option value="contractor">קבלן חיצוני</option>
+              <option value="manual">אחר (הזנה חופשית)</option>
+            </select>
+            <input type="text" id="roleBackupSecondary" list="empNamesList" placeholder="שם מלא" style="flex:1">
+          </div>
+        </div>
       </div>
       <div class="form-row">
         <label>תאריך אימות אחרון שהגיבוי מוכן בפועל (חפיפה/תדריך)</label>
@@ -709,7 +731,7 @@ function renderRoles(){
   const search=(document.getElementById('roleSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
-    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupSecondary:r.backupSecondary||'', backupVerified:r.backupVerified||'', updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
@@ -769,10 +791,29 @@ function backupStatus(r){
 
 function backupCellHtml(r){
   const st=backupStatus(r);
-  const title = r.backupSecondary ? (' title="גיבוי משני: '+esc(r.backupSecondary)+'"') : '';
-  return '<span'+title+'>'+(r.backupPrimary?esc(r.backupPrimary):'<span class="muted">—</span>')+'</span>'+
+  const primTag = backupTypeLabel(r.backupPrimaryType);
+  const secTag = r.backupSecondary ? (esc(r.backupSecondary)+(backupTypeLabel(r.backupSecondaryType)?' ('+backupTypeLabel(r.backupSecondaryType)+')':'')) : '';
+  const title = secTag ? (' title="גיבוי משני: '+secTag+'"') : '';
+  return '<span'+title+'>'+(r.backupPrimary?esc(r.backupPrimary):'<span class="muted">—</span>')+(primTag?' <span style="font-size:10px;color:#888">'+primTag+'</span>':'')+'</span>'+
     '<div style="margin-top:2px"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
     (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '');
+}
+
+function toggleBackupInput(fieldId){
+  const type=document.getElementById(fieldId+'Type').value;
+  const input=document.getElementById(fieldId);
+  if(type==='internal'){
+    input.setAttribute('list','empNamesList');
+    input.placeholder='שם מלא';
+  } else {
+    input.removeAttribute('list');
+    input.placeholder = type==='contractor' ? 'שם הקבלן / החברה'
+      : type==='other_dept' ? 'שם + מחלקה (לדוגמה: דנה כהן, מחלקת כספים)'
+      : 'הזן שם באופן חופשי';
+  }
+}
+function backupTypeLabel(type){
+  return {internal:'', other_dept:'🏢 מחלקה אחרת', contractor:'🔧 קבלן חיצוני', manual:''}[type] || '';
 }
 
 function openNewRole(){
@@ -784,7 +825,11 @@ function openNewRole(){
   document.getElementById('roleAuthorities').value='';
   document.getElementById('roleGoals').value='';
   document.getElementById('roleBackupPrimary').value='';
+  document.getElementById('roleBackupPrimaryType').value='internal';
   document.getElementById('roleBackupSecondary').value='';
+  document.getElementById('roleBackupSecondaryType').value='internal';
+  toggleBackupInput('roleBackupPrimary');
+  toggleBackupInput('roleBackupSecondary');
   document.getElementById('roleBackupVerified').value='';
   document.getElementById('roleUpdated').value=new Date().toISOString().slice(0,10);
   document.getElementById('roleVersion').value='1.0';
@@ -804,7 +849,11 @@ function editRole(id){
   document.getElementById('roleAuthorities').value=r.authorities||'';
   document.getElementById('roleGoals').value=r.goals||'';
   document.getElementById('roleBackupPrimary').value=r.backupPrimary||'';
+  document.getElementById('roleBackupPrimaryType').value=r.backupPrimaryType||'internal';
   document.getElementById('roleBackupSecondary').value=r.backupSecondary||'';
+  document.getElementById('roleBackupSecondaryType').value=r.backupSecondaryType||'internal';
+  toggleBackupInput('roleBackupPrimary');
+  toggleBackupInput('roleBackupSecondary');
   document.getElementById('roleBackupVerified').value=r.backupVerified||'';
   document.getElementById('roleUpdated').value=r.updated||'';
   document.getElementById('roleVersion').value=r.version||'1.0';
@@ -829,7 +878,9 @@ async function saveRole(){
     authorities:document.getElementById('roleAuthorities').value.trim(),
     goals:document.getElementById('roleGoals').value.trim(),
     backupPrimary:document.getElementById('roleBackupPrimary').value.trim(),
+    backupPrimaryType:document.getElementById('roleBackupPrimaryType').value,
     backupSecondary:document.getElementById('roleBackupSecondary').value.trim(),
+    backupSecondaryType:document.getElementById('roleBackupSecondaryType').value,
     backupVerified:document.getElementById('roleBackupVerified').value,
     updated:document.getElementById('roleUpdated').value,
     version:document.getElementById('roleVersion').value.trim(),
