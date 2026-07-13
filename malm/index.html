@@ -192,7 +192,19 @@ tr:hover td{background:#fffbf0}
   <div class="stats" id="s1"></div>
   <div class="filters">
     <input type="text" id="q1" placeholder="חיפוש חופשי..." oninput="r1()">
-    <select id="st1" onchange="r1()"><option value="">כל הסטטוסים</option><option value="פתוח+ממתין" data-fixed="1">פתוח + בטיפול</option></select>
+    <div id="st1wrap" style="position:relative;display:inline-block">
+      <button onclick="toggleStatusDropdown('1')" id="st1btn" style="padding:5px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;font-family:Arial;min-width:130px;text-align:right;direction:rtl">כל הסטטוסים ▾</button>
+      <div id="st1dropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:999;min-width:160px;padding:6px 0">
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" id="st1_all" checked onchange="toggleAllStatuses(this,'1')"> <span>כל הסטטוסים</span></label>
+        <hr style="margin:4px 0;border:none;border-top:1px solid #eee">
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="פתוח" onchange="onStatusChange('1')" checked> <span class="badge s-פתוח">פתוח</span></label>
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="בטיפול" onchange="onStatusChange('1')" checked> <span class="badge s-בטיפול">בטיפול</span></label>
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="בבדיקה" onchange="onStatusChange('1')" checked> <span class="badge s-בבדיקה">בבדיקה</span></label>
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="מוקפא" onchange="onStatusChange('1')" checked> <span class="badge s-מוקפא">מוקפא</span></label>
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="בוטל" onchange="onStatusChange('1')" checked> <span class="badge s-בוטל">בוטל</span></label>
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:Arial;direction:rtl"><input type="checkbox" class="st1cb" value="בוצע" onchange="onStatusChange('1')" checked> <span class="badge s-בוצע">בוצע</span></label>
+      </div>
+    </div>
     <select id="dm1" onchange="r1()"><option value="">כל התחומים</option></select>
     <select id="pr1" onchange="r1()">
       <option value="">כל העדיפויות</option>
@@ -546,12 +558,16 @@ function initFilters(){
 }
 
 function r1(){
+  updateStatusBtn('1');
   const q=document.getElementById('q1').value.toLowerCase();
-  const st=document.getElementById('st1').value;
+  const st1cbs=document.querySelectorAll('.st1cb');
+  const selectedStatuses=[...st1cbs].filter(cb=>cb.checked).map(cb=>cb.value);
+  const allChecked=st1cbs.length===0||selectedStatuses.length===st1cbs.length;
   const dm=document.getElementById('dm1').value;
   const pr=document.getElementById('pr1').value;
   buildStats(DB.malm,document.getElementById('s1'));
   let f=DB.malm.filter(r=>{
+    if(!allChecked&&!selectedStatuses.includes(r.ס||'פתוח'))return false;
     if(dm&&r.ד!==dm)return false;
     if(pr&&String(r.ע)!==pr)return false;
     if(q&&!(r.מ+r.ד+r.א+(r.dhl||'')+r.ה).toLowerCase().includes(q))return false;
@@ -1684,26 +1700,30 @@ async function resetSanityTasks() {
   alert('✅ אופס בהצלחה!');
 }
 
-function toggleStatusDropdown() {
-  var dd = document.getElementById('st2dropdown');
+function toggleStatusDropdown(sfx) {
+  sfx = sfx || '2';
+  var dd = document.getElementById('st'+sfx+'dropdown');
   dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
-function toggleAllStatuses(cb) {
-  document.querySelectorAll('.st2cb').forEach(function(c){ c.checked = cb.checked; });
-  updateStatusBtn();
-  r2();
+function toggleAllStatuses(cb, sfx) {
+  sfx = sfx || '2';
+  document.querySelectorAll('.st'+sfx+'cb').forEach(function(c){ c.checked = cb.checked; });
+  updateStatusBtn(sfx);
+  if(sfx==='1') r1(); else r2();
 }
-function onStatusChange() {
-  var cbs = document.querySelectorAll('.st2cb');
-  var allCb = document.getElementById('st2_all');
+function onStatusChange(sfx) {
+  sfx = sfx || '2';
+  var cbs = document.querySelectorAll('.st'+sfx+'cb');
+  var allCb = document.getElementById('st'+sfx+'_all');
   if(allCb) allCb.checked = [...cbs].every(c=>c.checked);
-  updateStatusBtn();
-  r2();
+  updateStatusBtn(sfx);
+  if(sfx==='1') r1(); else r2();
 }
-function updateStatusBtn() {
-  var cbs = [...document.querySelectorAll('.st2cb')];
+function updateStatusBtn(sfx) {
+  sfx = sfx || '2';
+  var cbs = [...document.querySelectorAll('.st'+sfx+'cb')];
   var checked = cbs.filter(c=>c.checked);
-  var btn = document.getElementById('st2btn');
+  var btn = document.getElementById('st'+sfx+'btn');
   if(!btn) return;
   if(checked.length===0) btn.textContent = 'ללא סטטוס ▾';
   else if(checked.length===cbs.length) btn.textContent = 'כל הסטטוסים ▾';
@@ -1712,11 +1732,13 @@ function updateStatusBtn() {
 }
 // Close dropdown on outside click
 document.addEventListener('click', function(e){
-  var wrap = document.getElementById('st2wrap');
-  if(wrap && !wrap.contains(e.target)){
-    var dd = document.getElementById('st2dropdown');
-    if(dd) dd.style.display='none';
-  }
+  ['1','2'].forEach(function(sfx){
+    var wrap = document.getElementById('st'+sfx+'wrap');
+    if(wrap && !wrap.contains(e.target)){
+      var dd = document.getElementById('st'+sfx+'dropdown');
+      if(dd) dd.style.display='none';
+    }
+  });
 });
 
 async function updateSanityAdminNotes(id, val) {
