@@ -480,7 +480,7 @@ a.doc-link:hover{text-decoration:underline}
           <input type="date" id="roleBackupVerified" style="flex:1">
           <button type="button" class="btn btn-cancel" style="white-space:nowrap" onclick="document.getElementById('roleBackupVerified').value=new Date().toISOString().slice(0,10)">אמתי היום</button>
         </div>
-        <div class="small-note">האימות פג תוקף אוטומטית אחרי 6 חודשים ומופיע כהתראה</div>
+        <div class="small-note">האימות פג תוקף אוטומטית אחרי שנה ומופיע כהתראה</div>
       </div>
     </div>
     <datalist id="empNamesList"></datalist>
@@ -1031,7 +1031,7 @@ function renderRoles(){
     let msg='⚠️ ';
     const parts=[];
     if(noBackup.length) parts.push('<b>'+noBackup.length+' תפקידים ללא גיבוי מוגדר</b>');
-    if(expiredBackup.length) parts.push('<b>'+expiredBackup.length+' גיבויים לא אומתו מעל 6 חודשים</b>');
+    if(expiredBackup.length) parts.push('<b>'+expiredBackup.length+' גיבויים לא אומתו מעל שנה</b>');
     if(soonBackup.length) parts.push(soonBackup.length+' גיבויים מתקרבים לפקיעת אימות');
     banner.innerHTML='<div class="alert-banner">'+msg+parts.join(' — ')+'</div>';
   } else banner.innerHTML='';
@@ -1067,7 +1067,7 @@ function renderRoles(){
 function backupStatus(r){
   if(!r.backupPrimary) return {cls:'s-expired', label:'לא הוגדר'};
   if(!r.backupVerified) return {cls:'s-expired', label:'לא אומת מעולם'};
-  const days=daysUntil(addMonths(r.backupVerified, 6));
+  const days=daysUntil(addMonths(r.backupVerified, 12));
   if(days<0) return {cls:'s-expired', label:'אימות פג'};
   if(days<=30) return {cls:'s-soon', label:'מתקרב לפקיעה'};
   return {cls:'s-ok', label:'בתוקף'};
