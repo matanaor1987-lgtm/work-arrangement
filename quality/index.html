@@ -250,8 +250,8 @@ a.doc-link:hover{text-decoration:underline}
     <div id="roleAlertBanner"></div>
     <div class="stats">
       <div class="stat"><div class="n n-all" id="roleAll">0</div><div class="l">סה"כ תפקידים</div></div>
-      <div class="stat"><div class="n n-ok" id="roleSigned">0</div><div class="l">חתומים</div></div>
-      <div class="stat"><div class="n n-soon" id="rolePending">0</div><div class="l">ממתינים לחתימה</div></div>
+      <div class="stat"><div class="n n-ok" id="roleSigned">0</div><div class="l">מגבים שאישרו</div></div>
+      <div class="stat"><div class="n n-soon" id="rolePending">0</div><div class="l">מגבים ממתינים</div></div>
       <div class="stat"><div class="n n-expired" id="roleBackupBad">0</div><div class="l">גיבוי לא מאומת / פג</div></div>
     </div>
     <div class="filters">
@@ -268,11 +268,10 @@ a.doc-link:hover{text-decoration:underline}
             <th onclick="sortRolesBy('version')">גרסה</th>
             <th>גיבוי בהיעדרות</th>
             <th>מסמך</th>
-            <th>חתימה</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="tbodyRoles"><tr><td colspan="8" class="loading">טוען...</td></tr></tbody>
+        <tbody id="tbodyRoles"><tr><td colspan="7" class="loading">טוען...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -736,8 +735,8 @@ function renderRoles(){
   });
 
   document.getElementById('roleAll').textContent=rows.length;
-  document.getElementById('roleSigned').textContent=rows.filter(r=>r.signature).length;
-  document.getElementById('rolePending').textContent=rows.filter(r=>!r.signature).length;
+  document.getElementById('roleSigned').textContent=rows.filter(r=>r.backupPrimary && r.backupSignature).length;
+  document.getElementById('rolePending').textContent=rows.filter(r=>r.backupPrimary && !r.backupSignature).length;
 
   const badBackup = rows.filter(r=> backupStatus(r).cls!=='s-ok');
   document.getElementById('roleBackupBad').textContent=badBackup.length;
@@ -775,8 +774,7 @@ function renderRoles(){
       '<td>'+esc(r.version)+'</td>'+
       '<td>'+backupCellHtml(r)+'</td>'+
       '<td>'+docHtml+'</td>'+
-      '<td>'+recordSignCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="שלח לחתימה לעובד" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -1841,7 +1839,7 @@ async function checkSignatureReminders(){
     }
   }
 
-  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[ROLES,'roleDefinitions','הגדרת תפקיד']];
+  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית']];
   for(const [store,node,label] of singleTargets){
     for(const id of Object.keys(store)){
       const rec=store[id];
