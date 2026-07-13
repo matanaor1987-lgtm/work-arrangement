@@ -1433,7 +1433,7 @@ async function confirmSendSign(){
         email: contact.email||'',
         name: n,
         subject: 'נוהל לאישור קריאה: '+p.name,
-        message: 'שלום '+n+', מצורף נוהל לאישור קריאה: '+p.name+'\n'+link
+        message: 'מצורף נוהל לאישור קריאה: '+p.name+'\n'+link
       };
       const sendBtn = contact.email
         ? '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendDirectFromPackage(\''+pkgKey+'\', this)">📧 שלח מייל</button>'
@@ -1492,7 +1492,7 @@ async function openQuickSign(type, id){
 
   const link=buildRecordSignLink(type, id);
   const subject = info.label+' לאישור קריאה';
-  const msg='שלום '+rec.employee+', מצורף '+info.label+' לאישור קריאה.\n'+link;
+  const msg='מצורף '+info.label+' לאישור קריאה.\n'+link;
 
   window.SEND_PACKAGES = window.SEND_PACKAGES || {};
   const pkgKey='q_'+type+'_'+id;
@@ -1555,7 +1555,7 @@ async function backupSignBlockHtml(id){
 
   const link=buildRecordSignLink('rb', id);
   const subject='אישור תפקיד גיבוי — '+rec.roleName;
-  const msg='שלום '+rec.backupPrimary+', הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
+  const msg='הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
 
   window.SEND_PACKAGES = window.SEND_PACKAGES || {};
   const pkgKey='qb_r_'+id;
@@ -1824,7 +1824,7 @@ async function checkSignatureReminders(){
           const link=buildSignLink(id, name);
           try{
             await sendReminderEmail(contact.email, name, 'תזכורת: נוהל ממתין לאישור קריאה - '+p.name,
-              'שלום '+name+', זו תזכורת שהנוהל "'+p.name+'" עדיין ממתין לאישור הקריאה שלך.\n'+link);
+              'זו תזכורת שהנוהל "'+p.name+'" עדיין ממתין לאישור הקריאה שלך.\n'+link);
             reminded[name]=new Date().toISOString();
             changed=true;
           }catch(e){}
@@ -1849,7 +1849,7 @@ async function checkSignatureReminders(){
           const link=buildRecordSignLink(node==='feedback'?'f':(node==='oneToOne'?'o':'r'), id);
           try{
             await sendReminderEmail(contact.email, rec.employee, 'תזכורת: '+label+' ממתין לאישור קריאה',
-              'שלום '+rec.employee+', זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
+              'זו תזכורת ל'+label+' שממתין לאישור הקריאה שלך.\n'+link);
             await fetch(DB+'/'+node+'/'+id+'/signRemindedAt.json',{method:'PUT',body:JSON.stringify(new Date().toISOString())});
             rec.signRemindedAt=new Date().toISOString();
           }catch(e){}
