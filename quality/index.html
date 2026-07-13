@@ -247,10 +247,12 @@ a.doc-link:hover{text-decoration:underline}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
       <button class="btn btn-add" onclick="openNewRole()">+ הגדרת תפקיד חדשה</button>
     </div>
+    <div id="roleAlertBanner"></div>
     <div class="stats">
       <div class="stat"><div class="n n-all" id="roleAll">0</div><div class="l">סה"כ תפקידים</div></div>
       <div class="stat"><div class="n n-ok" id="roleSigned">0</div><div class="l">חתומים</div></div>
       <div class="stat"><div class="n n-soon" id="rolePending">0</div><div class="l">ממתינים לחתימה</div></div>
+      <div class="stat"><div class="n n-expired" id="roleBackupBad">0</div><div class="l">גיבוי לא מאומת / פג</div></div>
     </div>
     <div class="filters">
       <input type="text" id="roleSearch" placeholder="חיפוש לפי תפקיד / עובד..." oninput="renderRoles()">
@@ -402,10 +404,25 @@ a.doc-link:hover{text-decoration:underline}
     </div>
     <div class="form-row"><label>אחריות</label><textarea id="roleResponsibilities"></textarea></div>
     <div class="form-row"><label>סמכויות</label><textarea id="roleAuthorities"></textarea></div>
-    <div class="form-grid">
-      <div class="form-row"><label>יעדים (לא חובה)</label><input type="text" id="roleGoals"></div>
-      <div class="form-row"><label>גיבוי בהיעדרות</label><input type="text" id="roleBackup"></div>
+    <div class="form-row"><label>יעדים (לא חובה)</label><input type="text" id="roleGoals"></div>
+
+    <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-top:4px">
+      <label style="font-size:12px;color:#333;margin-bottom:8px">🔄 מטריצת גיבוי בהיעדרות</label>
+      <div class="form-grid">
+        <div class="form-row"><label>גיבוי ראשי</label><input type="text" id="roleBackupPrimary" list="empNamesList" placeholder="שם מלא"></div>
+        <div class="form-row"><label>גיבוי משני (לא חובה)</label><input type="text" id="roleBackupSecondary" list="empNamesList" placeholder="שם מלא"></div>
+      </div>
+      <div class="form-row">
+        <label>תאריך אימות אחרון שהגיבוי מוכן בפועל (חפיפה/תדריך)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="roleBackupVerified" style="flex:1">
+          <button type="button" class="btn btn-cancel" style="white-space:nowrap" onclick="document.getElementById('roleBackupVerified').value=new Date().toISOString().slice(0,10)">אמתי היום</button>
+        </div>
+        <div class="small-note">האימות פג תוקף אוטומטית אחרי 6 חודשים ומופיע כהתראה</div>
+      </div>
     </div>
+    <datalist id="empNamesList"></datalist>
+
     <div class="form-grid">
       <div class="form-row"><label>תאריך עדכון</label><input type="date" id="roleUpdated"></div>
       <div class="form-row"><label>גרסה</label><input type="text" id="roleVersion" placeholder="לדוגמה 1.0"></div>
@@ -692,12 +709,27 @@ function renderRoles(){
   const search=(document.getElementById('roleSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
-    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backup:r.backup||'', updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupSecondary:r.backupSecondary||'', backupVerified:r.backupVerified||'', updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
   document.getElementById('roleSigned').textContent=rows.filter(r=>r.signature).length;
   document.getElementById('rolePending').textContent=rows.filter(r=>!r.signature).length;
+
+  const badBackup = rows.filter(r=> backupStatus(r).cls!=='s-ok');
+  document.getElementById('roleBackupBad').textContent=badBackup.length;
+  const noBackup = rows.filter(r=>!r.backupPrimary);
+  const expiredBackup = rows.filter(r=>r.backupPrimary && backupStatus(r).cls==='s-expired');
+  const soonBackup = rows.filter(r=>r.backupPrimary && backupStatus(r).cls==='s-soon');
+  const banner=document.getElementById('roleAlertBanner');
+  if(noBackup.length||expiredBackup.length||soonBackup.length){
+    let msg='⚠️ ';
+    const parts=[];
+    if(noBackup.length) parts.push('<b>'+noBackup.length+' תפקידים ללא גיבוי מוגדר</b>');
+    if(expiredBackup.length) parts.push('<b>'+expiredBackup.length+' גיבויים לא אומתו מעל 6 חודשים</b>');
+    if(soonBackup.length) parts.push(soonBackup.length+' גיבויים מתקרבים לפקיעת אימות');
+    banner.innerHTML='<div class="alert-banner">'+msg+parts.join(' — ')+'</div>';
+  } else banner.innerHTML='';
 
   if(search) rows=rows.filter(r=> (r.roleName+' '+r.employee).toLowerCase().includes(search));
 
@@ -718,12 +750,29 @@ function renderRoles(){
       '<td><span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(r.employee).replace(/'/g,"\\'")+'\')">'+esc(r.employee)+'</span></td>'+
       '<td>'+esc(r.updated)+'</td>'+
       '<td>'+esc(r.version)+'</td>'+
-      '<td>'+esc(r.backup)+'</td>'+
+      '<td>'+backupCellHtml(r)+'</td>'+
       '<td>'+docHtml+'</td>'+
       '<td>'+recordSignCellHtml(r)+'</td>'+
       '<td><button class="act-btn" title="שלח לחתימה" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
+}
+
+function backupStatus(r){
+  if(!r.backupPrimary) return {cls:'s-expired', label:'לא הוגדר'};
+  if(!r.backupVerified) return {cls:'s-expired', label:'לא אומת מעולם'};
+  const days=daysUntil(addMonths(r.backupVerified, 6));
+  if(days<0) return {cls:'s-expired', label:'אימות פג'};
+  if(days<=30) return {cls:'s-soon', label:'מתקרב לפקיעה'};
+  return {cls:'s-ok', label:'בתוקף'};
+}
+
+function backupCellHtml(r){
+  const st=backupStatus(r);
+  const title = r.backupSecondary ? (' title="גיבוי משני: '+esc(r.backupSecondary)+'"') : '';
+  return '<span'+title+'>'+(r.backupPrimary?esc(r.backupPrimary):'<span class="muted">—</span>')+'</span>'+
+    '<div style="margin-top:2px"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
+    (r.backupVerified ? '<div style="font-size:10px;color:#999;margin-top:1px">אומת: '+esc(r.backupVerified)+'</div>' : '');
 }
 
 function openNewRole(){
@@ -734,12 +783,15 @@ function openNewRole(){
   document.getElementById('roleResponsibilities').value='';
   document.getElementById('roleAuthorities').value='';
   document.getElementById('roleGoals').value='';
-  document.getElementById('roleBackup').value='';
+  document.getElementById('roleBackupPrimary').value='';
+  document.getElementById('roleBackupSecondary').value='';
+  document.getElementById('roleBackupVerified').value='';
   document.getElementById('roleUpdated').value=new Date().toISOString().slice(0,10);
   document.getElementById('roleVersion').value='1.0';
   document.getElementById('roleApprovedBy').value='';
   pendingRoleAttachments=[];
   renderRoleAttachmentsBox();
+  populateEmpNamesList();
   document.getElementById('roleModalBg').classList.add('open');
 }
 function editRole(id){
@@ -751,13 +803,21 @@ function editRole(id){
   document.getElementById('roleResponsibilities').value=r.responsibilities||'';
   document.getElementById('roleAuthorities').value=r.authorities||'';
   document.getElementById('roleGoals').value=r.goals||'';
-  document.getElementById('roleBackup').value=r.backup||'';
+  document.getElementById('roleBackupPrimary').value=r.backupPrimary||'';
+  document.getElementById('roleBackupSecondary').value=r.backupSecondary||'';
+  document.getElementById('roleBackupVerified').value=r.backupVerified||'';
   document.getElementById('roleUpdated').value=r.updated||'';
   document.getElementById('roleVersion').value=r.version||'1.0';
   document.getElementById('roleApprovedBy').value=r.approvedBy||'';
   pendingRoleAttachments=(r.attachments||[]).slice();
   renderRoleAttachmentsBox();
+  populateEmpNamesList();
   document.getElementById('roleModalBg').classList.add('open');
+}
+async function populateEmpNamesList(){
+  await ensureEmpDataMap();
+  const dl=document.getElementById('empNamesList');
+  if(dl) dl.innerHTML=Object.keys(EMP_DATA_MAP).map(n=>'<option value="'+esc(n)+'">').join('');
 }
 async function saveRole(){
   const id=document.getElementById('roleId').value || 'r'+Date.now();
@@ -768,7 +828,9 @@ async function saveRole(){
     responsibilities:document.getElementById('roleResponsibilities').value.trim(),
     authorities:document.getElementById('roleAuthorities').value.trim(),
     goals:document.getElementById('roleGoals').value.trim(),
-    backup:document.getElementById('roleBackup').value.trim(),
+    backupPrimary:document.getElementById('roleBackupPrimary').value.trim(),
+    backupSecondary:document.getElementById('roleBackupSecondary').value.trim(),
+    backupVerified:document.getElementById('roleBackupVerified').value,
     updated:document.getElementById('roleUpdated').value,
     version:document.getElementById('roleVersion').value.trim(),
     approvedBy:document.getElementById('roleApprovedBy').value.trim(),
@@ -924,6 +986,11 @@ const CANON_NUMS = {
 function addYears(dateStr, years){
   const d = dateStr ? new Date(dateStr) : new Date();
   d.setFullYear(d.getFullYear()+years);
+  return d.toISOString().slice(0,10);
+}
+function addMonths(dateStr, months){
+  const d = dateStr ? new Date(dateStr) : new Date();
+  d.setMonth(d.getMonth()+months);
   return d.toISOString().slice(0,10);
 }
 
