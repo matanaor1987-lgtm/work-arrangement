@@ -133,7 +133,6 @@ tr:hover td{background:#fffbf0}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
-<!-- redeploy trigger 2026-07-14 -->
 <body>
 
 <div class="lg-overlay" id="lgOverlay">
@@ -553,9 +552,8 @@ function populateSel(id,vals){
 }
 
 function initFilters(){
-  populateSel('st1',DB.malm.map(r=>r.ס));
   populateSel('dm1',DB.malm.map(r=>r.ד));
-  // st2 is now a checkbox dropdown — no populateSel needed
+  // st1 and st2 are checkbox dropdowns — no populateSel needed
 }
 
 function r1(){
