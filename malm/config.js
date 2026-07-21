@@ -2,8 +2,7 @@
 window.APP_CONFIG = {
   owner: 'matanaor1987-lgtm',
   repo: 'malm-focus-tasks',
-  // Token stored split to avoid scanning - assembled at runtime
-  t1: 'ghp_cNLn2SH8JN',
-  t2: 'vv5KYfDzBUlO7j5XeIIq27FcAR'
+  // Token revoked 2026-07-21 (was exposed in this public repo's source).
+  // File-attachment upload is disabled until a new token is issued via a non-public mechanism.
+  token: ''
 };
-window.APP_CONFIG.token = window.APP_CONFIG.t1 + window.APP_CONFIG.t2;
