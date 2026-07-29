@@ -2335,7 +2335,7 @@ function buildVacationMgr(){
   </div>`;
 }
 
-// ===== VACATION REPORT: EMAIL EXPORT =====
+// ===== VACATION REPORT: COLORFUL FILTERABLE EXPORT =====
 function getVacationReportRows(){
   let records=Object.values(state.vacationData||{});
   const fmtD=hours=>(Number(hours||0)/9).toFixed(1);
@@ -2366,13 +2366,15 @@ function getVacationReportRows(){
   });
   return records.map(r=>{
     const L=live&&live[r.empId];
-    const unmatched=live&&!(L&&L.matched);
+    const unmatched=!!(live&&!(L&&L.matched));
+    const nowH=nowHoursOf(r),yearH=yearEndHoursOf(r),schedH=scheduledUpcomingHoursOf(r),forfH=forfeitHoursOf(r);
     return {
       fullName:((r.firstName||'')+' '+(r.lastName||'')).trim(),
-      nowD:fmtD(nowHoursOf(r)),
-      yearD:fmtD(yearEndHoursOf(r)),
-      schedD:scheduledUpcomingHoursOf(r)>0?fmtD(scheduledUpcomingHoursOf(r)):'—',
-      forfD:forfeitHoursOf(r)>0?fmtD(forfeitHoursOf(r)):'—',
+      nowH,yearH,schedH,forfH,
+      nowD:fmtD(nowH),
+      yearD:fmtD(yearH),
+      schedD:schedH>0?fmtD(schedH):'—',
+      forfD:forfH>0?fmtD(forfH):'—',
       unmatched
     };
   });
@@ -2383,18 +2385,124 @@ window.exportVacationEmail = function(){
   if(!rows.length){ showToast('⚠️ אין נתוני חופשה לייצוא'); return; }
   const dateStr=new Date().toLocaleDateString('he-IL');
   const timeStr=new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-  let body=`דוח ניהול חופשות — DHL Express Israel (מכס יבוא)\nעדכני ל-${dateStr} בשעה ${timeStr}\n\n`;
-  body+=`שם | ימי חופש עכשיו | סוף שנה | מתוכנן עד ינואר | לניצול (מעל 3)\n`;
-  body+=`------------------------------------------------------------------\n`;
-  rows.forEach(r=>{
-    body+=`${r.fullName}${r.unmatched?' (לא מקושר לסידור)':''} | ${r.nowD} | ${r.yearD} | ${r.schedD} | ${r.forfD}\n`;
-  });
-  body+=`\nסה"כ עובדים בדוח: ${rows.length}\n\nנשלח ממערכת סידור עבודה DHL`;
-  const subject=encodeURIComponent(`דוח ניהול חופשות — ${dateStr}`);
-  window.location.href=`mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
-  showToast('📧 נפתח מייל עם דוח ניהול החופשות');
+
+  const rowsHTML=rows.map(r=>{
+    const status = r.unmatched ? 'unmatched' : (r.forfH>0 ? 'atrisk' : (r.nowH<0 ? 'negative' : 'ok'));
+    const nowColor = r.nowH<0 ? '#c00' : '#1e7a3a';
+    const yearColor = r.yearH<0 ? '#c00' : '#333';
+    const forfColor = r.forfH>0 ? '#6b21a8' : '#999';
+    const rowBg = r.nowH<0 ? '#fff0f0' : (r.forfH>0 ? '#f8f0ff' : '#fff');
+    return `<tr class="vr-row" data-status="${status}" data-name="${r.fullName.replace(/"/g,'')}" style="background:${rowBg}">
+      <td class="vr-name">${r.fullName}${r.unmatched?' <span class="vr-flag" title="לא מקושר לסידור">🔗</span>':''}</td>
+      <td style="text-align:center;font-weight:800;color:${nowColor}">${r.nowD}</td>
+      <td style="text-align:center;font-weight:700;color:${yearColor}">${r.yearD}</td>
+      <td style="text-align:center;font-weight:700;color:#555">${r.schedD}</td>
+      <td style="text-align:center;font-weight:800;color:${forfColor}">${r.forfD}</td>
+    </tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+<title>דוח ניהול חופשות — ${dateStr}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap');
+  *{box-sizing:border-box}
+  body{font-family:'Heebo',Arial,sans-serif;direction:rtl;margin:0;padding:20px;background:#f4f5f7;color:#222}
+  .header{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid #D40511}
+  .dhl-logo{background:#FFCC00;padding:6px 14px;border-radius:3px;font-family:Arial Black,Arial;font-weight:900;font-size:26px;color:#D40511;line-height:1}
+  h1{font-size:19px;font-weight:900;color:#D40511;margin:0}
+  .sub{font-size:12px;color:#888;margin:2px 0 0}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .toolbar input, .toolbar select{padding:8px 10px;font-size:13px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit}
+  .toolbar input{flex:1;min-width:160px}
+  .btn{padding:8px 16px;font-size:13px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:800;color:#fff}
+  .btn-print{background:#333}
+  .btn-mail{background:#0078d4}
+  .count{font-size:12px;color:#666;margin-right:auto}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  thead th{background:#2b2b2b;color:#fff;padding:10px 8px;font-size:12.5px;text-align:center}
+  thead th.vr-name{text-align:right}
+  td{padding:9px 8px;font-size:13px;border-bottom:1px solid #eee}
+  tbody tr:last-child td{border-bottom:none}
+  .vr-flag{font-size:11px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:#555}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .footer{margin-top:14px;font-size:10px;color:#aaa;text-align:center}
+  @media print{
+    body{background:#fff;padding:8px}
+    .toolbar{display:none}
+    @page{margin:10mm;size:A4 portrait}
+  }
+</style></head><body>
+  <div class="header">
+    <div class="dhl-logo">DHL</div>
+    <div>
+      <h1>דוח ניהול חופשות — מכס יבוא</h1>
+      <div class="sub">עדכני ל-${dateStr} בשעה ${timeStr}</div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <input id="vr-search" type="text" placeholder="🔎 חיפוש לפי שם...">
+    <select id="vr-filter">
+      <option value="all">כל העובדים</option>
+      <option value="negative">יתרה שלילית</option>
+      <option value="atrisk">בסיכון לפקיעה (מעל 3 ימים)</option>
+      <option value="unmatched">לא מקושרים לסידור</option>
+    </select>
+    <span class="count" id="vr-count"></span>
+    <button class="btn btn-print" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+    <button class="btn btn-mail" onclick="sendVR()">📧 שלח במייל</button>
+  </div>
+  <table>
+    <thead><tr>
+      <th class="vr-name">שם</th>
+      <th>ימי חופש עכשיו</th>
+      <th>סוף שנה</th>
+      <th>מתוכנן עד ינואר</th>
+      <th>לניצול (מעל 3)</th>
+    </tr></thead>
+    <tbody id="vr-tbody">${rowsHTML}</tbody>
+  </table>
+  <div class="legend">
+    <span><i class="dot" style="background:#fff0f0;border:1px solid #f0c0c0"></i> יתרה שלילית</span>
+    <span><i class="dot" style="background:#f8f0ff;border:1px solid #d8b8f0"></i> בסיכון לפקיעה</span>
+    <span>🔗 לא מקושר לסידור</span>
+  </div>
+  <div class="footer">דוח ניהול חופשות DHL — נוצר אוטומטית ממערכת סידור עבודה | ${rows.length} עובדים</div>
+<script>
+  function applyFilters(){
+    var q=(document.getElementById('vr-search').value||'').trim();
+    var f=document.getElementById('vr-filter').value;
+    var rows=document.querySelectorAll('.vr-row');
+    var shown=0;
+    rows.forEach(function(row){
+      var name=row.getAttribute('data-name')||'';
+      var status=row.getAttribute('data-status');
+      var matchesName = !q || name.indexOf(q)!==-1;
+      var matchesFilter = f==='all' || status===f;
+      var visible = matchesName && matchesFilter;
+      row.style.display = visible ? '' : 'none';
+      if(visible) shown++;
+    });
+    document.getElementById('vr-count').textContent = shown + ' מתוך ' + rows.length + ' עובדים';
+  }
+  document.getElementById('vr-search').addEventListener('input', applyFilters);
+  document.getElementById('vr-filter').addEventListener('change', applyFilters);
+  applyFilters();
+  function sendVR(){
+    var subject=encodeURIComponent('דוח ניהול חופשות — ${dateStr}');
+    var body=encodeURIComponent('שלום,\\n\\nמצורף דוח ניהול חופשות עדכני ל-${dateStr}.\\n\\nשלבים:\\n1. לחץ על "הדפס / שמור PDF" וסגור חלון זה\\n2. שמור את הקובץ כ-PDF\\n3. צרף אותו למייל זה ושלח\\n\\nבברכה');
+    window.location.href='mailto:?subject='+subject+'&body='+body;
+  }
+<\/script>
+</body></html>`;
+
+  const win=window.open('','_blank','width=1100,height=800');
+  win.document.write(html);
+  win.document.close();
+  showToast('📊 נפתח דוח חופשות צבעוני עם אפשרות סינון');
 };
-// ===== END VACATION REPORT EMAIL EXPORT =====
+// ===== END VACATION REPORT EXPORT =====
 // ===== END VACATION BALANCE MANAGEMENT =====
 
 
