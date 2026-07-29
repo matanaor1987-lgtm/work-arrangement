@@ -192,7 +192,18 @@ async function runFilter() {
     ws.eachRow((row,rn)=>{
       if(rn<=headerRowNum) return;
 
-      const get=name=>{const idx=ci(name);return idx>0?row.getCell(idx).value:'';};
+      const cellText=v=>{
+        if(v===null||v===undefined) return '';
+        if(typeof v==='object'){
+          if(v.richText) return v.richText.map(rt=>rt.text||'').join('');
+          if(v.text) return v.text;
+          if(v.result!==undefined) return v.result;
+          if(v.hyperlink) return v.text||v.hyperlink;
+          return '';
+        }
+        return v;
+      };
+      const get=name=>{const idx=ci(name);return idx>0?cellText(row.getCell(idx).value):'';};
 
       const weight=parseFloat(get('WEIGHT'))||0;
       const step=String(get('STEP_1615')||'').trim().toLowerCase();
@@ -204,7 +215,7 @@ async function runFilter() {
 
       // עמודה 151
       const idx151=headers.indexOf('151')>0?headers.indexOf('151'):headers.findIndex(h=>String(h)==='151');
-      const col151=idx151>0?String(row.getCell(idx151).value||'').trim():'';
+      const col151=idx151>0?String(cellText(row.getCell(idx151).value)||'').trim():'';
 
       if(weight>=30){removed++;return;}
       if(step!=='yes'){removed++;return;}
