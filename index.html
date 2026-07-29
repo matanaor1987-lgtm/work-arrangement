@@ -2386,20 +2386,11 @@ window.exportVacationEmail = function(){
   const dateStr=new Date().toLocaleDateString('he-IL');
   const timeStr=new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
 
-  const rowsHTML=rows.map(r=>{
+  const rowsData=rows.map(r=>{
     const status = r.unmatched ? 'unmatched' : (r.forfH>0 ? 'atrisk' : (r.nowH<0 ? 'negative' : 'ok'));
-    const nowColor = r.nowH<0 ? '#c00' : '#1e7a3a';
-    const yearColor = r.yearH<0 ? '#c00' : '#333';
-    const forfColor = r.forfH>0 ? '#6b21a8' : '#999';
-    const rowBg = r.nowH<0 ? '#fff0f0' : (r.forfH>0 ? '#f8f0ff' : '#fff');
-    return `<tr class="vr-row" data-status="${status}" data-name="${r.fullName.replace(/"/g,'')}" style="background:${rowBg}">
-      <td class="vr-name">${r.fullName}${r.unmatched?' <span class="vr-flag" title="לא מקושר לסידור">🔗</span>':''}</td>
-      <td style="text-align:center;font-weight:800;color:${nowColor}">${r.nowD}</td>
-      <td style="text-align:center;font-weight:700;color:${yearColor}">${r.yearD}</td>
-      <td style="text-align:center;font-weight:700;color:#555">${r.schedD}</td>
-      <td style="text-align:center;font-weight:800;color:${forfColor}">${r.forfD}</td>
-    </tr>`;
-  }).join('');
+    return {name:r.fullName, now:r.nowH, nowD:r.nowD, year:r.yearH, yearD:r.yearD, sched:r.schedH, schedD:r.schedD, forf:r.forfH, forfD:r.forfD, unmatched:r.unmatched, status};
+  });
+  const rowsJSON=JSON.stringify(rowsData).replace(/</g,'\\u003c');
 
   const html=`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
 <title>דוח ניהול חופשות — ${dateStr}</title>
@@ -2419,8 +2410,9 @@ window.exportVacationEmail = function(){
   .btn-mail{background:#0078d4}
   .count{font-size:12px;color:#666;margin-right:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-  thead th{background:#2b2b2b;color:#fff;padding:10px 8px;font-size:12.5px;text-align:center}
+  thead th{background:#2b2b2b;color:#fff;padding:10px 8px;font-size:12.5px;text-align:center;cursor:pointer;user-select:none;white-space:nowrap}
   thead th.vr-name{text-align:right}
+  thead th:hover{background:#3d3d3d}
   td{padding:9px 8px;font-size:13px;border-bottom:1px solid #eee}
   tbody tr:last-child td{border-bottom:none}
   .vr-flag{font-size:11px}
@@ -2455,13 +2447,13 @@ window.exportVacationEmail = function(){
   </div>
   <table>
     <thead><tr>
-      <th class="vr-name">שם</th>
-      <th>ימי חופש עכשיו</th>
-      <th>סוף שנה</th>
-      <th>מתוכנן עד ינואר</th>
-      <th>לניצול (מעל 3)</th>
+      <th class="vr-name" data-key="name">שם <span class="vr-arrow" data-arrow="name"></span></th>
+      <th data-key="now">ימי חופש עכשיו <span class="vr-arrow" data-arrow="now"></span></th>
+      <th data-key="year">סוף שנה <span class="vr-arrow" data-arrow="year"></span></th>
+      <th data-key="sched">מתוכנן עד ינואר <span class="vr-arrow" data-arrow="sched"></span></th>
+      <th data-key="forf">לניצול (מעל 3) <span class="vr-arrow" data-arrow="forf"></span></th>
     </tr></thead>
-    <tbody id="vr-tbody">${rowsHTML}</tbody>
+    <tbody id="vr-tbody"></tbody>
   </table>
   <div class="legend">
     <span><i class="dot" style="background:#fff0f0;border:1px solid #f0c0c0"></i> יתרה שלילית</span>
@@ -2470,25 +2462,60 @@ window.exportVacationEmail = function(){
   </div>
   <div class="footer">דוח ניהול חופשות DHL — נוצר אוטומטית ממערכת סידור עבודה | ${rows.length} עובדים</div>
 <script>
-  function applyFilters(){
+  var VR_DATA = ${rowsJSON};
+  var vrSortKey = null, vrSortDir = 'asc';
+
+  function vrEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function renderTable(){
     var q=(document.getElementById('vr-search').value||'').trim();
     var f=document.getElementById('vr-filter').value;
-    var rows=document.querySelectorAll('.vr-row');
-    var shown=0;
-    rows.forEach(function(row){
-      var name=row.getAttribute('data-name')||'';
-      var status=row.getAttribute('data-status');
-      var matchesName = !q || name.indexOf(q)!==-1;
-      var matchesFilter = f==='all' || status===f;
-      var visible = matchesName && matchesFilter;
-      row.style.display = visible ? '' : 'none';
-      if(visible) shown++;
+    var data=VR_DATA.filter(function(r){
+      var matchesName = !q || r.name.indexOf(q)!==-1;
+      var matchesFilter = f==='all' || r.status===f;
+      return matchesName && matchesFilter;
     });
-    document.getElementById('vr-count').textContent = shown + ' מתוך ' + rows.length + ' עובדים';
+    if(vrSortKey){
+      data.sort(function(a,b){
+        var va=a[vrSortKey], vb=b[vrSortKey];
+        var cmp;
+        if(typeof va==='string') cmp=va.localeCompare(vb,'he'); else cmp=va-vb;
+        return vrSortDir==='asc'?cmp:-cmp;
+      });
+    }
+    var html=data.map(function(r){
+      var nowColor = r.now<0 ? '#c00' : '#1e7a3a';
+      var yearColor = r.year<0 ? '#c00' : '#333';
+      var forfColor = r.forf>0 ? '#6b21a8' : '#999';
+      var rowBg = r.now<0 ? '#fff0f0' : (r.forf>0 ? '#f8f0ff' : '#fff');
+      return '<tr style="background:'+rowBg+'">'+
+        '<td>'+vrEsc(r.name)+(r.unmatched?' <span class="vr-flag" title="לא מקושר לסידור">🔗</span>':'')+'</td>'+
+        '<td style="text-align:center;font-weight:800;color:'+nowColor+'">'+r.nowD+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:'+yearColor+'">'+r.yearD+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:#555">'+r.schedD+'</td>'+
+        '<td style="text-align:center;font-weight:800;color:'+forfColor+'">'+r.forfD+'</td>'+
+        '</tr>';
+    }).join('');
+    document.getElementById('vr-tbody').innerHTML = html;
+    document.getElementById('vr-count').textContent = data.length + ' מתוך ' + VR_DATA.length + ' עובדים';
+    document.querySelectorAll('.vr-arrow').forEach(function(el){
+      var key=el.getAttribute('data-arrow');
+      el.textContent = (vrSortKey===key) ? (vrSortDir==='asc'?'▲':'▼') : '';
+    });
   }
-  document.getElementById('vr-search').addEventListener('input', applyFilters);
-  document.getElementById('vr-filter').addEventListener('change', applyFilters);
-  applyFilters();
+
+  document.getElementById('vr-search').addEventListener('input', renderTable);
+  document.getElementById('vr-filter').addEventListener('change', renderTable);
+  document.querySelectorAll('thead th').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key=th.getAttribute('data-key');
+      if(vrSortKey===key){ vrSortDir = (vrSortDir==='asc'?'desc':'asc'); }
+      else { vrSortKey=key; vrSortDir='asc'; }
+      renderTable();
+    });
+  });
+  renderTable();
+
   function sendVR(){
     var subject=encodeURIComponent('דוח ניהול חופשות — ${dateStr}');
     var body=encodeURIComponent('שלום,\\n\\nמצורף דוח ניהול חופשות עדכני ל-${dateStr}.\\n\\nשלבים:\\n1. לחץ על "הדפס / שמור PDF" וסגור חלון זה\\n2. שמור את הקובץ כ-PDF\\n3. צרף אותו למייל זה ושלח\\n\\nבברכה');
@@ -2500,7 +2527,7 @@ window.exportVacationEmail = function(){
   const win=window.open('','_blank','width=1100,height=800');
   win.document.write(html);
   win.document.close();
-  showToast('📊 נפתח דוח חופשות צבעוני עם אפשרות סינון');
+  showToast('📊 נפתח דוח חופשות עם מיון וסינון');
 };
 // ===== END VACATION REPORT EXPORT =====
 // ===== END VACATION BALANCE MANAGEMENT =====
