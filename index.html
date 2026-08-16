@@ -1183,6 +1183,7 @@ function buildPopup(){
     <h3>✏️ ${emp} — ${DAY_NAMES_FULL[wd]} ${d}</h3>
     <div class="popup-grid">
       ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" style="${s.bg?`background:${s.bg};color:${s.txt};`:''}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
+      <div class="shift-opt" style="border-style:dashed;color:#888;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="window.quickAddShift()">➕ הוסף</div>
     </div>
     <div style="margin:10px 0 4px;font-size:12px;color:#555">📝 הערה לעובד על יום זה:</div>
     <input type="text" id="cell-note-inp" value="${note}" placeholder="למשל: להגיע מוקדם, החלפה עם..." style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;margin-bottom:12px" oninput="window._liveNoteCell(this.value)">
@@ -2106,6 +2107,22 @@ window.changeMonth=function(d){
 window.openPopup=function(emp,d){state.popup={emp,d,sel:getShift(emp,d),noteVal:getCellNote(emp,d)};render();};
 window.closePopup=function(){state.popup=null;render();};
 window._pickShift=function(k){if(state.popup){state.popup.sel=k;render();}};
+window.quickAddShift=function(){
+  const label=prompt('תווית למשמרת החדשה (למשל 09-18):');
+  if(!label||!label.trim())return;
+  const lbl=label.trim();
+  let key=lbl.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!key)key='S'+Date.now().toString().slice(-4);
+  if(key.length>8)key=key.slice(0,8);
+  let baseKey=key,n=2;
+  while(SHIFTS.some(s=>s.key===key)){key=baseKey+n;n++;}
+  const PALETTE=[["#e0f7fa","#006064"],["#e8eaf6","#1a237e"],["#fce4ec","#880e4f"],["#e0f2f1","#004d40"],["#fff3e0","#e65100"],["#f3e5f5","#4a148c"],["#e6f4ea","#1e5c2e"],["#fce8dc","#7a2e00"]];
+  const[bg,txt]=PALETTE[SHIFTS.length%PALETTE.length];
+  SHIFTS.splice(SHIFTS.length-1,0,{key,label:lbl,cls:'',bg,txt});
+  saveShiftsToCloud();
+  if(state.popup){state.popup.sel=key;}
+  render();
+};
 window._liveNoteCell=function(v){if(state.popup){state.popup.noteVal=v;}};
 window._confirmShift=function(){
   if(state.popup){
