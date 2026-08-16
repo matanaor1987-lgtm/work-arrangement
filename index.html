@@ -398,26 +398,27 @@ const EMPLOYEES=[
   {role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}
 ];
 const ROLE_COLORS={"מסווג":"#D40511","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
-const SHIFTS=[
-  {key:"A",label:"08-17",cls:"sh-a"},
-  {key:"B",label:"07-16",cls:"sh-b"},
-  {key:"C",label:"06-15",cls:"sh-c"},
-  {key:"D",label:"08-16",cls:"sh-d"},
-  {key:"E",label:"07-15",cls:"sh-e"},
-  {key:"F",label:"06-14",cls:"sh-f"},
-  {key:"G",label:"08-13",cls:"sh-g"},
-  {key:"SAB",label:"סבב",cls:"sh-sab"},
-  {key:"MOTZ",label:"מוצש",cls:"sh-motz"},
-  {key:"AUDIT",label:"ביקורת",cls:"sh-audit"},
-  {key:"OFF",label:"חופש",cls:"sh-off"},
-  {key:"MIL",label:"מיל'",cls:"sh-mil"},
-  {key:"SICK",label:"מחלה",cls:"sh-sick"},
-  {key:"HV",label:"HV",cls:"sh-hv"},
-  {key:"LOW",label:"LOW",cls:"sh-low"},
-  {key:"FLIGHT",label:"פותח טיסות",cls:"sh-flight"},
-  {key:"REPORT",label:"דוחות",cls:"sh-report"},
-  {key:"",label:"ריק",cls:""}
+const SHIFTS_DEFAULT=[
+  {key:"A",label:"08-17",cls:"sh-a",bg:"#fff6cc",txt:"#7a5c00"},
+  {key:"B",label:"07-16",cls:"sh-b",bg:"#e6f4ea",txt:"#1e5c2e"},
+  {key:"C",label:"06-15",cls:"sh-c",bg:"#fce8dc",txt:"#7a2e00"},
+  {key:"D",label:"08-16",cls:"sh-d",bg:"#fff9c4",txt:"#6d4c00"},
+  {key:"E",label:"07-15",cls:"sh-e",bg:"#dcedc8",txt:"#1b5e20"},
+  {key:"F",label:"06-14",cls:"sh-f",bg:"#ffe0b2",txt:"#6d1f00"},
+  {key:"G",label:"08-13",cls:"sh-g",bg:"#e0f7fa",txt:"#006064"},
+  {key:"SAB",label:"סבב",cls:"sh-sab",bg:"#fce4ec",txt:"#880e4f"},
+  {key:"MOTZ",label:"מוצש",cls:"sh-motz",bg:"#e8eaf6",txt:"#1a237e"},
+  {key:"AUDIT",label:"ביקורת",cls:"sh-audit",bg:"#fce4ec",txt:"#6a1b4d"},
+  {key:"OFF",label:"חופש",cls:"sh-off",bg:"#f0e8fc",txt:"#5c2e8a"},
+  {key:"MIL",label:"מיל'",cls:"sh-mil",bg:"#daeaf8",txt:"#1a4a70"},
+  {key:"SICK",label:"מחלה",cls:"sh-sick",bg:"#ffe0b2",txt:"#bf360c"},
+  {key:"HV",label:"HV",cls:"sh-hv",bg:"#e8eaf6",txt:"#283593"},
+  {key:"LOW",label:"LOW",cls:"sh-low",bg:"#e0f2f1",txt:"#004d40"},
+  {key:"FLIGHT",label:"פותח טיסות",cls:"sh-flight",bg:"#e1f5fe",txt:"#01579b"},
+  {key:"REPORT",label:"דוחות",cls:"sh-report",bg:"#f3e5f5",txt:"#4a148c"},
+  {key:"",label:"ריק",cls:"",bg:"",txt:""}
 ];
+let SHIFTS=JSON.parse(JSON.stringify(SHIFTS_DEFAULT));
 const MONTHS=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 const DAY_NAMES=["א","ב","ג","ד","ה","ו","ש"];
 const DAY_NAMES_FULL=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
@@ -427,7 +428,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationNextJanHours:{},vacationSortKey:'live',vacationSortDir:'asc'};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,showShiftMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationNextJanHours:{},vacationSortKey:'live',vacationSortDir:'asc'};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -549,6 +550,12 @@ function listenToData(){
     if(data&&Array.isArray(data)&&data.length>0){employees=mergeBirthdays(data);}
     else{employees=mergeBirthdays(JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT)));}
     recalcVacationLive();render();
+  });
+  onValue(ref(db,'shifts'),(snap)=>{
+    const data=snap.val();
+    if(data&&Array.isArray(data)&&data.length>0){SHIFTS=data;}
+    else{SHIFTS=JSON.parse(JSON.stringify(SHIFTS_DEFAULT));}
+    render();
   });
   listenToRequests();
   onValue(ref(db,'vacationBalance'),(snap)=>{
@@ -702,6 +709,11 @@ function saveEmployeesToCloud(){
   set(ref(db,'employees'),employees);
   showToast("✓ רשימת עובדים נשמרה");
 }
+function saveShiftsToCloud(){
+  if(!db)return;
+  set(ref(db,'shifts'),SHIFTS);
+  showToast("✓ סוגי משמרות נשמרו");
+}
 
 function ilWD(y,m,d){return new Date(y,m,d).getDay();}
 function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
@@ -774,7 +786,7 @@ function buildWeekView(isAdmin){
                     const bgCell=isSab?'background:#fde8e8':isFri?'background:#fffbea':'';
                     if(si.key){
                       return `<td style="padding:4px;text-align:center;border:1px solid #ebebeb;${bgCell}">
-                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}">
+                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700;${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}">
                           ${si.label}
                           ${cn?`<span style="display:block;font-size:8px;opacity:0.8">📝</span>`:''}
                         </div>
@@ -885,7 +897,7 @@ function buildDailyDist(){
       const si=shiftInfo(sh);
       rows+=`<div class="daily-emp-row">
         <span class="daily-emp-name">${emp.name}</span>
-        <span class="daily-emp-shift ${si.cls}">${si.label}</span>
+        <span class="daily-emp-shift ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</span>
         <input class="daily-resp-inp" id="resp-${emp.name}" placeholder="אחריות / משימה...">
       </div>`;
     });
@@ -955,6 +967,7 @@ function buildApp(){
     ${state.mode==="admin"?`<button class="bell-btn" onclick="openAdminRequests()" style="margin-left:6px">🔔 בקשות${getPendingCount()>0?` <span class="bell-badge">${getPendingCount()}</span>`:''}</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openDailyDist()" style="background:rgba(255,204,0,0.3);margin-left:6px">☀️ חלוקה יומית</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openEmpMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">👥 ניהול עובדים</button>`:""}
+    ${state.mode==="admin"?`<button class="sign-btn" onclick="openShiftMgr()" style="background:rgba(255,255,255,0.15);margin-left:6px">🕒 ניהול משמרות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="importVacationData()" style="background:rgba(255,204,0,0.25);margin-left:6px" title="ייבא ימי חופש מלוח החופשות">📥 ייבא חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="openVacationMgr()" style="background:rgba(255,204,0,0.3);margin-left:6px" title="ניהול יתרות חופשה">🏖️ ניהול חופשות</button>`:""}
     ${state.mode==="admin"?`<button class="sign-btn" onclick="exportToPDF()" style="background:rgba(255,255,255,0.18);margin-left:6px" title="ייצא סידור ל-PDF">🖨️ PDF</button>`:""}
@@ -1002,7 +1015,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showShiftMgr&&isAdmin?buildShiftMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
@@ -1086,7 +1099,7 @@ function buildTable(days,isAdmin){
         const isToday2=new Date().getDate()===d&&new Date().getMonth()===state.month&&new Date().getFullYear()===state.year;const bgCell=isToday2?"background:#FFFACD;border-left:2px solid var(--dhl-red);border-right:2px solid var(--dhl-red)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":`background:${wkColor}`;
         if(k){
           const cn=getCellNote(emp.name,d);
-          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}">${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
+          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}">${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
         }
         const cnEmpty=getCellNote(emp.name,d);
         if(cnEmpty){
@@ -1169,7 +1182,7 @@ function buildPopup(){
   return `<div class="popup">
     <h3>✏️ ${emp} — ${DAY_NAMES_FULL[wd]} ${d}</h3>
     <div class="popup-grid">
-      ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
+      ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" style="${s.bg?`background:${s.bg};color:${s.txt};`:''}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
     </div>
     <div style="margin:10px 0 4px;font-size:12px;color:#555">📝 הערה לעובד על יום זה:</div>
     <input type="text" id="cell-note-inp" value="${note}" placeholder="למשל: להגיע מוקדם, החלפה עם..." style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;margin-bottom:12px" oninput="window._liveNoteCell(this.value)">
@@ -1246,6 +1259,76 @@ function buildEmpMgr(){
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
         <button class="emp-mgr-cancel" onclick="closeEmpMgr()">ביטול</button>
         <button class="emp-mgr-save" onclick="saveEmps()">💾 שמור שינויים</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.openShiftMgr=function(){state.showShiftMgr=true;render();};
+window.closeShiftMgr=function(){state.showShiftMgr=false;render();};
+window.delShiftType=function(i){
+  const sh=SHIFTS[i];
+  if(sh.key===''){alert('לא ניתן למחוק את הערך הריק');return;}
+  if(!confirm(`למחוק את המשמרת "${sh.label}" (${sh.key})? משבצות קיימות עם קוד זה בסידור לא יימחקו אבל יוצגו ללא צבע/תווית.`))return;
+  SHIFTS.splice(i,1);
+  render();
+};
+window.addShiftType=function(){
+  const k=document.getElementById('new-sh-key').value.trim().toUpperCase();
+  const l=document.getElementById('new-sh-label').value.trim();
+  const bg=document.getElementById('new-sh-bg').value;
+  const txt=document.getElementById('new-sh-txt').value;
+  if(!k||!l){alert('הכנס קוד ותווית למשמרת');return;}
+  if(!/^[A-Z0-9_]{1,8}$/.test(k)){alert('קוד המשמרת יכול להכיל רק אותיות אנגליות גדולות, מספרים וקו תחתון (עד 8 תווים)');return;}
+  if(SHIFTS.some(s=>s.key===k)){alert('קוד המשמרת הזה כבר קיים');return;}
+  SHIFTS.splice(SHIFTS.length-1,0,{key:k,label:l,cls:'',bg,txt});
+  document.getElementById('new-sh-key').value='';
+  document.getElementById('new-sh-label').value='';
+  render();
+};
+window.saveShiftTypes=function(){
+  SHIFTS.forEach((s,i)=>{
+    if(s.key==='')return;
+    const li=document.getElementById('sh-label-'+i);
+    const bi=document.getElementById('sh-bg-'+i);
+    const ti=document.getElementById('sh-txt-'+i);
+    if(li)s.label=li.value.trim()||s.label;
+    if(bi)s.bg=bi.value;
+    if(ti)s.txt=ti.value;
+  });
+  saveShiftsToCloud();
+  state.showShiftMgr=false;
+  render();
+};
+
+function buildShiftMgr(){
+  return `<div class="emp-mgr" onclick="if(event.target===this)closeShiftMgr()">
+    <div class="emp-mgr-box">
+      <h2>🕒 ניהול סוגי משמרות</h2>
+      <div style="margin-bottom:8px;font-size:12px;color:#888">ערוך תוויות וצבעים, הוסף או הסר סוגי משמרות</div>
+      ${SHIFTS.map((s,i)=>{
+        if(s.key==='')return '';
+        return `<div class="emp-mgr-row" style="grid-template-columns:70px 1fr 40px 40px 40px;align-items:center">
+          <div style="font-weight:800;font-size:12px;text-align:center;color:#888">${s.key}</div>
+          <input id="sh-label-${i}" value="${s.label}" placeholder="תווית">
+          <input id="sh-bg-${i}" type="color" value="${s.bg||'#eeeeee'}" title="צבע רקע" style="padding:2px;height:32px">
+          <input id="sh-txt-${i}" type="color" value="${s.txt||'#333333'}" title="צבע טקסט" style="padding:2px;height:32px">
+          <button class="emp-mgr-del" onclick="delShiftType(${i})">✕</button>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#333">➕ הוסף סוג משמרת חדש</div>
+        <div class="emp-mgr-row" style="grid-template-columns:70px 1fr 40px 40px 40px;align-items:center">
+          <input id="new-sh-key" placeholder="קוד (למשל H2)" maxlength="8" style="text-align:center">
+          <input id="new-sh-label" placeholder="תווית (למשל 09-18)">
+          <input id="new-sh-bg" type="color" value="#e0f7fa" title="צבע רקע" style="padding:2px;height:32px">
+          <input id="new-sh-txt" type="color" value="#006064" title="צבע טקסט" style="padding:2px;height:32px">
+          <button class="emp-mgr-add" onclick="addShiftType()">+</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="emp-mgr-cancel" onclick="closeShiftMgr()">ביטול</button>
+        <button class="emp-mgr-save" onclick="saveShiftTypes()">💾 שמור שינויים</button>
       </div>
     </div>
   </div>`;
@@ -1352,7 +1435,7 @@ function buildPersonalModal(){
         const isFri=wd===5;
         const isSat=wd===6;
         const dayBorder=isSat?'border-right:4px solid #e53935':isFri?'border-right:4px solid #fb8c00':'border-right:4px solid var(--dhl-red)';
-        return `<div class="my-shift-card ${si.cls}" style="border:1px solid rgba(0,0,0,0.08);${dayBorder}">
+        return `<div class="my-shift-card ${si.cls}" style="border:1px solid rgba(0,0,0,0.08);${si.bg?`background:${si.bg};color:${si.txt};`:''}${dayBorder}">
           <div>
             <div style="font-weight:700;font-size:13px">${DAY_NAMES_FULL[wd]} ${d}${isSat?' 🔵':isFri?' 🟠':''}</div>
             ${cn?`<div style="font-size:11px;opacity:0.8;margin-top:2px">📝 ${cn}</div>`:''}
@@ -1726,7 +1809,7 @@ function buildEmpView(){
             <div style="font-size:11px;color:#888">${d} ${MONTHS_HE[state.month]}${isToday?' ← היום':''}</div>
           </div>
           <div style="flex:1;padding:0 12px">${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
-          <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;padding:0 12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center">${si.label}</div>`:`<div style="color:#ccc;font-size:13px">—</div>`}</div>
+          <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;padding:0 12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:`<div style="color:#ccc;font-size:13px">—</div>`}</div>
         </div>`;
       }).join('')}
     </div>`:`
@@ -1748,7 +1831,7 @@ function buildEmpView(){
             ${isToday?`<div style="font-size:10px;color:var(--dhl-red);font-weight:700">← היום</div>`:''}
           </div>
           <div style="flex:1;padding:0 12px">${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
-          <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:28px;border-radius:3px;padding:0 10px;font-size:12px;font-weight:800;display:inline-flex;align-items:center">${si.label}</div>`:''}</div>
+          <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:28px;border-radius:3px;padding:0 10px;font-size:12px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:''}</div>
         </div>`;
       }).join('')}
     </div>`}
@@ -2607,10 +2690,6 @@ window.exportToPDF = function(){
   const roles=[...new Set(employees.map(e=>e.role))];
   const ROLE_COLORS_PDF={"מסווג":"#D40511","בקרה":"#375623","אישורים":"#833C00","פקידי רישוי":"#7030A0","רפרנטיות":"#C00000"};
 
-  // Build shift color map
-  const shiftBgMap={A:'#fff6cc',B:'#e6f4ea',C:'#fce8dc',D:'#fff9c4',E:'#dcedc8',F:'#ffe0b2',G:'#e0f7fa',SAB:'#fce4ec',MOTZ:'#e8eaf6',AUDIT:'#fce4ec',OFF:'#f0e8fc',MIL:'#daeaf8',SICK:'#ffe0b2',HV:'#e8eaf6',LOW:'#e0f2f1',FLIGHT:'#e1f5fe',REPORT:'#f3e5f5'};
-  const shiftTxtMap={A:'#7a5c00',B:'#1e5c2e',C:'#7a2e00',D:'#6d4c00',E:'#1b5e20',F:'#6d1f00',G:'#006064',SAB:'#880e4f',MOTZ:'#1a237e',AUDIT:'#6a1b4d',OFF:'#5c2e8a',MIL:'#1a4a70',SICK:'#bf360c',HV:'#283593',LOW:'#004d40',FLIGHT:'#01579b',REPORT:'#4a148c'};
-
   let tableHTML='<table style="border-collapse:collapse;width:100%;font-size:9px;direction:rtl">';
   tableHTML+='<thead><tr>';
   tableHTML+='<th style="border:1px solid #ccc;padding:4px 6px;background:#ebebeb;text-align:right;min-width:80px">שם</th>';
@@ -2639,8 +2718,8 @@ window.exportToPDF = function(){
         if(["A","B","C","D","E","F","G","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(si.key)) tot++;
         const cellBg=isSat?'#fde8e8':isFri?'#FFF3CC':rowBg;
         if(k&&si.label){
-          const bg=shiftBgMap[k]||'#eee';
-          const tc=shiftTxtMap[k]||'#333';
+          const bg=si.bg||'#eee';
+          const tc=si.txt||'#333';
           cells+=`<td style="border:1px solid #e0e0e0;padding:1px;text-align:center;background:${cellBg}"><div style="background:${bg};color:${tc};border-radius:2px;padding:1px 2px;font-size:8px;font-weight:700">${si.label}</div></td>`;
         } else {
           cells+=`<td style="border:1px solid #e0e0e0;background:${cellBg}"></td>`;
