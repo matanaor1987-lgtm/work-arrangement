@@ -1686,13 +1686,15 @@ function buildRecordSignLink(type, id){
 function buildRoleMultiSignLink(id, name){
   return signBaseUrl()+'?t=rm&id='+encodeURIComponent(id)+'&e='+encodeURIComponent(name);
 }
-function openRoleSignDetails(id){
+async function openRoleSignDetails(id){
   const r=ROLES[id];
   if(!r) return;
+  await ensureEmpDataMap();
   document.getElementById('signDetailsTitle').textContent='חתימות עובדים — '+(r.roleName||'');
   const required=roleAssignedNames(r);
   const signed=roleSignaturesMap(r);
   const box=document.getElementById('signDetailsBox');
+  window.SEND_PACKAGES = window.SEND_PACKAGES || {};
   if(!required.length){ box.innerHTML='<div class="muted">לא שויכו עדיין עובדים לתפקיד זה. ערוך את הגדרת התפקיד כדי לשייך.</div>'; }
   else{
     box.innerHTML=required.map(n=>{
@@ -1700,10 +1702,29 @@ function openRoleSignDetails(id){
       const link=buildRoleMultiSignLink(id,n);
       const nEsc=n.replace(/'/g,"\\'");
       if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+'</span></div>';
-      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><span><a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px" onclick="markRoleLinkSent(\''+id+'\',\''+nEsc+'\')">פתח קישור</a> <button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');markRoleLinkSent(\''+id+'\',\''+nEsc+'\');this.textContent=\'✓\'">🔗</button></span></div>';
+      const contact=EMP_DATA_MAP[n];
+      const pkgKey='rm_'+id+'_'+sigKey(n);
+      window.SEND_PACKAGES[pkgKey]={email:(contact&&contact.email)||'', name:n, subject:'הגדרת תפקיד לאישור קריאה — '+(r.roleName||''), message:'מצורפת הגדרת תפקיד "'+(r.roleName||'')+'" לאישור קריאה.\n'+link, roleId:id};
+      const sendBtn = (contact&&contact.email)
+        ? '<button class="btn btn-save" style="padding:4px 10px;font-size:11px" onclick="sendRoleSignEmail(\''+pkgKey+'\', this)">📧 שלח מייל</button>'
+        : '<span class="muted" style="font-size:11px">אין מייל</span>';
+      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><span>'+sendBtn+' <a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px" onclick="markRoleLinkSent(\''+id+'\',\''+nEsc+'\')">פתח קישור</a> <button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');markRoleLinkSent(\''+id+'\',\''+nEsc+'\');this.textContent=\'✓\'">🔗</button></span></div>';
     }).join('');
   }
   document.getElementById('signDetailsModalBg').classList.add('open');
+}
+async function sendRoleSignEmail(pkgKey, btn){
+  const pkg=window.SEND_PACKAGES && window.SEND_PACKAGES[pkgKey];
+  if(!pkg || !pkg.email) return;
+  btn.disabled=true; btn.textContent='שולח...';
+  try{
+    await sendReminderEmail(pkg.email, pkg.name, pkg.subject, pkg.message);
+    await markRoleLinkSent(pkg.roleId, pkg.name);
+    btn.textContent='✓ נשלח';
+    btn.style.background='#2e7d32';
+  }catch(e){
+    btn.disabled=false; btn.textContent='📧 שלח שוב';
+  }
 }
 async function markRoleLinkSent(id, name){
   const r=ROLES[id];
