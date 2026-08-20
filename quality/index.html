@@ -1701,7 +1701,7 @@ async function openRoleSignDetails(id){
       const s=signed[sigKey(n)];
       const link=buildRoleMultiSignLink(id,n);
       const nEsc=n.replace(/'/g,"\\'");
-      if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+'</span></div>';
+      if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+' <button class="act-btn" title="אפס חתימה ושלח שוב לאישור" onclick="resetRoleSignature(\''+id+'\',\''+nEsc+'\')" style="margin-right:4px">🔄</button></span></div>';
       const contact=EMP_DATA_MAP[n];
       const pkgKey='rm_'+id+'_'+sigKey(n);
       window.SEND_PACKAGES[pkgKey]={email:(contact&&contact.email)||'', name:n, subject:'הגדרת תפקיד לאישור קריאה — '+(r.roleName||''), message:'מצורפת הגדרת תפקיד "'+(r.roleName||'')+'" לאישור קריאה.\n'+link, roleId:id};
@@ -1712,6 +1712,22 @@ async function openRoleSignDetails(id){
     }).join('');
   }
   document.getElementById('signDetailsModalBg').classList.add('open');
+}
+async function resetRoleSignature(id, name){
+  const r=ROLES[id];
+  if(!r) return;
+  if(!confirm('לאפס את החתימה של '+name+'? הוא/היא יצטרכו לאשר שוב (למשל אם התוכן התעדכן).')) return;
+  const newSignatures={...roleSignaturesMap(r)};
+  delete newSignatures[sigKey(name)];
+  const rec={...r, signatures:newSignatures};
+  // מיגרציה: אם זו רשומה ישנה שהשתמשה בשדה employee/signature בודד, ננקה גם אותו
+  if(rec.employee===name) rec.signature=null;
+  try{
+    await fetch(DB+'/roleDefinitions/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    ROLES[id]=rec;
+    openRoleSignDetails(id);
+    renderRoles();
+  }catch(e){ alert('שגיאה באיפוס החתימה'); }
 }
 async function sendRoleSignEmail(pkgKey, btn){
   const pkg=window.SEND_PACKAGES && window.SEND_PACKAGES[pkgKey];
