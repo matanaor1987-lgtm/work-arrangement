@@ -1208,14 +1208,13 @@ function toggleRoleEmp(cb){
 async function saveRole(){
   const id=document.getElementById('roleId').value || 'r'+Date.now();
   const existing=ROLES[id];
-  const prevAssigned=existing ? roleAssignedNames(existing) : [];
   const signRequired=Array.from(selectedRoleEmployees);
 
-  // שימור חתימות קיימות (כולל מיגרציה מהמבנה הישן של עובד יחיד)
+  // שימור חתימות ותאריכי שליחה קיימים (כולל מיגרציה מהמבנה הישן של עובד יחיד)
   let signatures={...roleSignaturesMap(existing||{})};
-  // שמירת תאריך שליחה ראשוני לעובדים חדשים שנוספו עכשיו לתפקיד
   let signSentDates={...((existing && existing.signSentDates)||{})};
-  signRequired.forEach(n=>{ if(!prevAssigned.includes(n)) signSentDates[n]=new Date().toISOString(); });
+  // הערה: תאריך השליחה לא נקבע כאן אוטומטית — הוא נקבע רק כשבאמת פותחים/מעתיקים
+  // קישור לעובד ספציפי בחלון "חתימות עובדים", כדי שלא "יסומן כנשלח" בלי שבאמת נשלח.
 
   const rec={
     roleName:document.getElementById('roleName').value.trim(),
@@ -1699,11 +1698,21 @@ function openRoleSignDetails(id){
     box.innerHTML=required.map(n=>{
       const s=signed[sigKey(n)];
       const link=buildRoleMultiSignLink(id,n);
+      const nEsc=n.replace(/'/g,"\\'");
       if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+'</span></div>';
-      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><span><a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px">פתח קישור</a> <button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button></span></div>';
+      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><span><a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px" onclick="markRoleLinkSent(\''+id+'\',\''+nEsc+'\')">פתח קישור</a> <button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');markRoleLinkSent(\''+id+'\',\''+nEsc+'\');this.textContent=\'✓\'">🔗</button></span></div>';
     }).join('');
   }
   document.getElementById('signDetailsModalBg').classList.add('open');
+}
+async function markRoleLinkSent(id, name){
+  const r=ROLES[id];
+  if(!r) return;
+  const rec={...r, signSentDates:{...(r.signSentDates||{}), [name]:new Date().toISOString()}};
+  try{
+    await fetch(DB+'/roleDefinitions/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
+    ROLES[id]=rec;
+  }catch(e){}
 }
 
 let EMP_DATA_MAP={};
