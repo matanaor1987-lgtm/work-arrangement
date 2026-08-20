@@ -264,7 +264,7 @@ a.doc-link:hover{text-decoration:underline}
         <thead>
           <tr>
             <th onclick="sortRolesBy('roleName')">תפקיד</th>
-            <th onclick="sortRolesBy('employee')">עובד</th>
+            <th onclick="sortRolesBy('employee')">עובדים משויכים</th>
             <th onclick="sortRolesBy('updated')">עודכן</th>
             <th onclick="sortRolesBy('version')">גרסה</th>
             <th>גיבוי בהיעדרות</th>
@@ -439,11 +439,17 @@ a.doc-link:hover{text-decoration:underline}
     <input type="hidden" id="roleId">
     <div class="form-grid">
       <div class="form-row"><label>שם התפקיד</label><input type="text" id="roleName" placeholder="לדוגמה מסווג בכיר"></div>
-      <div class="form-row"><label>עובד משויך</label><input type="text" id="roleEmployee" placeholder="שם מלא"></div>
     </div>
     <div class="form-row"><label>אחריות</label><textarea id="roleResponsibilities"></textarea></div>
     <div class="form-row"><label>סמכויות</label><textarea id="roleAuthorities"></textarea></div>
     <div class="form-row"><label>יעדים (לא חובה)</label><input type="text" id="roleGoals"></div>
+
+    <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-top:4px">
+      <label style="font-size:12px;color:#333;margin-bottom:8px">👥 עובדים משויכים לתפקיד זה (לחתימה)</label>
+      <input type="text" id="roleEmpSearch" placeholder="חיפוש עובד..." oninput="renderRoleEmpChecklist()" style="margin-bottom:8px">
+      <div id="roleEmpChecklist" style="max-height:180px;overflow-y:auto;border:1px solid #eee;border-radius:6px;background:#fff"></div>
+      <div style="font-size:11px;color:#999;margin-top:4px" id="roleEmpSelectedCount"></div>
+    </div>
 
     <div class="form-row" style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-top:4px">
       <label style="font-size:12px;color:#333;margin-bottom:8px">🔄 מטריצת גיבוי בהיעדרות</label>
@@ -1010,11 +1016,20 @@ function sortRolesBy(col){
   renderRoles();
 }
 
+function roleAssignedNames(r){
+  return (r.signRequired && r.signRequired.length) ? r.signRequired.slice() : (r.employee ? [r.employee] : []);
+}
+function roleSignaturesMap(r){
+  if(r.signatures) return r.signatures;
+  if(r.employee && r.signature) return {[sigKey(r.employee)]:r.signature};
+  return {};
+}
 function renderRoles(){
   const search=(document.getElementById('roleSearch').value||'').trim().toLowerCase();
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
-    return {id, roleName:r.roleName||'', employee:r.employee||'', responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupPrimaryEmail:r.backupPrimaryEmail||'', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], signature:r.signature||null, signSentAt:r.signSentAt||null};
+    const assigned=roleAssignedNames(r);
+    return {id, roleName:r.roleName||'', employee:assigned.join(', '), assigned, signatures:roleSignaturesMap(r), responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupPrimaryEmail:r.backupPrimaryEmail||'', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[]};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
@@ -1052,14 +1067,14 @@ function renderRoles(){
     const docHtml=(r.attachments||[]).length ? r.attachments.map(a=>'<a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a>').join('<br>') : '<span class="muted">—</span>';
     return '<tr>'+
       '<td>'+esc(r.roleName)+'</td>'+
-      '<td><span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(r.employee).replace(/'/g,"\\'")+'\')">'+esc(r.employee)+'</span></td>'+
+      '<td>'+roleAssignedCellHtml(r)+'</td>'+
       '<td>'+esc(r.updated)+'</td>'+
       '<td>'+esc(r.version)+'</td>'+
       '<td>'+backupCellHtml(r)+'</td>'+
       '<td>'+docHtml+'</td>'+
-      '<td>'+recordSignCellHtml(r)+'</td>'+
+      '<td>'+roleSignBadgeHtml(r)+'</td>'+
       '<td>'+backupSignCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="שלח לחתימה לעובד" onclick="openQuickSign(\'r\',\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="חתימות עובדים / שלח לחתימה" onclick="openRoleSignDetails(\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -1113,7 +1128,8 @@ function openNewRole(){
   document.getElementById('roleModalTitle').textContent='הגדרת תפקיד חדשה';
   document.getElementById('roleId').value='';
   document.getElementById('roleName').value='';
-  document.getElementById('roleEmployee').value='';
+  selectedRoleEmployees=new Set();
+  document.getElementById('roleEmpSearch').value='';
   document.getElementById('roleResponsibilities').value='';
   document.getElementById('roleAuthorities').value='';
   document.getElementById('roleGoals').value='';
@@ -1131,6 +1147,7 @@ function openNewRole(){
   pendingRoleAttachments=[];
   renderRoleAttachmentsBox();
   populateEmpNamesList();
+  renderRoleEmpChecklist();
   document.getElementById('roleModalBg').classList.add('open');
 }
 function editRole(id){
@@ -1138,7 +1155,8 @@ function editRole(id){
   document.getElementById('roleModalTitle').textContent='עריכת הגדרת תפקיד';
   document.getElementById('roleId').value=id;
   document.getElementById('roleName').value=r.roleName||'';
-  document.getElementById('roleEmployee').value=r.employee||'';
+  selectedRoleEmployees=new Set(roleAssignedNames(r));
+  document.getElementById('roleEmpSearch').value='';
   document.getElementById('roleResponsibilities').value=r.responsibilities||'';
   document.getElementById('roleAuthorities').value=r.authorities||'';
   document.getElementById('roleGoals').value=r.goals||'';
@@ -1156,6 +1174,7 @@ function editRole(id){
   pendingRoleAttachments=(r.attachments||[]).slice();
   renderRoleAttachmentsBox();
   populateEmpNamesList();
+  renderRoleEmpChecklist();
   document.getElementById('roleModalBg').classList.add('open');
 }
 async function populateEmpNamesList(){
@@ -1163,12 +1182,46 @@ async function populateEmpNamesList(){
   const dl=document.getElementById('empNamesList');
   if(dl) dl.innerHTML=Object.keys(EMP_DATA_MAP).map(n=>'<option value="'+esc(n)+'">').join('');
 }
+
+let selectedRoleEmployees=new Set();
+async function renderRoleEmpChecklist(){
+  await ensureEmpDataMap();
+  const search=(document.getElementById('roleEmpSearch').value||'').trim().toLowerCase();
+  const box=document.getElementById('roleEmpChecklist');
+  let names=Object.keys(EMP_DATA_MAP).sort((a,b)=>a.localeCompare(b,'he'));
+  if(search) names=names.filter(n=>n.toLowerCase().includes(search));
+  if(!names.length){ box.innerHTML='<div class="muted" style="padding:8px;font-size:12px">לא נמצאו עובדים — אפשר להוסיף דרך 👥 ניהול עובדים בטאב הנהלים</div>'; }
+  else box.innerHTML=names.map(n=>
+    '<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-bottom:1px solid #f5f5f5;cursor:pointer;font-size:12px">'+
+    '<span>'+esc(n)+'</span>'+
+    '<input type="checkbox" value="'+esc(n)+'" '+(selectedRoleEmployees.has(n)?'checked':'')+' onchange="toggleRoleEmp(this)">'+
+    '</label>'
+  ).join('');
+  document.getElementById('roleEmpSelectedCount').textContent=selectedRoleEmployees.size+' עובדים נבחרו';
+}
+function toggleRoleEmp(cb){
+  if(cb.checked) selectedRoleEmployees.add(cb.value);
+  else selectedRoleEmployees.delete(cb.value);
+  document.getElementById('roleEmpSelectedCount').textContent=selectedRoleEmployees.size+' עובדים נבחרו';
+}
+
 async function saveRole(){
   const id=document.getElementById('roleId').value || 'r'+Date.now();
   const existing=ROLES[id];
+  const prevAssigned=existing ? roleAssignedNames(existing) : [];
+  const signRequired=Array.from(selectedRoleEmployees);
+
+  // שימור חתימות קיימות (כולל מיגרציה מהמבנה הישן של עובד יחיד)
+  let signatures={...roleSignaturesMap(existing||{})};
+  // שמירת תאריך שליחה ראשוני לעובדים חדשים שנוספו עכשיו לתפקיד
+  let signSentDates={...((existing && existing.signSentDates)||{})};
+  signRequired.forEach(n=>{ if(!prevAssigned.includes(n)) signSentDates[n]=new Date().toISOString(); });
+
   const rec={
     roleName:document.getElementById('roleName').value.trim(),
-    employee:document.getElementById('roleEmployee').value.trim(),
+    signRequired,
+    signatures,
+    signSentDates,
     responsibilities:document.getElementById('roleResponsibilities').value.trim(),
     authorities:document.getElementById('roleAuthorities').value.trim(),
     goals:document.getElementById('roleGoals').value.trim(),
@@ -1178,13 +1231,16 @@ async function saveRole(){
     backupSecondary:document.getElementById('roleBackupSecondary').value.trim(),
     backupSecondaryType:document.getElementById('roleBackupSecondaryType').value,
     backupVerified:document.getElementById('roleBackupVerified').value,
+    backupSignature:(existing&&existing.backupSignature)||null,
+    backupSignSentAt:(existing&&existing.backupSignSentAt)||null,
     updated:document.getElementById('roleUpdated').value,
     version:document.getElementById('roleVersion').value.trim(),
     approvedBy:document.getElementById('roleApprovedBy').value.trim(),
     attachments:pendingRoleAttachments.slice(),
     updatedAt:new Date().toISOString()
   };
-  if(!rec.roleName || !rec.employee){ alert('נא להזין שם תפקיד ועובד משויך'); return; }
+  if(!rec.roleName){ alert('נא להזין שם תפקיד'); return; }
+  if(!rec.signRequired.length){ if(!confirm('לא נבחרו עובדים לשיוך לתפקיד. לשמור בכל זאת?')) return; }
   showSaving(true);
   try{
     await fetch(DB+'/roleDefinitions/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
@@ -1317,6 +1373,21 @@ function recordSignCellHtml(r){
   if(r.signature) return '<span class="badge s-ok">✔ נחתם '+esc((r.signature.date||'').slice(0,10))+'</span>';
   if(r.signSentAt) return '<span class="badge s-soon">⏳ נשלח '+esc((r.signSentAt||'').slice(0,10))+'</span>';
   return '<span class="muted">לא נשלח</span>';
+}
+
+function roleAssignedCellHtml(r){
+  const assigned=r.assigned||[];
+  if(!assigned.length) return '<span class="muted">לא שויך</span>';
+  const preview = assigned.length<=2 ? assigned.map(esc).join(', ') : (esc(assigned[0])+' ועוד '+(assigned.length-1));
+  return '<span style="cursor:pointer;color:#1565c0" onclick="openEmpCard(\''+esc(assigned[0]).replace(/'/g,"\\'")+'\')">'+preview+'</span>';
+}
+function roleSignBadgeHtml(r){
+  const assigned=r.assigned||[];
+  if(!assigned.length) return '<span class="muted">—</span>';
+  const signed=r.signatures||{};
+  const signedCount=assigned.filter(n=>signed[sigKey(n)]).length;
+  const cls = signedCount===assigned.length ? 's-ok' : (signedCount===0 ? 's-expired' : 's-soon');
+  return '<span class="badge '+cls+'" style="cursor:pointer" onclick="openRoleSignDetails(\''+r.id+'\')">'+signedCount+'/'+assigned.length+' חתמו</span>';
 }
 
 const CANON_NUMS = {
@@ -1613,6 +1684,27 @@ function buildSignLink(procId, name){
 function buildRecordSignLink(type, id){
   return signBaseUrl()+'?t='+type+'&id='+encodeURIComponent(id);
 }
+function buildRoleMultiSignLink(id, name){
+  return signBaseUrl()+'?t=rm&id='+encodeURIComponent(id)+'&e='+encodeURIComponent(name);
+}
+function openRoleSignDetails(id){
+  const r=ROLES[id];
+  if(!r) return;
+  document.getElementById('signDetailsTitle').textContent='חתימות עובדים — '+(r.roleName||'');
+  const required=roleAssignedNames(r);
+  const signed=roleSignaturesMap(r);
+  const box=document.getElementById('signDetailsBox');
+  if(!required.length){ box.innerHTML='<div class="muted">לא שויכו עדיין עובדים לתפקיד זה. ערוך את הגדרת התפקיד כדי לשייך.</div>'; }
+  else{
+    box.innerHTML=required.map(n=>{
+      const s=signed[sigKey(n)];
+      const link=buildRoleMultiSignLink(id,n);
+      if(s) return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px;background:#e8f5e9;border-color:#c8e6c9"><span>✔ '+esc(n)+'</span><span style="font-size:10px;color:#2e7d32">'+esc((s.date||'').slice(0,10))+'</span></div>';
+      return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px"><span>⏳ '+esc(n)+'</span><span><a href="'+esc(link)+'" target="_blank" class="doc-link" style="font-size:11px">פתח קישור</a> <button class="act-btn" title="העתק קישור" onclick="navigator.clipboard.writeText(\''+link.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">🔗</button></span></div>';
+    }).join('');
+  }
+  document.getElementById('signDetailsModalBg').classList.add('open');
+}
 
 let EMP_DATA_MAP={};
 
@@ -1840,7 +1932,8 @@ async function backupSignBlockHtml(id){
 
   const link=buildRecordSignLink('rb', id);
   const subject='אישור תפקיד גיבוי — '+rec.roleName;
-  const msg='הוגדרת כגיבוי לתפקיד "'+rec.roleName+'" (עובד: '+rec.employee+'). אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
+  const assignedForMsg=roleAssignedNames(rec).join(', ');
+  const msg='הוגדרת כגיבוי לתפקיד "'+rec.roleName+'"'+(assignedForMsg?(' (עובדים בתפקיד: '+assignedForMsg+')'):'')+'. אנא אשר/י שאת/ה מודע/ת לכך ולתחומי האחריות.\n'+link;
 
   window.SEND_PACKAGES = window.SEND_PACKAGES || {};
   const pkgKey='qb_r_'+id;
@@ -1886,7 +1979,7 @@ async function openEmpCard(prefillName){
   Object.values(PROCS).forEach(p=>(p.signRequired||[]).forEach(n=>namesSet.add(n)));
   Object.values(FEEDBACK).forEach(f=>{ if(f.employee) namesSet.add(f.employee); });
   Object.values(ONETOONE).forEach(o=>{ if(o.employee) namesSet.add(o.employee); });
-  Object.values(ROLES).forEach(r=>{ if(r.employee) namesSet.add(r.employee); });
+  Object.values(ROLES).forEach(r=>{ roleAssignedNames(r).forEach(n=>namesSet.add(n)); });
   Object.values(COMPETENCY).forEach(r=>{ if(r.employee) namesSet.add(r.employee); });
   const names=Array.from(namesSet).sort((a,b)=>a.localeCompare(b,'he'));
   const sel=document.getElementById('empCardSelect');
@@ -1901,7 +1994,7 @@ function renderEmpCard(name){
   if(!name){ box.innerHTML=''; return; }
 
   const procRows=Object.keys(PROCS).map(id=>PROCS[id]).filter(p=>(p.signRequired||[]).includes(name));
-  const roleRows=Object.values(ROLES).filter(r=>r.employee===name);
+  const roleRows=Object.values(ROLES).filter(r=>roleAssignedNames(r).includes(name));
   const compRows=Object.values(COMPETENCY).filter(r=>r.employee===name);
   const fbRows=Object.values(FEEDBACK).filter(f=>f.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const ooRows=Object.values(ONETOONE).filter(o=>o.employee===name).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -1918,12 +2011,13 @@ function renderEmpCard(name){
 
   html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">🧾 הגדרות תפקיד ('+roleRows.length+')</h4>';
   if(!roleRows.length) html+='<div class="muted" style="font-size:12px">אין הגדרות תפקיד לעובד זה</div>';
-  else html+=roleRows.map(r=>
-    '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
+  else html+=roleRows.map(r=>{
+    const s=roleSignaturesMap(r)[sigKey(name)];
+    return '<div class="att-item" style="width:100%;justify-content:space-between;margin-top:4px">'+
       '<span>'+esc(r.roleName)+' (גרסה '+esc(r.version||'')+')</span>'+
-      (r.signature ? '<span class="badge s-ok">✔ '+esc((r.signature.date||'').slice(0,10))+'</span>' : '<span class="badge s-soon">⏳ ממתין</span>')+
-    '</div>'
-  ).join('');
+      (s ? '<span class="badge s-ok">✔ '+esc((s.date||'').slice(0,10))+'</span>' : '<span class="badge s-soon">⏳ ממתין</span>')+
+    '</div>';
+  }).join('');
 
   html+='<h4 style="margin:14px 0 6px;font-size:13px;color:#1a1a2e">🎓 חפיפה וכשירות ('+compRows.length+')</h4>';
   if(!compRows.length) html+='<div class="muted" style="font-size:12px">אין רשומות חפיפה לעובד זה</div>';
@@ -2134,7 +2228,39 @@ async function checkSignatureReminders(){
     }
   }
 
-  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[ROLES,'roleDefinitions','הגדרת תפקיד'],[COMPETENCY,'competency','חפיפה וכשירות']];
+  for(const id of Object.keys(ROLES)){
+    const r=ROLES[id];
+    const required=roleAssignedNames(r);
+    if(!required.length) continue;
+    const sentDates=r.signSentDates||{};
+    const signatures=roleSignaturesMap(r);
+    const reminded={...(r.signRemindedDates||{})};
+    let changed=false;
+    for(const name of required){
+      if(signatures[sigKey(name)]) continue;
+      const sentAt=sentDates[name];
+      if(!sentAt) continue;
+      const lastCheck = reminded[name] || sentAt;
+      if(daysSince(sentAt) >= REMIND_DAYS && daysSince(lastCheck) >= REMIND_DAYS){
+        const contact=EMP_DATA_MAP[name];
+        if(contact && contact.email){
+          const link=buildRoleMultiSignLink(id, name);
+          try{
+            await sendReminderEmail(contact.email, name, 'תזכורת: הגדרת תפקיד ממתינה לאישור - '+r.roleName,
+              'זו תזכורת שהגדרת התפקיד "'+r.roleName+'" עדיין ממתינה לאישור הקריאה שלך.\n'+link);
+            reminded[name]=new Date().toISOString();
+            changed=true;
+          }catch(e){}
+        }
+      }
+    }
+    if(changed){
+      const rec={...r, signRemindedDates:reminded};
+      try{ await fetch(DB+'/roleDefinitions/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)}); ROLES[id]=rec; }catch(e){}
+    }
+  }
+
+  const singleTargets=[[FEEDBACK,'feedback','משוב'],[ONETOONE,'oneToOne','שיחה אישית'],[COMPETENCY,'competency','חפיפה וכשירות']];
   for(const [store,node,label] of singleTargets){
     for(const id of Object.keys(store)){
       const rec=store[id];
