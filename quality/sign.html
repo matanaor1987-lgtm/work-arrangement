@@ -131,17 +131,22 @@ async function initRoleMulti(){
   if(!rec){ card.innerHTML='<div class="logo">DHL</div><div class="err">הרשומה לא נמצאה</div>'; return; }
 
   const already = rec.signatures && rec.signatures[sigKey(empName)];
-  const bodyText = rec.responsibilities ? ('תחומי אחריות עיקריים:\n'+rec.responsibilities) : '';
+  let bodyText='';
+  if(rec.responsibilities) bodyText += 'תחומי אחריות:\n'+rec.responsibilities;
+  if(rec.authorities) bodyText += (bodyText?'\n\n':'')+'סמכויות:\n'+rec.authorities;
+  if(rec.goals) bodyText += (bodyText?'\n\n':'')+'יעדים:\n'+rec.goals;
+  let docHtml='';
+  (rec.attachments||[]).forEach(a=> docHtml += '<div><a class="doc-link" href="'+esc(a.url)+'" target="_blank">📎 '+esc(a.name)+'</a></div>');
 
   if(already){
     card.innerHTML='<div class="logo">DHL</div><h2>'+esc(rec.roleName||'')+'</h2><div class="sub">שלום '+esc(empName)+'</div>'+
-      (bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
+      docHtml+(bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
       '<div class="done">✔ כבר אישרת שקראת את הגדרת התפקיד ב-'+esc((already.date||'').slice(0,10))+'</div>';
     return;
   }
 
   card.innerHTML='<div class="logo">DHL</div><h2>'+esc(rec.roleName||'')+'</h2><div class="sub">שלום '+esc(empName)+', אנא קרא/י את הגדרת התפקיד ואשר/י</div>'+
-    (bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
+    docHtml+(bodyText?'<div class="box">'+esc(bodyText)+'</div>':'')+
     '<button class="btn btn-confirm" id="confirmBtn">קראתי ואני מאשר/ת</button><div id="resultArea"></div>';
 
   document.getElementById('confirmBtn').addEventListener('click', async ()=>{
