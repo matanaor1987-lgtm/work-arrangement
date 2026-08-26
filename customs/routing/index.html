@@ -370,7 +370,14 @@ async function runRouting() {
     const outWb = new ExcelJS.Workbook();
     const outWs = outWb.addWorksheet('ניתוב');
 
-    const newHeaders = [...headers.slice(1), 'רמת_סיכון', 'סיבה', 'ניתוב', 'עלות_קבלן'];
+    const HIDDEN_COLS = new Set(['HAS_STEP_1123','STATUS_DRAFT_WG','CLASSIFICATION_LINES','IMPORTER_NO','PERSONAL_IMPORTING']);
+    // אינדקסים (1-based, כמו ב-ExcelJS) של העמודות המקוריות שכן יוצגו
+    const keepIdx = [];
+    for (let i = 1; i < headers.length; i++) {
+      if (!HIDDEN_COLS.has(headers[i])) keepIdx.push(i);
+    }
+
+    const newHeaders = [...keepIdx.map(i => headers[i]), 'רמת_סיכון', 'סיבה'];
     outWs.addRow(newHeaders);
 
     const headerRow = outWs.getRow(1);
@@ -430,8 +437,8 @@ async function runRouting() {
       if (route === 'קבלן') { contractorC++; contractorCost += cost; }
       else { internalC++; }
 
-      const rowVals = headers.slice(1).map((h,i) => row.getCell(i+1).value);
-      rowVals.push(labels[level], reason, route, route === 'קבלן' ? cost : '');
+      const rowVals = keepIdx.map(i => row.getCell(i).value);
+      rowVals.push(labels[level], reason);
 
       const newRow = outWs.addRow(rowVals);
       newRow.eachCell(cell => {
@@ -456,7 +463,7 @@ async function runRouting() {
       if (hs === 'DESCRIPTION') col.width = 40;
       else if (hs === 'SHIPPER') col.width = 24;
       else if (hs === 'סיבה') col.width = 26;
-      else if (hs === 'רמת_סיכון' || hs === 'ניתוב') col.width = 16;
+      else if (hs === 'רמת_סיכון') col.width = 16;
       else col.width = 14;
     });
 
