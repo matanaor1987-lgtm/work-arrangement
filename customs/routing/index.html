@@ -208,8 +208,7 @@
   </div>
 
   <div class="legend">
-    <div class="legend-item"><div class="dot dot-red"></div>אדום — חשש גבוה, תמיד פנימי</div>
-    <div class="legend-item"><div class="dot dot-yellow"></div>צהוב — חשש בינוני, תמיד פנימי</div>
+    <div class="legend-item"><div class="dot dot-red"></div>אדום — אלקטרוניקה/רפואי/מזון/חלקי אלקטרוניקה, תמיד פנימי</div>
     <div class="legend-item"><div class="dot dot-green"></div>ירוק — מועמד לקבלן</div>
   </div>
 
@@ -233,39 +232,37 @@
 let fileBuffer = null;
 let outputBlob = null;
 
-// ── רשימות סיכון (מיובאות בדיוק מ-B3: customs/batch/index.html) ────────────────
-const RED_DESC = [
-  'GUN','PISTOL','RIFLE','AMMO','AMMUNITION','BULLET','EXPLOSIVE','GRENADE',
-  'DRUG','MEDICINE','MEDICATION','PHARMACEUTICAL','TABLET','CAPSULE','SYRUP',
-  'INJECTION','VACCINE','ANTIBIOTIC','NARCOTIC',
-  'ALCOHOL','WHISKEY','WHISKY','VODKA','WINE ','BEER ','SPIRITS','COGNAC',
-  'CHAMPAGNE','BRANDY','TEQUILA','LIQUEUR','JOHNNIE WALKER','JACK DANIEL',
-  'GREY GOOSE','ABSOLUT','BACARDI','JAMESON','CHIVAS','CHÂTEAU','HENNESSY',
-  'CIGARETTE','TOBACCO','VAPE','CIGAR',
-  'PESTICIDE','HERBICIDE','INSECTICIDE',
-  'CAR PARTS','AUTO PARTS','VEHICLE','ENGINE PART','TRANSMISSION','BUMPER',
-  'WINDSHIELD','CAR TIRE','MOTORCYCLE','SCOOTER','CHASSIS','GEARBOX',
-  'CHEMICAL','REAGENT','SOLVENT','ACID','ACETONE','TOLUENE','BENZENE',
-  'FORMALDEHYDE','SULFURIC','HYDROCHLORIC','CAUSTIC','CORROSIVE','TOXIC SUBSTANCE',
-  'SUNGLASS','SUN GLASS'
+// ── רשימות סיכון — מורכבות תיק / סיכוי לחוקיות יבוא (לא רשימת B3) ──────────────
+const RED_ELECTRONICS = [
+  'ELECTRONIC','ELECTRONICS','CHARGER','ADAPTER','CABLE','USB','BATTERY','POWER BANK',
+  'ROUTER','MODEM','SPEAKER','HEADPHONE','EARBUD','EARPHONE','LAPTOP','COMPUTER','TABLET',
+  'PHONE','SMARTPHONE','CAMERA','DRONE','SMARTWATCH','MONITOR',' TV ','TELEVISION',
+  'PROCESSOR','TRANSFORMER',' LED ','LIGHT BULB'
 ];
 
-const YEL_DESC = [
-  'SUPPLEMENT','VITAMIN','PROTEIN POWDER','PROBIOTIC','OMEGA','COLLAGEN',
-  'WHEY','CREATINE','BCAA','PRE-WORKOUT','NUTRITIONAL','DIETARY','HERBAL',
-  'CREAM','SERUM','LOTION','MOISTURIZER','SUNSCREEN','FOUNDATION',
-  'LIPSTICK','MASCARA','EYESHADOW','BLUSH','CONCEALER','SHAMPOO','CONDITIONER',
-  'PERFUME','EAU DE','COLOGNE','DEODORANT',
-  'BABY ','INFANT','TODDLER',
-  'COFFEE','SNACK','CANDY','CHOCOLATE','FOOD','RED BULL','ENERGY DRINK',
-  'WATCH','BRACELET','NECKLACE','RING ','EARRING','PENDANT','DIAMOND','GEMSTONE',
-  'CHARGER','ADAPTER','POWER BANK','BATTERY'
+const RED_MEDICAL = [
+  'MEDICAL','MEDICINE','MEDICATION','PHARMACEUTICAL','TABLET','CAPSULE','SYRUP',
+  'INJECTION','VACCINE','ANTIBIOTIC','THERMOMETER','STETHOSCOPE','SYRINGE','BANDAGE',
+  'SURGICAL','DIAGNOSTIC','TEST KIT','MASK','GLOVES','SUPPLEMENT','VITAMIN'
+];
+
+const RED_FOOD = [
+  'FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','SPICE','BEVERAGE','DRINK',
+  'SAUCE','HONEY','CEREAL','NUTRITIONAL','DIETARY','HERBAL'
+];
+
+const RED_ELECTRONIC_PARTS = [
+  'CIRCUIT BOARD','PCB','RESISTOR','CAPACITOR','TRANSISTOR','SEMICONDUCTOR','CHIP',
+  'MODULE','SENSOR','CONNECTOR','WIRE HARNESS','ANTENNA','DISPLAY PANEL','LCD',
+  'LED PANEL','ELECTRONIC COMPONENT','ELECTRONIC PART'
 ];
 
 function getRisk(desc) {
   const d = String(desc || '').toUpperCase();
-  for (const kw of RED_DESC) if (d.includes(kw)) return ['red', `תיאור: ${kw}`];
-  for (const kw of YEL_DESC) if (d.includes(kw)) return ['yellow', `תיאור: ${kw}`];
+  for (const kw of RED_ELECTRONICS)      if (d.includes(kw)) return ['red', `אלקטרוניקה: ${kw}`];
+  for (const kw of RED_MEDICAL)          if (d.includes(kw)) return ['red', `רפואי: ${kw}`];
+  for (const kw of RED_FOOD)             if (d.includes(kw)) return ['red', `מזון: ${kw}`];
+  for (const kw of RED_ELECTRONIC_PARTS) if (d.includes(kw)) return ['red', `חלקי אלקטרוניקה: ${kw}`];
   return ['green', 'ללא התאמת סיכון'];
 }
 
@@ -383,9 +380,9 @@ async function runRouting() {
       yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } },
       green:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8E6C9' } },
     };
-    const labels = { red: '🔴 חשש גבוה', yellow: '🟡 חשש בינוני', green: '🟢 ללא חשש' };
+    const labels = { red: '🔴 דורש רישוי מיוחד', green: '🟢 ללא חשש' };
 
-    let redC = 0, yelC = 0, grnC = 0;
+    let redC = 0, grnC = 0;
     let contractorC = 0, internalC = 0;
     const totalRows = ws.rowCount - headerRowNum;
 
@@ -403,7 +400,6 @@ async function runRouting() {
       const [level, reason] = getRisk(description);
 
       if (level === 'red') redC++;
-      else if (level === 'yellow') yelC++;
       else grnC++;
 
       // ── לוגיקת ניתוב ──
@@ -411,7 +407,7 @@ async function runRouting() {
       // ירוק + LOW => קבלן.
       // ירוק + HV => לפי ההגדרה (checkbox).
       let route;
-      if (level === 'red' || level === 'yellow') {
+      if (level === 'red') {
         route = 'פנימי';
       } else if (valueCategory === 'LOW') {
         route = 'קבלן';
@@ -465,9 +461,8 @@ async function runRouting() {
     setProgress(100, 'הניתוב הושלם ✓');
 
     document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="num">${redC+yelC+grnC}</div><div class="lbl">סה"כ שורות</div></div>
-      <div class="stat-card c-red"><div class="num">${redC}</div><div class="lbl">🔴 חשש גבוה</div></div>
-      <div class="stat-card c-yellow"><div class="num">${yelC}</div><div class="lbl">🟡 חשש בינוני</div></div>
+      <div class="stat-card"><div class="num">${redC+grnC}</div><div class="lbl">סה"כ שורות</div></div>
+      <div class="stat-card c-red"><div class="num">${redC}</div><div class="lbl">🔴 דורש רישוי מיוחד</div></div>
       <div class="stat-card c-green"><div class="num">${grnC}</div><div class="lbl">🟢 ללא חשש</div></div>
       <div class="stat-card c-blue"><div class="num">${internalC}</div><div class="lbl">מנותב פנימי</div></div>
       <div class="stat-card c-blue"><div class="num">${contractorC}</div><div class="lbl">מנותב לקבלן</div></div>
