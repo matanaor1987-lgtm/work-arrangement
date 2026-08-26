@@ -210,10 +210,14 @@
       <input type="number" id="redToContractorPct" value="50" min="0" max="100" step="5" style="width:60px">
       <span>%</span>
     </div>
+    <div class="settings-row">
+      <label>מ-כמה שורות סיווג תיק נחשב מורכב (בנוסף לפרק תעריף)</label>
+      <input type="number" id="linesComplexThreshold" value="5" min="1" step="1" style="width:60px">
+    </div>
   </div>
 
   <div class="legend">
-    <div class="legend-item"><div class="dot dot-red"></div>אדום — פרק תעריף 84/85/30/90/01-24</div>
+    <div class="legend-item"><div class="dot dot-red"></div>אדום — פרק תעריף 84/85/30/90/01-24 או הרבה שורות סיווג</div>
     <div class="legend-item"><div class="dot dot-green"></div>ירוק — פשוט</div>
   </div>
 
@@ -246,13 +250,16 @@ const RED_CH2 = new Set([
   '15','16','17','18','19','20','21','22','23','24' // מזון III-IV (כולל משקאות/טבק)
 ]);
 
-function getRisk(hsCodesStr) {
+function getRisk(hsCodesStr, linesCount, linesThreshold) {
   const codes = String(hsCodesStr || '').split(',').map(c => c.trim()).filter(Boolean);
   for (const code of codes) {
     const ch2 = code.substring(0, 2);
     if (RED_CH2.has(ch2)) return ['red', `פרק תעריף ${ch2}`];
   }
-  return ['green', 'ללא פרק תעריף בסיכון'];
+  if (Number(linesCount) >= Number(linesThreshold)) {
+    return ['red', `${linesCount} שורות סיווג (סף: ${linesThreshold})`];
+  }
+  return ['green', 'ללא פרק תעריף בסיכון ומעט שורות'];
 }
 
 // hash דטרמיניסטי פשוט: אותו FILE_NO תמיד ייתן אותו מספר 0-99.
@@ -319,6 +326,7 @@ async function runRouting() {
 
   const hvToContractor = document.getElementById('hvToContractor').checked;
   const redToContractorPct = parseFloat(document.getElementById('redToContractorPct').value) || 0;
+  const linesComplexThreshold = parseFloat(document.getElementById('linesComplexThreshold').value) || 5;
 
   try {
     setProgress(10, 'קורא קובץ...');
@@ -381,7 +389,7 @@ async function runRouting() {
       yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } },
       green:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8E6C9' } },
     };
-    const labels = { red: '🔴 פרק תעריף מורכב', green: '🟢 ללא חשש' };
+    const labels = { red: '🔴 מורכב', green: '🟢 פשוט' };
 
     let redC = 0, grnC = 0;
     let contractorC = 0, internalC = 0;
@@ -397,9 +405,10 @@ async function runRouting() {
 
       const hsCodes = String(get('HS_CODES') || '');
       const valueCategory = String(get('VALUE_CATEGORY') || '').trim().toUpperCase();
+      const linesCount = Number(get('CLASSIFICATION_LINES')) || 0;
       const fileNo = String(get('FILE_NO') || rn);
 
-      const [level, reason] = getRisk(hsCodes);
+      const [level, reason] = getRisk(hsCodes, linesCount, linesComplexThreshold);
 
       if (level === 'red') redC++;
       else grnC++;
