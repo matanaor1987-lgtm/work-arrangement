@@ -360,7 +360,7 @@ async function runRouting() {
     const outWb = new ExcelJS.Workbook();
     const outWs = outWb.addWorksheet('ניתוב');
 
-    const HIDDEN_COLS = new Set(['HAS_STEP_1123','STATUS_DRAFT_WG','CLASSIFICATION_LINES','IMPORTER_NO','PERSONAL_IMPORTING']);
+    const HIDDEN_COLS = new Set(['HAS_STEP_1123','STATUS_DRAFT_WG','IMPORTER_NO','PERSONAL_IMPORTING']);
     // אינדקסים (1-based, כמו ב-ExcelJS) של העמודות המקוריות שכן יוצגו
     const keepIdx = [];
     for (let i = 1; i < headers.length; i++) {
