@@ -200,15 +200,7 @@
   </div>
 
   <div class="settings-box">
-    <h4>הגדרות תמחור קבלן (ניתן לעריכה)</h4>
-    <div class="settings-row">
-      <label>מחיר לתיק HV (₪)</label>
-      <input type="number" id="priceHV" value="6.75" step="0.01">
-    </div>
-    <div class="settings-row">
-      <label>מחיר לתיק LOW (₪)</label>
-      <input type="number" id="priceLOW" value="4" step="0.01">
-    </div>
+    <h4>הגדרת ניתוב</h4>
     <div class="settings-row">
       <label>גם תיקי HV בסיכון ירוק ילכו לקבלן</label>
       <input type="checkbox" id="hvToContractor" checked>
@@ -328,8 +320,6 @@ async function runRouting() {
   document.getElementById('progressWrap').classList.add('show');
   document.getElementById('runBtn').disabled = true;
 
-  const priceHV = parseFloat(document.getElementById('priceHV').value) || 6.75;
-  const priceLOW = parseFloat(document.getElementById('priceLOW').value) || 4;
   const hvToContractor = document.getElementById('hvToContractor').checked;
 
   try {
@@ -397,7 +387,6 @@ async function runRouting() {
 
     let redC = 0, yelC = 0, grnC = 0;
     let contractorC = 0, internalC = 0;
-    let contractorCost = 0;
     const totalRows = ws.rowCount - headerRowNum;
 
     ws.eachRow((row, rn) => {
@@ -421,20 +410,18 @@ async function runRouting() {
       // אדום/צהוב => תמיד פנימי.
       // ירוק + LOW => קבלן.
       // ירוק + HV => לפי ההגדרה (checkbox).
-      let route, cost = 0;
+      let route;
       if (level === 'red' || level === 'yellow') {
         route = 'פנימי';
       } else if (valueCategory === 'LOW') {
         route = 'קבלן';
-        cost = priceLOW;
       } else if (valueCategory === 'HV' && hvToContractor) {
         route = 'קבלן';
-        cost = priceHV;
       } else {
         route = 'פנימי';
       }
 
-      if (route === 'קבלן') { contractorC++; contractorCost += cost; }
+      if (route === 'קבלן') { contractorC++; }
       else { internalC++; }
 
       const rowVals = keepIdx.map(i => row.getCell(i).value);
@@ -484,7 +471,6 @@ async function runRouting() {
       <div class="stat-card c-green"><div class="num">${grnC}</div><div class="lbl">🟢 ללא חשש</div></div>
       <div class="stat-card c-blue"><div class="num">${internalC}</div><div class="lbl">מנותב פנימי</div></div>
       <div class="stat-card c-blue"><div class="num">${contractorC}</div><div class="lbl">מנותב לקבלן</div></div>
-      <div class="stat-card c-money"><div class="num">₪${contractorCost.toFixed(2)}</div><div class="lbl">עלות קבלן צפויה</div></div>
     `;
 
     document.getElementById('resultsBox').classList.add('show');
