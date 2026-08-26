@@ -205,11 +205,16 @@
       <label>גם תיקי HV בסיכון ירוק ילכו לקבלן</label>
       <input type="checkbox" id="hvToContractor" checked>
     </div>
+    <div class="settings-row">
+      <label>% מהתיקים המורכבים (אדום) שיועברו לקבלן</label>
+      <input type="number" id="redToContractorPct" value="50" min="0" max="100" step="5" style="width:60px">
+      <span>%</span>
+    </div>
   </div>
 
   <div class="legend">
-    <div class="legend-item"><div class="dot dot-red"></div>אדום — פרק תעריף 84/85/30/90/01-24, תמיד פנימי</div>
-    <div class="legend-item"><div class="dot dot-green"></div>ירוק — מועמד לקבלן</div>
+    <div class="legend-item"><div class="dot dot-red"></div>אדום — פרק תעריף 84/85/30/90/01-24</div>
+    <div class="legend-item"><div class="dot dot-green"></div>ירוק — פשוט</div>
   </div>
 
   <button class="run-btn" id="runBtn" onclick="runRouting()" disabled>הפעל ניתוב</button>
@@ -248,6 +253,17 @@ function getRisk(hsCodesStr) {
     if (RED_CH2.has(ch2)) return ['red', `פרק תעריף ${ch2}`];
   }
   return ['green', 'ללא פרק תעריף בסיכון'];
+}
+
+// hash דטרמיניסטי פשוט: אותו FILE_NO תמיד ייתן אותו מספר 0-99.
+// כך שינוי ה-% משפיע על הכמות אבל לא "מערבב" מחדש כל תיק בכל הרצה.
+function deterministicPct(key) {
+  let h = 0;
+  const s = String(key);
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h % 100;
 }
 
 // ── קבצים ──────────────────────────────────────────────────────────────────────
@@ -302,6 +318,7 @@ async function runRouting() {
   document.getElementById('runBtn').disabled = true;
 
   const hvToContractor = document.getElementById('hvToContractor').checked;
+  const redToContractorPct = parseFloat(document.getElementById('redToContractorPct').value) || 0;
 
   try {
     setProgress(10, 'קורא קובץ...');
@@ -380,6 +397,7 @@ async function runRouting() {
 
       const hsCodes = String(get('HS_CODES') || '');
       const valueCategory = String(get('VALUE_CATEGORY') || '').trim().toUpperCase();
+      const fileNo = String(get('FILE_NO') || rn);
 
       const [level, reason] = getRisk(hsCodes);
 
@@ -387,12 +405,13 @@ async function runRouting() {
       else grnC++;
 
       // ── לוגיקת ניתוב ──
-      // אדום/צהוב => תמיד פנימי.
-      // ירוק + LOW => קבלן.
-      // ירוק + HV => לפי ההגדרה (checkbox).
+      // אדום: X% (מוגדר ע"י המשתמש) הולך לקבלן, השאר פנימי — לא "תמיד פנימי".
+      // הבחירה נקבעת דטרמיניסטית לפי FILE_NO (לא רנדומלי חדש בכל הרצה),
+      // כדי שאותו קובץ ייתן תמיד את אותה תוצאה.
+      // ירוק + LOW => קבלן. ירוק + HV => לפי ה-checkbox.
       let route;
       if (level === 'red') {
-        route = 'פנימי';
+        route = (deterministicPct(fileNo) < redToContractorPct) ? 'קבלן' : 'פנימי';
       } else if (valueCategory === 'LOW') {
         route = 'קבלן';
       } else if (valueCategory === 'HV' && hvToContractor) {
