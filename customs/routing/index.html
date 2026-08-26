@@ -187,7 +187,7 @@
     <input type="file" id="fileInput" accept=".xlsx,.xls">
     <div class="upload-icon">📂</div>
     <h3>גרור את קובץ הדוח לכאן</h3>
-    <p>או לחץ לבחירת קובץ — .xlsx / .xls (הדוח עם FLIGHT / DESCRIPTION / VALUE_CATEGORY וכו')</p>
+    <p>או לחץ לבחירת קובץ — .xlsx / .xls (הדוח עם FLIGHT / HS_CODES / VALUE_CATEGORY וכו')</p>
   </div>
 
   <div class="file-info" id="fileInfo">
@@ -208,7 +208,7 @@
   </div>
 
   <div class="legend">
-    <div class="legend-item"><div class="dot dot-red"></div>אדום — אלקטרוניקה/רפואי/מזון (לפי תיאור), תמיד פנימי</div>
+    <div class="legend-item"><div class="dot dot-red"></div>אדום — פרק תעריף 84/85/30/90/01-24, תמיד פנימי</div>
     <div class="legend-item"><div class="dot dot-green"></div>ירוק — מועמד לקבלן</div>
   </div>
 
@@ -232,34 +232,22 @@
 let fileBuffer = null;
 let outputBlob = null;
 
-// ── סיווג סיכון — מורכבות תיק לפי תיאור (קוד מכס עדיין לא קיים בשלב הזה) ───────
-const RED_ELECTRONICS = [
-  'ELECTRONIC','ELECTRONICS','CHARGER','ADAPTER','CABLE','USB','BATTERY','POWER BANK',
-  'ROUTER','MODEM','SPEAKER','HEADPHONE','EARBUD','EARPHONE','LAPTOP','COMPUTER','TABLET',
-  'PHONE','SMARTPHONE','CAMERA','DRONE','SMARTWATCH','MONITOR',' TV ','TELEVISION',
-  'PROCESSOR','TRANSFORMER',' LED ','LIGHT BULB','CIRCUIT BOARD','PCB','RESISTOR',
-  'CAPACITOR','TRANSISTOR','SEMICONDUCTOR','CHIP','MODULE','SENSOR','CONNECTOR',
-  'WIRE HARNESS','ANTENNA','DISPLAY PANEL','LCD','LED PANEL','ELECTRONIC COMPONENT',
-  'ELECTRONIC PART'
-];
+// ── סיווג סיכון — לפי פרק תעריף רשמי (ספר המכס), על WG_PRAT_MECHES ────────────
+// מקור: AllCustomsBookDataPDF - תוכן העניינים הרשמי
+const RED_CH2 = new Set([
+  '84','85',   // אלקטרוניקה: מכונות/מכשירים מיכניים וחשמליים, כולל חלקיהם
+  '30','90',   // רפואי: מוצרים פרמצבטיים; מכשירים אופטיים/רפואיים/כירורגיים
+  '01','02','03','04','05','06','07','08','09','10','11','12','13','14', // מזון I-II
+  '15','16','17','18','19','20','21','22','23','24' // מזון III-IV (כולל משקאות/טבק)
+]);
 
-const RED_MEDICAL = [
-  'MEDICAL','MEDICINE','MEDICATION','PHARMACEUTICAL','TABLET','CAPSULE','SYRUP',
-  'INJECTION','VACCINE','ANTIBIOTIC','THERMOMETER','STETHOSCOPE','SYRINGE','BANDAGE',
-  'SURGICAL','DIAGNOSTIC','TEST KIT','MASK','GLOVES','SUPPLEMENT','VITAMIN'
-];
-
-const RED_FOOD = [
-  'FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','SPICE','BEVERAGE','DRINK',
-  'SAUCE','HONEY','CEREAL','NUTRITIONAL','DIETARY','HERBAL'
-];
-
-function getRisk(desc) {
-  const d = String(desc || '').toUpperCase();
-  for (const kw of RED_ELECTRONICS) if (d.includes(kw)) return ['red', `אלקטרוניקה: ${kw}`];
-  for (const kw of RED_MEDICAL)     if (d.includes(kw)) return ['red', `רפואי: ${kw}`];
-  for (const kw of RED_FOOD)        if (d.includes(kw)) return ['red', `מזון: ${kw}`];
-  return ['green', 'ללא התאמת סיכון'];
+function getRisk(hsCodesStr) {
+  const codes = String(hsCodesStr || '').split(',').map(c => c.trim()).filter(Boolean);
+  for (const code of codes) {
+    const ch2 = code.substring(0, 2);
+    if (RED_CH2.has(ch2)) return ['red', `פרק תעריף ${ch2}`];
+  }
+  return ['green', 'ללא פרק תעריף בסיכון'];
 }
 
 // ── קבצים ──────────────────────────────────────────────────────────────────────
@@ -376,7 +364,7 @@ async function runRouting() {
       yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } },
       green:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC8E6C9' } },
     };
-    const labels = { red: '🔴 אלקטרוניקה/רפואי/מזון', green: '🟢 ללא חשש' };
+    const labels = { red: '🔴 פרק תעריף מורכב', green: '🟢 ללא חשש' };
 
     let redC = 0, grnC = 0;
     let contractorC = 0, internalC = 0;
@@ -390,10 +378,10 @@ async function runRouting() {
         return idx > 0 ? row.getCell(idx).value : '';
       };
 
-      const description = String(get('DESCRIPTION') || '');
+      const hsCodes = String(get('HS_CODES') || '');
       const valueCategory = String(get('VALUE_CATEGORY') || '').trim().toUpperCase();
 
-      const [level, reason] = getRisk(description);
+      const [level, reason] = getRisk(hsCodes);
 
       if (level === 'red') redC++;
       else grnC++;
@@ -439,7 +427,7 @@ async function runRouting() {
     newHeaders.forEach((h, i) => {
       const col = outWs.getColumn(i + 1);
       const hs = String(h||'');
-      if (hs === 'DESCRIPTION') col.width = 40;
+      if (hs === 'HS_CODES') col.width = 30;
       else if (hs === 'SHIPPER') col.width = 24;
       else if (hs === 'סיבה') col.width = 26;
       else if (hs === 'רמת_סיכון') col.width = 16;
