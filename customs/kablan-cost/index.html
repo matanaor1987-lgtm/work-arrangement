@@ -282,11 +282,15 @@
 </div>
 
 <script>
-const LOCK_PASSWORD = 'DHL 123';
+const LOCK_PASSWORD = 'dhl123'; // השוואה מתעלמת מרווחים ומגודל אותיות
+
+function normalizePw(s) {
+  return String(s || '').trim().toLowerCase().replace(/\s+/g, '');
+}
 
 function checkPassword() {
   const input = document.getElementById('lockInput');
-  if (input.value === LOCK_PASSWORD) {
+  if (normalizePw(input.value) === LOCK_PASSWORD) {
     sessionStorage.setItem('kablanCostUnlocked', '1');
     document.getElementById('lockOverlay').classList.add('hidden');
     document.getElementById('appRoot').classList.remove('hidden');
