@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHL — חישוב עלויות קבלן</title>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<style>
+  :root {
+    --red: #D40511;
+    --yellow: #FFCC00;
+    --dark: #1A1A1A;
+    --light: #F5F5F5;
+    --border: #DDD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: var(--light); color: var(--dark); }
+
+  .topbar {
+    background: var(--red);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 24px;
+    height: 52px;
+  }
+  .topbar-logo { font-size: 22px; font-weight: 900; letter-spacing: 1px; }
+  .topbar-title { font-size: 15px; font-weight: 600; opacity: .9; }
+
+  .main { max-width: 900px; margin: 32px auto; padding: 0 16px 60px; }
+
+  .upload-zone {
+    border: 2.5px dashed var(--border);
+    border-radius: 10px;
+    background: white;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--red); background: #FFF5F5; }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 40px; margin-bottom: 10px; }
+  .upload-zone h3 { font-size: 17px; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: #777; }
+
+  .file-info {
+    display: none;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .file-info.show { display: flex; }
+  .file-icon { font-size: 28px; }
+  .file-details { flex: 1; }
+  .file-name { font-weight: 700; font-size: 14px; }
+  .file-meta { font-size: 12px; color: #777; margin-top: 2px; }
+  .remove-file { background: none; border: none; font-size: 18px; cursor: pointer; color: #999; }
+  .remove-file:hover { color: var(--red); }
+
+  .settings-box {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  .settings-box h4 { font-size: 13px; margin-bottom: 8px; }
+  .settings-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .settings-row label { flex: 1; color: #444; }
+  .settings-row input[type="number"] { width: 80px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; text-align: center; }
+  .settings-note { font-size: 11px; color: #999; margin-top: 4px; }
+
+  .run-btn {
+    display: block;
+    width: 100%;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 18px;
+    transition: opacity .15s;
+  }
+  .run-btn:hover:not(:disabled) { opacity: .88; }
+  .run-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .progress-wrap { display: none; margin-top: 16px; }
+  .progress-wrap.show { display: block; }
+  .progress-label { font-size: 13px; color: #444; margin-bottom: 6px; }
+  .progress-bar { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .progress-fill { background: var(--red); height: 100%; width: 0; transition: width .3s; }
+
+  .results-box { display: none; margin-top: 20px; }
+  .results-box.show { display: block; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-card .num { font-size: 22px; font-weight: 900; line-height: 1; }
+  .stat-card .lbl { font-size: 12px; color: #777; margin-top: 4px; }
+  .stat-card.c-blue .num { color: #1E88E5; }
+  .stat-card.c-money .num { color: #6A1B9A; }
+  .stat-card.c-total { border-color: var(--red); }
+  .stat-card.c-total .num { color: var(--red); }
+
+  table.breakdown {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  table.breakdown th, table.breakdown td {
+    padding: 9px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  table.breakdown th {
+    background: var(--dark);
+    color: white;
+    font-size: 12px;
+  }
+  table.breakdown tr:last-child td { border-bottom: none; }
+  table.breakdown tr.grand-row td { font-weight: 800; background: #FAFAFA; }
+  table.breakdown td.name-cell { text-align: right; font-weight: 700; }
+  table.breakdown td.money-cell { font-weight: 700; color: #6A1B9A; }
+
+  .download-btn {
+    display: block;
+    width: 100%;
+    background: var(--dark);
+    color: var(--yellow);
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .download-btn:hover { opacity: .85; }
+
+  .error-msg {
+    display: none;
+    background: #FFEBEE;
+    border: 1.5px solid #EF9A9A;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #C62828;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .error-msg.show { display: block; }
+
+  /* ── שער סיסמה ── */
+  .lock-overlay {
+    position: fixed; inset: 0; background: var(--dark);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 16px;
+  }
+  .lock-overlay.hidden { display: none; }
+  .lock-box {
+    background: white; border-radius: 14px; padding: 36px 30px;
+    width: 100%; max-width: 340px; text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  .lock-icon { font-size: 40px; margin-bottom: 10px; }
+  .lock-box h3 { font-size: 17px; margin-bottom: 6px; }
+  .lock-box p { font-size: 13px; color: #777; margin-bottom: 18px; }
+  .lock-box input {
+    width: 100%; padding: 12px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 15px; text-align: center; margin-bottom: 10px;
+  }
+  .lock-box button {
+    width: 100%; background: var(--red); color: white; border: none;
+    border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .lock-box button:hover { opacity: .88; }
+  .lock-error { color: #C62828; font-size: 12px; margin-top: 8px; display: none; }
+  .lock-error.show { display: block; }
+  #appRoot.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h3>כלי מוגן — חישוב עלויות קבלן</h3>
+    <p>מידע רגיש — הזן סיסמה להמשך</p>
+    <input type="password" id="lockInput" placeholder="סיסמה" autocomplete="off">
+    <button onclick="checkPassword()">כניסה</button>
+    <div class="lock-error" id="lockError">סיסמה שגויה, נסה שוב</div>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
+
+<div class="topbar">
+  <span class="topbar-logo">DHL</span>
+  <span class="topbar-title">חישוב עלויות קבלן 🔒</span>
+</div>
+
+<div class="main">
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <div class="upload-icon">📂</div>
+    <h3>גרור את דוח הקבלן לכאן</h3>
+    <p>או לחץ לבחירת קובץ — .xlsx / .xls (עמודות CLASSIFIER ו-FOB USD)</p>
+  </div>
+
+  <div class="file-info" id="fileInfo">
+    <span class="file-icon">📊</span>
+    <div class="file-details">
+      <div class="file-name" id="fileName"></div>
+      <div class="file-meta" id="fileMeta"></div>
+    </div>
+    <button class="remove-file" onclick="clearFile()">✕</button>
+  </div>
+
+  <div class="settings-box">
+    <h4>תעריפים</h4>
+    <div class="settings-row">
+      <label>תעריף לתיק מעל סף השווי (₪)</label>
+      <input type="number" id="rateHigh" value="6.75" min="0" step="0.05">
+    </div>
+    <div class="settings-row">
+      <label>תעריף לתיק עד סף השווי (₪)</label>
+      <input type="number" id="rateLow" value="4" min="0" step="0.05">
+    </div>
+    <div class="settings-row">
+      <label>סף שווי (FOB USD)</label>
+      <input type="number" id="threshold" value="1000" min="0" step="10">
+    </div>
+    <div class="settings-note">תיק בשווי מעל הסף → תעריף גבוה. תיק בשווי הסף ומטה → תעריף נמוך.</div>
+    <div class="settings-note">כמה שורות באותו HAWB + מסווג בפער של עד 15 דקות ביניהן נחשבות נגיעה אחת (תשלום פעם אחת). פער של מעל 15 דקות = נגיעה נפרדת (תשלום נוסף).</div>
+    <div class="settings-note">שורות שסטטוס שלהן אינו Close (בטיפול / בוטל) מנוקות אוטומטית ולא נכללות בחישוב או בדוח.</div>
+  </div>
+
+  <button class="run-btn" id="runBtn" onclick="runCalc()" disabled>חשב עלות</button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label" id="progressLabel">מעבד...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results-box" id="resultsBox">
+    <div class="stats-grid" id="statsGrid"></div>
+    <table class="breakdown" id="breakdownTable"></table>
+    <button class="download-btn" id="downloadBtn">⬇ הורד דוח עלויות מפורט (.xlsx)</button>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+const LOCK_PASSWORD = 'DHL 123';
+
+function checkPassword() {
+  const input = document.getElementById('lockInput');
+  if (input.value === LOCK_PASSWORD) {
+    sessionStorage.setItem('kablanCostUnlocked', '1');
+    document.getElementById('lockOverlay').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+  } else {
+    document.getElementById('lockError').classList.add('show');
+    input.value = '';
+    input.focus();
+  }
+}
+
+document.getElementById('lockInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+if (sessionStorage.getItem('kablanCostUnlocked') === '1') {
+  document.getElementById('lockOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+} else {
+  document.getElementById('lockInput').focus();
+}
+
+let fileBuffer = null;
+let outputBlob = null;
+
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = (file.size/1024).toFixed(0) + ' KB';
+  document.getElementById('fileInfo').classList.add('show');
+  document.getElementById('runBtn').disabled = false;
+  const reader = new FileReader();
+  reader.onload = e => { fileBuffer = e.target.result; };
+  reader.readAsArrayBuffer(file);
+}
+
+function clearFile() {
+  fileBuffer = outputBlob = null;
+  fileInput.value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('resultsBox').classList.remove('show');
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('errorMsg').classList.remove('show');
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function cellText(v) {
+  if (v == null) return '';
+  if (typeof v === 'object') {
+    if (v.richText) return v.richText.map(rt => rt.text).join('');
+    if (v.text) return String(v.text);
+    if (v.result !== undefined) return String(v.result);
+  }
+  return String(v);
+}
+
+function fmtMoney(n) {
+  return n.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ממיר "DD/MM/YYYY" + "HH:MM:SS" לחותמת זמן (ms). מחזיר null אם לא ניתן לפרסר.
+function parseDateTime(dateStr, timeStr) {
+  if (!dateStr) return null;
+  const dm = dateStr.trim().split('/');
+  if (dm.length !== 3) return null;
+  const [d, m, y] = dm.map(Number);
+  if (!d || !m || !y) return null;
+  const tm = (timeStr || '00:00:00').trim().split(':').map(Number);
+  const [hh, mm, ss] = [tm[0] || 0, tm[1] || 0, tm[2] || 0];
+  return new Date(y, m - 1, d, hh, mm, ss).getTime();
+}
+
+async function runCalc() {
+  if (!fileBuffer) return;
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('resultsBox').classList.remove('show');
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('runBtn').disabled = true;
+
+  const rateHigh = parseFloat(document.getElementById('rateHigh').value) || 0;
+  const rateLow = parseFloat(document.getElementById('rateLow').value) || 0;
+  const threshold = parseFloat(document.getElementById('threshold').value) || 0;
+
+  try {
+    setProgress(10, 'קורא קובץ...');
+    await new Promise(r => setTimeout(r, 30));
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(fileBuffer);
+
+    setProgress(20, 'מאתר כותרות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    // הדוח עלול לכלול גיליון פיבוט/סיכום לפני גיליון הנתונים עצמו (למשל Sheet2 לפני Sheet1),
+    // לכן סורקים את כל הגיליונות ומאתרים את זה שמכיל CLASSIFIER + FOB.
+    let ws = null;
+    let headerRowNum = -1;
+    let headers = [];
+    for (const sheet of wb.worksheets) {
+      let found = -1, hdrs = [];
+      sheet.eachRow((row, rn) => {
+        if (found !== -1) return;
+        const vals = row.values.map(v => cellText(v));
+        if (vals.includes('CLASSIFIER') && vals.some(v => v.toUpperCase().includes('FOB'))) {
+          found = rn;
+          hdrs = vals; // 1-based, index 0 empty
+        }
+      });
+      if (found !== -1) { ws = sheet; headerRowNum = found; headers = hdrs; break; }
+    }
+
+    if (headerRowNum === -1) {
+      showError('לא נמצאה שורת כותרות. ודא שקיימות עמודות CLASSIFIER ו-FOB USD בדוח.');
+      document.getElementById('progressWrap').classList.remove('show');
+      document.getElementById('runBtn').disabled = false;
+      return;
+    }
+
+    const ci = name => headers.indexOf(name);
+    const classifierIdx = ci('CLASSIFIER');
+    let fobIdx = ci('FOB USD');
+    if (fobIdx <= 0) fobIdx = headers.findIndex(h => h.toUpperCase().includes('FOB'));
+    const hawbIdx = ci('HAWB');
+    const createDateIdx = ci('CREATE DATE');
+    const createTimeIdx = ci('CREATE TIME');
+    const statusIdx = ci('STATUS');
+
+    setProgress(30, 'קורא שורות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    // ── שלב 1: קריאת כל השורות הגולמיות, וסינון שורות לא רלוונטיות (סטטוס שאינו Close) ──
+    // תיק שעדיין פתוח/ממתין (Active/Pending) הוא עבודה שלא הושלמה, ותיק שבוטל (Cancel)
+    // לא אמור להיות משולם עליו — לכן שניהם מנוקים לפני החישוב והדוח שיוצא לקבלן.
+    const rawRows = [];
+    let irrelevantCount = 0;
+    const totalRows = ws.rowCount - headerRowNum;
+
+    ws.eachRow((row, rn) => {
+      if (rn <= headerRowNum) return;
+
+      const status = statusIdx > 0 ? cellText(row.getCell(statusIdx).value).trim() : 'Close';
+      if (status.toLowerCase() !== 'close') { irrelevantCount++; return; }
+
+      const classifier = cellText(row.getCell(classifierIdx > 0 ? classifierIdx : 1).value).trim() || '(לא ידוע)';
+      const fob = Number(cellText(row.getCell(fobIdx > 0 ? fobIdx : 1).value)) || 0;
+      const hawb = hawbIdx > 0 ? cellText(row.getCell(hawbIdx).value).trim() : String(rn);
+      const ts = parseDateTime(
+        createDateIdx > 0 ? cellText(row.getCell(createDateIdx).value) : '',
+        createTimeIdx > 0 ? cellText(row.getCell(createTimeIdx).value) : ''
+      );
+
+      rawRows.push({ hawb, classifier, fob, ts });
+
+      if (rn % 1000 === 0) {
+        const pct = 30 + Math.round((rn - headerRowNum) / totalRows * 25);
+        setProgress(pct, `קורא שורה ${rn - headerRowNum} מתוך ${totalRows}...`);
+      }
+    });
+
+    setProgress(58, 'מאחד נגיעות חוזרות באותו תיק...');
+    await new Promise(r => setTimeout(r, 20));
+
+    // ── שלב 2: איחוד נגיעות — לפי HAWB+מסווג, נגיעות בפער ≤15 דק' נחשבות נגיעה אחת ──
+    const TOUCH_WINDOW_MS = 15 * 60 * 1000;
+    const byKey = {};
+    rawRows.forEach(r => {
+      const key = r.hawb + '|' + r.classifier;
+      if (!byKey[key]) byKey[key] = [];
+      byKey[key].push(r);
+    });
+
+    const touches = []; // כל נגיעה חייבת = תשלום אחד
+    Object.values(byKey).forEach(group => {
+      group.sort((a, b) => (a.ts ?? 0) - (b.ts ?? 0));
+      let current = null;
+      group.forEach(r => {
+        if (!current || r.ts == null || current.lastTs == null || (r.ts - current.lastTs) > TOUCH_WINDOW_MS) {
+          current = { hawb: r.hawb, classifier: r.classifier, fob: r.fob, rowCount: 1, lastTs: r.ts };
+          touches.push(current);
+        } else {
+          current.rowCount++;
+          current.lastTs = r.ts;
+        }
+      });
+    });
+
+    setProgress(70, 'מחשב עלויות...');
+    await new Promise(r => setTimeout(r, 20));
+
+    const byClassifier = {}; // { name: { countHigh, countLow, totalHigh, totalLow } }
+    const detailRows = [];
+
+    touches.forEach(t => {
+      const isHigh = t.fob > threshold;
+      const rate = isHigh ? rateHigh : rateLow;
+
+      if (!byClassifier[t.classifier]) {
+        byClassifier[t.classifier] = { countHigh: 0, countLow: 0, totalHigh: 0, totalLow: 0 };
+      }
+      const c = byClassifier[t.classifier];
+      if (isHigh) { c.countHigh++; c.totalHigh += rateHigh; }
+      else { c.countLow++; c.totalLow += rateLow; }
+
+      detailRows.push({
+        hawb: t.hawb,
+        classifier: t.classifier,
+        fob: t.fob,
+        isHigh,
+        rate,
+        rowCount: t.rowCount
+      });
+    });
+
+    setProgress(88, 'בונה דוח...');
+    await new Promise(r => setTimeout(r, 20));
+
+    // ── בניית קובץ פלט ──
+    const outWb = new ExcelJS.Workbook();
+
+    const sumWs = outWb.addWorksheet('סיכום קבלנים');
+    sumWs.addRow(['מסווג', `תיקים מעל $${threshold}`, `תיקים עד $${threshold}`, 'סה"כ תיקים', `עלות תיקים גבוהים (₪)`, `עלות תיקים נמוכים (₪)`, 'סה"כ לתשלום (₪)']);
+    let grandCases = 0, grandHigh = 0, grandLow = 0, grandTotal = 0;
+    const names = Object.keys(byClassifier).sort((a,b) => (byClassifier[b].totalHigh+byClassifier[b].totalLow) - (byClassifier[a].totalHigh+byClassifier[a].totalLow));
+    names.forEach(name => {
+      const c = byClassifier[name];
+      const total = c.totalHigh + c.totalLow;
+      sumWs.addRow([name, c.countHigh, c.countLow, c.countHigh + c.countLow, c.totalHigh, c.totalLow, total]);
+      grandCases += c.countHigh + c.countLow;
+      grandHigh += c.totalHigh;
+      grandLow += c.totalLow;
+      grandTotal += total;
+    });
+    sumWs.addRow(['סה"כ', names.reduce((s,n)=>s+byClassifier[n].countHigh,0), names.reduce((s,n)=>s+byClassifier[n].countLow,0), grandCases, grandHigh, grandLow, grandTotal]);
+
+    sumWs.getRow(1).eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    const lastRow = sumWs.getRow(sumWs.rowCount);
+    lastRow.font = { name: 'Arial', bold: true, size: 10 };
+    lastRow.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } }; });
+    sumWs.columns.forEach(col => col.width = 20);
+    sumWs.views = [{ state: 'frozen', ySplit: 1, rtl: true }];
+
+    const detWs = outWb.addWorksheet('דוח לקבלן');
+    detWs.addRow(['HAWB', 'מסווג', 'FOB USD', 'קטגוריה', 'תעריף (₪)', 'שורות דוח שאוחדו לנגיעה זו']);
+    detailRows.forEach(d => {
+      detWs.addRow([d.hawb, d.classifier, d.fob, d.isHigh ? `מעל $${threshold}` : `עד $${threshold}`, d.rate, d.rowCount]);
+    });
+    detWs.getRow(1).eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+      cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    detWs.columns.forEach(col => col.width = 16);
+    detWs.views = [{ state: 'frozen', ySplit: 1, rtl: true }];
+
+    setProgress(96, 'שומר קובץ...');
+    await new Promise(r => setTimeout(r, 20));
+
+    const buf = await outWb.xlsx.writeBuffer();
+    outputBlob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    setProgress(100, 'החישוב הושלם ✓');
+
+    const mergedAway = rawRows.length - grandCases;
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="num">${grandCases}</div><div class="lbl">נגיעות לתשלום</div></div>
+      <div class="stat-card"><div class="num">${irrelevantCount}</div><div class="lbl">שורות לא רלוונטיות שהוסרו (לא Close)</div></div>
+      <div class="stat-card c-blue"><div class="num">${mergedAway}</div><div class="lbl">שורות שאוחדו (≤15 דק')</div></div>
+      <div class="stat-card c-money"><div class="num">₪${fmtMoney(grandHigh+grandLow)}</div><div class="lbl">סה"כ לתשלום</div></div>
+    `;
+
+    let tableHtml = `<tr><th>מסווג</th><th>תיקים מעל $${threshold}</th><th>תיקים עד $${threshold}</th><th>סה"כ תיקים</th><th>סה"כ לתשלום (₪)</th></tr>`;
+    names.forEach(name => {
+      const c = byClassifier[name];
+      const total = c.totalHigh + c.totalLow;
+      tableHtml += `<tr><td class="name-cell">${name}</td><td>${c.countHigh}</td><td>${c.countLow}</td><td>${c.countHigh+c.countLow}</td><td class="money-cell">₪${fmtMoney(total)}</td></tr>`;
+    });
+    tableHtml += `<tr class="grand-row"><td class="name-cell">סה"כ</td><td>${grandCases > 0 ? names.reduce((s,n)=>s+byClassifier[n].countHigh,0) : 0}</td><td>${names.reduce((s,n)=>s+byClassifier[n].countLow,0)}</td><td>${grandCases}</td><td class="money-cell">₪${fmtMoney(grandTotal)}</td></tr>`;
+    document.getElementById('breakdownTable').innerHTML = tableHtml;
+
+    document.getElementById('resultsBox').classList.add('show');
+    document.getElementById('runBtn').disabled = false;
+
+    document.getElementById('downloadBtn').onclick = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(outputBlob);
+      a.download = 'עלויות_קבלן.xlsx';
+      a.click();
+    };
+
+  } catch(err) {
+    showError('שגיאה: ' + err.message);
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
