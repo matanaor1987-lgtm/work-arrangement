@@ -259,7 +259,6 @@
     </div>
     <div class="settings-note">תיק בשווי מעל הסף → תעריף גבוה. תיק בשווי הסף ומטה → תעריף נמוך.</div>
     <div class="settings-note">כמה שורות באותו HAWB + מסווג בפער של עד 15 דקות ביניהן נחשבות נגיעה אחת (תשלום פעם אחת). פער של מעל 15 דקות = נגיעה נפרדת (תשלום נוסף).</div>
-    <div class="settings-note">שורות שסטטוס שלהן אינו Close (בטיפול / בוטל) מנוקות אוטומטית ולא נכללות בחישוב או בדוח.</div>
   </div>
 
   <button class="run-btn" id="runBtn" onclick="runCalc()" disabled>חשב עלות</button>
@@ -437,23 +436,18 @@ async function runCalc() {
     const hawbIdx = ci('HAWB');
     const createDateIdx = ci('CREATE DATE');
     const createTimeIdx = ci('CREATE TIME');
-    const statusIdx = ci('STATUS');
 
     setProgress(30, 'קורא שורות...');
     await new Promise(r => setTimeout(r, 20));
 
-    // ── שלב 1: קריאת כל השורות הגולמיות, וסינון שורות לא רלוונטיות (סטטוס שאינו Close) ──
-    // תיק שעדיין פתוח/ממתין (Active/Pending) הוא עבודה שלא הושלמה, ותיק שבוטל (Cancel)
-    // לא אמור להיות משולם עליו — לכן שניהם מנוקים לפני החישוב והדוח שיוצא לקבלן.
+    // ── שלב 1: קריאת כל השורות הגולמיות ──
+    // כל שורה נחשבת נגיעה בתיק, ללא קשר לסטטוס (Close/Active/Pending/Cancel) —
+    // גם תיק שלא נסגר סופית מייצג עבודה שהמסווג ביצע ולכן משולם עליו.
     const rawRows = [];
-    let irrelevantCount = 0;
     const totalRows = ws.rowCount - headerRowNum;
 
     ws.eachRow((row, rn) => {
       if (rn <= headerRowNum) return;
-
-      const status = statusIdx > 0 ? cellText(row.getCell(statusIdx).value).trim() : 'Close';
-      if (status.toLowerCase() !== 'close') { irrelevantCount++; return; }
 
       const classifier = cellText(row.getCell(classifierIdx > 0 ? classifierIdx : 1).value).trim() || '(לא ידוע)';
       const fob = Number(cellText(row.getCell(fobIdx > 0 ? fobIdx : 1).value)) || 0;
@@ -581,7 +575,7 @@ async function runCalc() {
     const mergedAway = rawRows.length - grandCases;
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="num">${grandCases}</div><div class="lbl">נגיעות לתשלום</div></div>
-      <div class="stat-card"><div class="num">${irrelevantCount}</div><div class="lbl">שורות לא רלוונטיות שהוסרו (לא Close)</div></div>
+      <div class="stat-card"><div class="num">${rawRows.length}</div><div class="lbl">שורות גולמיות בדוח</div></div>
       <div class="stat-card c-blue"><div class="num">${mergedAway}</div><div class="lbl">שורות שאוחדו (≤15 דק')</div></div>
       <div class="stat-card c-money"><div class="num">₪${fmtMoney(grandHigh+grandLow)}</div><div class="lbl">סה"כ לתשלום</div></div>
     `;
