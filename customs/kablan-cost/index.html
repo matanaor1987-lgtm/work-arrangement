@@ -456,8 +456,9 @@ async function runCalc() {
         createDateIdx > 0 ? cellText(row.getCell(createDateIdx).value) : '',
         createTimeIdx > 0 ? cellText(row.getCell(createTimeIdx).value) : ''
       );
+      const originalValues = row.values.slice(1); // מסיר את התא הריק המוביל של ExcelJS (אינדקס 0)
 
-      rawRows.push({ hawb, classifier, fob, ts });
+      rawRows.push({ hawb, classifier, fob, ts, originalValues });
 
       if (rn % 1000 === 0) {
         const pct = 30 + Math.round((rn - headerRowNum) / totalRows * 25);
@@ -477,13 +478,13 @@ async function runCalc() {
       byKey[key].push(r);
     });
 
-    const touches = []; // כל נגיעה חייבת = תשלום אחד
+    const touches = []; // כל נגיעה חייבת = תשלום אחד. שומרים את השורה המקורית המלאה של הנגיעה הראשונה בכל קבוצה.
     Object.values(byKey).forEach(group => {
       group.sort((a, b) => (a.ts ?? 0) - (b.ts ?? 0));
       let current = null;
       group.forEach(r => {
         if (!current || r.ts == null || current.lastTs == null || (r.ts - current.lastTs) > TOUCH_WINDOW_MS) {
-          current = { hawb: r.hawb, classifier: r.classifier, fob: r.fob, rowCount: 1, lastTs: r.ts };
+          current = { hawb: r.hawb, classifier: r.classifier, fob: r.fob, rowCount: 1, lastTs: r.ts, originalValues: r.originalValues };
           touches.push(current);
         } else {
           current.rowCount++;
@@ -510,9 +511,7 @@ async function runCalc() {
       else { c.countLow++; c.totalLow += rateLow; }
 
       detailRows.push({
-        hawb: t.hawb,
-        classifier: t.classifier,
-        fob: t.fob,
+        originalValues: t.originalValues,
         isHigh,
         rate,
         rowCount: t.rowCount
@@ -552,9 +551,11 @@ async function runCalc() {
     sumWs.views = [{ state: 'frozen', ySplit: 1, rtl: true }];
 
     const detWs = outWb.addWorksheet('דוח לקבלן');
-    detWs.addRow(['HAWB', 'מסווג', 'FOB USD', 'קטגוריה', 'תעריף (₪)', 'שורות דוח שאוחדו לנגיעה זו']);
+    // עמודות הדוח בדיוק כמו הקובץ המקורי שהועלה — רק השורות הכפולות (נגיעות שאוחדו) הוסרו.
+    const originalHeaderRow = headers.slice(1); // headers[0] הוא תא ריק שמגיע מ-ExcelJS (row.values)
+    detWs.addRow(originalHeaderRow);
     detailRows.forEach(d => {
-      detWs.addRow([d.hawb, d.classifier, d.fob, d.isHigh ? `מעל $${threshold}` : `עד $${threshold}`, d.rate, d.rowCount]);
+      detWs.addRow(d.originalValues);
     });
     detWs.getRow(1).eachCell(cell => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
