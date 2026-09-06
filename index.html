@@ -2223,14 +2223,38 @@ window.delVacationRecord=async function(empId,name){
 function parseVacationPaste(text){
   const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
   const records=[];
+  const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n;};
   for(const line of lines){
-    let cols=line.split('\t').map(c=>c.trim());
+    const rawCols=line.split('\t').map(c=>c.trim());
+
+    // Format A: "חריגי חופשה" balance-snapshot report (9 columns, incl. 2 blank ones —
+    // מס עובד | שם פרטי | שם משפחה | סטטוס(ריק) | יחידה(ריק) | מנהל | מספר מנהל | הסכם | יתרת חופשה שנתית).
+    // Only gives the current balance, not the full accrual breakdown — so this is a
+    // balance-only REFRESH: updates newBalance/updatedAt and leaves monthlyHours/quota
+    // etc. exactly as already stored for that employee (untouched fields are never
+    // guessed, since accrual rate isn't part of this report).
+    if(rawCols.length===9){
+      const empId=rawCols[0],first=rawCols[1],last=rawCols[2],agreement=rawCols[7],balance=rawCols[8];
+      if(/^\d+$/.test(empId)){
+        records.push({empId,firstName:first,lastName:last,agreement,newBalance:num(balance),updatedAt:Date.now(),_partial:true});
+        continue;
+      }
+    }
+
+    // Format B: full Focus report — 11 columns in the older layout, or 12 in the current
+    // one (פוקוס now splits the old single "שעות לחודש" into "זכות החודש" + "חובה החודש").
+    // newBalance is always taken from the LAST column, never a fixed index — a column-count
+    // change like this one silently shifted every field one slot when parsed positionally,
+    // which is exactly what corrupted the last import.
+    let cols=rawCols;
     if(cols.length<11) cols=line.split(/\s{2,}/).map(c=>c.trim());
     cols=cols.filter(c=>c!=='');
     if(cols.length<11) continue;
-    const [empId,first,last,type,month,quota,opening,accrued,used,monthly,newBal]=cols;
+    const empId=cols[0],first=cols[1],last=cols[2],type=cols[3],month=cols[4];
     if(!/^\d+$/.test(empId)) continue; // skip header row / junk
-    const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n;};
+    const quota=cols[5],opening=cols[6],accrued=cols[7],used=cols[8];
+    const monthly=cols[9]; // "זכות החודש" / "שעות לחודש" — the accrual-rate column, right after "ניצול מצטבר"
+    const newBal=cols[cols.length-1]; // "יתרה חדשה" — always the last column, whatever else sits before it
     records.push({
       empId,firstName:first,lastName:last,absenceType:type,month,
       annualQuota:num(quota),openingBalance:num(opening),accruedRight:num(accrued),
@@ -2248,9 +2272,25 @@ window.saveVacationImport=async function(){
   if(records.length===0){alert('לא זוהו שורות תקינות. ודא שהעמודות מופרדות בטאבים (הדבקה ישירה מאקסל/פוקוס) ושמספר העובד הוא העמודה הראשונה.');return;}
   if(!db){alert('אין חיבור ל-Firebase');return;}
   const updates={};
-  records.forEach(r=>{updates[r.empId]=r;});
+  const newlyCreated=[];
+  records.forEach(r=>{
+    if(r._partial){
+      // Balance-only refresh: touch just these keys so existing monthlyHours/quota/etc.
+      // for that employee survive untouched (a flat 'update' with a plain object at
+      // empId would REPLACE the whole record, wiping the accrual fields this report
+      // doesn't provide).
+      updates[r.empId+'/newBalance']=r.newBalance;
+      updates[r.empId+'/firstName']=r.firstName;
+      updates[r.empId+'/lastName']=r.lastName;
+      updates[r.empId+'/updatedAt']=r.updatedAt;
+      if(!state.vacationData[r.empId]) newlyCreated.push(r.empId+' - '+r.firstName+' '+r.lastName);
+    } else {
+      updates[r.empId]=r;
+    }
+  });
   await update(ref(db,'vacationBalance'),updates);
   showToast('✅ עודכנו '+records.length+' רשומות חופשה');
+  if(newlyCreated.length) alert('שימו לב — העובדים הבאים חדשים במערכת ועדיין אין להם "שעות לחודש" מוגדרות, כך שהיתרה שלהם לא תתעדכן אוטומטית מהסידור עד שיוזן דוח מלא מפוקוס עבורם:\n\n'+newlyCreated.join('\n'));
   if(ta)ta.value='';
 };
 
@@ -2354,7 +2394,7 @@ function buildVacationMgr(){
         </table>
       </div>`:`<div style="text-align:center;padding:24px;color:#888;font-size:13px;border:1px dashed #ddd;border-radius:8px;margin-bottom:16px">אין נתוני חופשה. טען נתוני יוני 2026 או הדבק דוח למטה.</div>`}
       <div style="border-top:1px solid #eee;padding-top:12px">
-        <textarea id="vac-paste" rows="5" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן דוח חדש מפוקוס (מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה)"></textarea>
+        <textarea id="vac-paste" rows="5" style="width:100%;padding:8px;font-size:11px;border:1px solid #d0d7e8;border-radius:8px;font-family:monospace;margin-bottom:8px" placeholder="הדבק כאן דוח מפוקוס — מתקבלים 2 פורמטים:&#10;• דוח מלא (11 עמודות): מס עובד · שם פרטי · שם משפחה · סוג היעדרות · תאריך · מכסה שנתית · יתרה בתחילת שנה · זכות מצטברת · ניצול מצטבר · שעות לחודש · יתרה חדשה&#10;• דוח יתרות (9 עמודות, למשל 'חריגי חופשה'): מס עובד · שם פרטי · שם משפחה · סטטוס · יחידה · מנהל · מספר מנהל · הסכם · יתרת חופשה שנתית — מעדכן רק את היתרה הנוכחית"></textarea>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="emp-mgr-cancel" onclick="closeVacationMgr()">סגור</button>
           <button class="emp-mgr-save" onclick="saveVacationImport()">💾 ייבא / עדכן</button>
