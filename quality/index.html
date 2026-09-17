@@ -1037,7 +1037,7 @@ function renderRoles(){
   let rows=Object.keys(ROLES).map(id=>{
     const r=ROLES[id];
     const assigned=roleAssignedNames(r);
-    return {id, roleName:r.roleName||'', employee:assigned.join(', '), assigned, signatures:roleSignaturesMap(r), responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupPrimaryEmail:r.backupPrimaryEmail||'', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], roleValidUntil:r.roleValidUntil||''};
+    return {id, roleName:r.roleName||'', employee:assigned.join(', '), assigned, signatures:roleSignaturesMap(r), responsibilities:r.responsibilities||'', authorities:r.authorities||'', goals:r.goals||'', backupPrimary:r.backupPrimary||'', backupPrimaryType:r.backupPrimaryType||'internal', backupPrimaryEmail:r.backupPrimaryEmail||'', backupSecondary:r.backupSecondary||'', backupSecondaryType:r.backupSecondaryType||'internal', backupVerified:r.backupVerified||'', backupSignature:r.backupSignature||null, backupSignSentAt:r.backupSignSentAt||null, updated:r.updated||'', version:r.version||'', approvedBy:r.approvedBy||'', attachments:r.attachments||[], roleValidUntil:r.roleValidUntil||'', roleLastReviewedBy:r.roleLastReviewedBy||'', roleLastReviewedAt:r.roleLastReviewedAt||''};
   });
 
   document.getElementById('roleAll').textContent=rows.length;
@@ -1087,7 +1087,7 @@ function renderRoles(){
       '<td>'+docHtml+'</td>'+
       '<td>'+roleSignBadgeHtml(r)+'</td>'+
       '<td>'+backupSignCellHtml(r)+'</td>'+
-      '<td><button class="act-btn" title="הארך תוקף הגדרה בשנה" onclick="extendRole(\''+r.id+'\')">🔄</button><button class="act-btn" title="חתימות עובדים / שלח לחתימה" onclick="openRoleSignDetails(\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
+      '<td><button class="act-btn" title="הערכת תוקף שנתית ע\"י המנהל" onclick="extendRole(\''+r.id+'\')">🔄</button><button class="act-btn" title="חתימות עובדים / שלח לחתימה" onclick="openRoleSignDetails(\''+r.id+'\')">✉️</button><button class="act-btn" title="שלח לחתימה למגבה" onclick="openBackupSign(\''+r.id+'\')">🛡️</button><button class="act-btn" title="ערוך" onclick="editRole(\''+r.id+'\')">✏️</button><button class="act-btn" title="מחק" onclick="deleteRole(\''+r.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -1115,7 +1115,8 @@ function roleValidCellHtml(r){
   if(!r.roleValidUntil) return '<span class="muted">—</span>';
   const s=statusOf(r.roleValidUntil);
   return '<span class="badge '+statusClass(s)+'">'+statusLabel(s)+'</span>'+
-    '<div style="font-size:10px;color:#999;margin-top:1px">עד '+esc(r.roleValidUntil)+'</div>';
+    '<div style="font-size:10px;color:#999;margin-top:1px">עד '+esc(r.roleValidUntil)+'</div>'+
+    (r.roleLastReviewedBy ? '<div style="font-size:10px;color:#999">הוערך ע"י '+esc(r.roleLastReviewedBy)+'</div>' : '');
 }
 
 function backupSignCellHtml(r){
@@ -1684,14 +1685,21 @@ async function extendProc(id){
 async function extendRole(id){
   const r=ROLES[id];
   if(!r) return;
+  const changed = confirm('הערכת תוקף שנתית — "'+r.roleName+'"\n\nהאם הגדרת התפקיד השתנתה מאז החתימה האחרונה?\n\nאישור (OK) = כן, השתנתה — החתימות הקיימות יתאפסו והעובדים יצטרכו לחתום מחדש\nביטול (Cancel) = לא השתנתה, רק הארכת תוקף לשנה נוספת');
   const newValid = addYears(r.roleValidUntil || null, 1);
-  if(!confirm('להאריך את תוקף הגדרת התפקיד "'+r.roleName+'" עד '+newValid+'?')) return;
-  const rec={...r, roleValidUntil:newValid, updatedBy:userName, updatedAt:new Date().toISOString()};
+  const rec={...r, roleValidUntil:newValid, roleLastReviewedBy:userName, roleLastReviewedAt:new Date().toISOString(), updatedBy:userName, updatedAt:new Date().toISOString()};
+  if(changed){
+    rec.signatures={};
+    rec.signSentDates={};
+  }
   showSaving(true);
   try{
     await fetch(DB+'/roleDefinitions/'+id+'.json',{method:'PUT',body:JSON.stringify(rec)});
     ROLES[id]=rec;
     renderRoles();
+    alert(changed
+      ? 'התוקף הוארך עד '+newValid+'. החתימות אופסו — יש לשלוח את ההגדרה מחדש לחתימת העובדים.'
+      : 'התוקף הוארך עד '+newValid+'.');
   }catch(e){ alert('שגיאה בהארכה'); }
   showSaving(false);
 }
