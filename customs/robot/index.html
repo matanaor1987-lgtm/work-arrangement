@@ -137,7 +137,9 @@ function isCompany(n) { const u=String(n||'').toUpperCase(); for(const l of [COM
 // גבולות מילה כדי ש-CONSUL לא יתפוס CONSULTING וכו'
 const DIPLO_RE=/\b(EMBASSY|EMBASSIES|EMBAJADA|AMBASSADE|AMBASCIATA|BOTSCHAFT|EMBAIXADA|AMBASADA|AMBASSADOR|CONSULATE|CONSULATES|CONSULAT|CONSULADO|CONSOLATO|KONSULAT|CONSUL|CONSUL GENERAL|DIPLOMATIC|DIPLOMAT|DIPLOMATS|DIPLOMATIQUE|DIPLOMATISCH|DIPLOMATICO|DIPLOMATICA|DIPLOMATIC POUCH|DIPLOMATIC BAG|VALISE DIPLOMATIQUE|MINISTRY OF FOREIGN AFFAIRS|FOREIGN AFFAIRS|FOREIGN OFFICE|DEPARTMENT OF STATE|MFA)\b/;
 const DIPLO_HE=['שגרירות','שגריר','קונסוליה','קונסול','דיפלומט','דיפלומטי'];
-function isDiplomatic(...vals) { for(const v of vals){ const s=String(v||''); if(DIPLO_RE.test(s.toUpperCase())) return true; for(const k of DIPLO_HE) if(s.includes(k)) return true; } return false; }
+// DIPLOMATIC BAG ובכל הכתיבים: DIPLOMATICBAG, DIPL. BAG, DIPLO-BAG, DIP BAG, DIPLOMATIC BAGS / POUCH / MAIL
+const DIPLO_BAG_RE=/\bDIP(L|LO|LOMATIC|LOMATIQUE|LOMATICO|LOMATICA)?[\s.\-_\/]*(BAGS?|POUCH(ES)?|MAIL)\b/;
+function isDiplomatic(...vals) { for(const v of vals){ const s=String(v||''); const u=s.toUpperCase(); if(DIPLO_RE.test(u)||DIPLO_BAG_RE.test(u)) return true; for(const k of DIPLO_HE) if(s.includes(k)) return true; } return false; }
 function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; return false; }
 function shouldYellow(d,s) { const u=String(d||'').toUpperCase(),v=String(s||'').toUpperCase(); for(const k of YELLOW_DESC) if(u.includes(k)||v.includes(k)) return true; return false; }
 
