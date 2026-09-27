@@ -133,6 +133,11 @@ const REMOVE_DESC = ['WHISKEY','WHISKY','VODKA','WINE ','BEER ','SPIRITS','COGNA
 const YELLOW_DESC = ['FOOD','SNACK','CANDY','CHOCOLATE','COFFEE','TEA ','BISCUIT','COOKIE','SAUCE','SPICE','SEASONING','NUT ','NUTS','DRIED FRUIT','CEREAL','PROTEIN BAR','ENERGY BAR','GRANOLA','OATMEAL','PASTA','NOODLE','SUPPLEMENT','VITAMIN','MINERAL','PROBIOTIC','OMEGA','COLLAGEN','WHEY','CREATINE','BCAA','PRE-WORKOUT','NUTRITIONAL','DIETARY','HERBAL','HERB ','EXTRACT ','CAPSULE','TABLET','POWDER','FISH OIL','COD LIVER','MAGNESIUM','CALCIUM','ZINC','IRON ','OPTIMUM NUTRITION','LACTOFIT','DOTERRA','RED BULL','MONSTER ENERGY','MYPROTEIN','HERBALIFE'];
 
 function isCompany(n) { const u=String(n||'').toUpperCase(); for(const l of [COMPANY_KW,MEDICAL_CO,KNOWN_CO,COSMET_CO,JEWEL_CO,FOOD_CO,CHEM_CO]) for(const k of l) if(u.includes(k)) return true; return false; }
+// שגרירויות / קונסוליות / דיפלומטים — סינון קבוע (שם יבואן, שולח, תיאור)
+// גבולות מילה כדי ש-CONSUL לא יתפוס CONSULTING וכו'
+const DIPLO_RE=/\b(EMBASSY|EMBASSIES|EMBAJADA|AMBASSADE|AMBASCIATA|BOTSCHAFT|EMBAIXADA|AMBASADA|AMBASSADOR|CONSULATE|CONSULATES|CONSULAT|CONSULADO|CONSOLATO|KONSULAT|CONSUL|CONSUL GENERAL|DIPLOMATIC|DIPLOMAT|DIPLOMATS|DIPLOMATIQUE|DIPLOMATISCH|DIPLOMATICO|DIPLOMATICA|DIPLOMATIC POUCH|DIPLOMATIC BAG|VALISE DIPLOMATIQUE|MINISTRY OF FOREIGN AFFAIRS|FOREIGN AFFAIRS|FOREIGN OFFICE|DEPARTMENT OF STATE|MFA)\b/;
+const DIPLO_HE=['שגרירות','שגריר','קונסוליה','קונסול','דיפלומט','דיפלומטי'];
+function isDiplomatic(...vals) { for(const v of vals){ const s=String(v||''); if(DIPLO_RE.test(s.toUpperCase())) return true; for(const k of DIPLO_HE) if(s.includes(k)) return true; } return false; }
 function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; return false; }
 function shouldYellow(d,s) { const u=String(d||'').toUpperCase(),v=String(s||'').toUpperCase(); for(const k of YELLOW_DESC) if(u.includes(k)||v.includes(k)) return true; return false; }
 
@@ -249,6 +254,7 @@ async function runFilter() {
       if(country==='IL'){removed++;return;}
 
       if(col151!==''&&col151!==' '){removed++;return;}
+      if(isDiplomatic(impName,shipper,teur)){removed++;return;}
       if(isCompany(impName)){removed++;return;}
       if(shouldRemove(teur)){removed++;return;}
       if(shouldRemove(shipper)){removed++;return;}
