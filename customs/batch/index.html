@@ -450,6 +450,7 @@ async function runFilter() {
 
       const teurCheck = String(get('TEUR_TOVIN')||'').toUpperCase();
       if (teurCheck.includes('METABOIN')) { removed++; return; }
+      if (teurCheck.includes('TBS')) { removed++; return; }
 
       const teur = String(get('TEUR_TOVIN')||'');
       const pieces = parseInt(get('PIECES')) || 0;
