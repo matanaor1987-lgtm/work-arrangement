@@ -281,6 +281,9 @@ const DIPLO_HE=['שגרירות','שגריר','קונסוליה','קונסול',
 const DIPLO_BAG_RE=/\bDIP(L|LO|LOMATIC|LOMATIQUE|LOMATICO|LOMATICA)?[\s.\-_\/]*(BAGS?|POUCH(ES)?|MAIL)\b/;
 function isDiplomatic(...vals) { for(const v of vals){ const s=String(v||''); const u=s.toUpperCase(); if(DIPLO_RE.test(u)||DIPLO_BAG_RE.test(u)||DIPLO_UN_RE.test(u)) return true; for(const k of DIPLO_HE) if(s.includes(k)) return true; } return false; }
 
+// איירסופט — סינון קבוע (תיאור + שולח)
+const AIRSOFT_KW = ['AIRSOFT','AIR SOFT','AIR-SOFT','SOFTAIR','SOFT AIR GUN','BB GUN','BB PELLET','BB BULLET','BB AMMO','GEL BLASTER','GEL BALL BLASTER','GEL BEAD BLASTER','GAS BLOWBACK','TOKYO MARUI','KRYTAC','G&G ARMAMENT','איירסופט','אירסופט'];
+
 function isCompany(name) {
   const u = String(name||'').toUpperCase();
   for (const lst of [COMPANY_KW,MEDICAL_CO,KNOWN_CO,COSMET_CO,JEWEL_CO,FOOD_CO,CHEM_CO,INSTITUTE_CO])
@@ -451,6 +454,7 @@ async function runFilter() {
       const teurCheck = String(get('TEUR_TOVIN')||'').toUpperCase();
       if (teurCheck.includes('METABOIN')) { removed++; return; }
       if (teurCheck.includes('TBS')) { removed++; return; }
+      if (AIRSOFT_KW.some(k => teurCheck.includes(k) || shipper.includes(k))) { removed++; return; }
 
       const teur = String(get('TEUR_TOVIN')||'');
       const pieces = parseInt(get('PIECES')) || 0;
