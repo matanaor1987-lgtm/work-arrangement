@@ -1188,6 +1188,7 @@ window.autoAssignWfh=async function(){
 };
 window.approveWfh=function(){
   const pr=state.wfhProposal;if(!pr)return;
+  snapshotForUndo('חלוקת ימי בית');
   state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
   state.wfh=pr.wfh;state.wfhProposal=null;
   saveToCloud();
@@ -1529,6 +1530,7 @@ window.planEarlyShifts=async function(){
 const get_=(...a)=>get(...a);
 window.approveEarly=function(){
   const pr=state.earlyProposal;if(!pr)return;
+  snapshotForUndo(pr.clear?'מחיקת משמרות בוקר':'שיבוץ משמרות בוקר');
   // יוצרים את סוגי המשמרות אם חסרים
   let added=false;
   const fix={};
@@ -1628,6 +1630,7 @@ window.planSabDays=async function(){
 };
 window.approveSab=function(){
   const pr=state.sabProposal;if(!pr)return;
+  snapshotForUndo('שיבוץ ימי סבב');
   state.schedule=pr.sched;state.sabProposal=null;
   saveToCloud();showToast(`✓ ימי סבב שובצו (${pr.changes.length})`);render();
 };
@@ -1647,6 +1650,78 @@ function buildSabPreview(){
     <div class="wfhv-act">
       <button class="wfhv-cancel" onclick="cancelSab()">ביטול</button>
       ${pr.changes.length?`<button class="wfhv-ok-btn" style="background:#880e4f;border-color:#880e4f" onclick="approveSab()">✓ אשר ושמור</button>`:''}
+    </div>
+  </div></div>`;
+}
+// ===== ביטול שיבוץ אחרון + שחזור חודש מגיבוי =====
+function undoKey(){return `seder_undo_${state.year}_${state.month}`;}
+function snapshotForUndo(label){
+  try{localStorage.setItem(undoKey(),JSON.stringify({label,at:Date.now(),schedule:state.schedule,earlyOrig:state.earlyOrig||{},wfh:state.wfh||{}}));}catch(e){}
+}
+function getUndo(){try{return JSON.parse(localStorage.getItem(undoKey())||'null');}catch(e){return null;}}
+window.undoLastPlan=function(){
+  const u=getUndo();if(!u)return;
+  if(!confirm(`לבטל את "${u.label}" ולהחזיר את ${MONTHS[state.month]} למצב שלפני (${new Date(u.at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})})?`))return;
+  state.schedule=u.schedule;state.earlyOrig=u.earlyOrig;state.wfh=u.wfh;
+  try{localStorage.removeItem(undoKey());}catch(e){}
+  saveToCloud();showToast('↩️ בוטל — החודש חזר למצב הקודם');render();
+};
+// שחזור חודש אחד מקובץ גיבוי JSON — בלי לגעת בשאר הנתונים
+window.restoreMonthFromBackup=async function(ev){
+  const f=ev.target.files[0];ev.target.value='';if(!f)return;
+  let data;try{data=JSON.parse(await f.text());}catch(e){alert('הקובץ לא נקרא — ודא שזה קובץ גיבוי JSON של הסידור');return;}
+  const key=`seder_${state.year}_${state.month}`;
+  const m=data[key];
+  if(!m||!m.schedule){alert(`בקובץ הגיבוי אין נתונים ל${MONTHS[state.month]} ${state.year}`);return;}
+  state.restoreProposal={file:f.name,at:(data._meta&&data._meta.exportedAt)||'',backup:m,mode:'early'};
+  render();
+};
+function restoreChanges(pr){
+  const bs=pr.backup.schedule||{},cur=state.schedule,out=[];
+  const keys=new Set([...Object.keys(bs),...Object.keys(cur)]);
+  keys.forEach(k=>{
+    const was=bs[k]||'',now=cur[k]||'';
+    if(was===now) return;
+    if(pr.mode==='early'&&!isEarlyLabel(was)) return; // רק משמרות בוקר שנמחקו
+    const [n,d]=k.split('|');out.push({k,n,d:+d,now,was});
+  });
+  return out.sort((a,b)=>a.n.localeCompare(b.n,'he')||a.d-b.d);
+}
+window.setRestoreMode=function(m){if(state.restoreProposal){state.restoreProposal.mode=m;render();}};
+window.cancelRestore=function(){state.restoreProposal=null;render();};
+window.approveRestore=function(){
+  const pr=state.restoreProposal;if(!pr)return;
+  snapshotForUndo('שחזור מגיבוי');
+  const ch=restoreChanges(pr);
+  const sched={...state.schedule};
+  ch.forEach(c=>{if(c.was)sched[c.k]=c.was;else delete sched[c.k];});
+  state.schedule=sched;
+  if(pr.mode==='full'){state.notes=pr.backup.notes||{};state.cellNotes=pr.backup.cellNotes||{};state.wfh=pr.backup.wfh||{};state.earlyOrig=pr.backup.earlyOrig||{};}
+  else ch.forEach(c=>{if(state.earlyOrig)delete state.earlyOrig[c.k];});
+  state.restoreProposal=null;saveToCloud();
+  showToast(`♻️ שוחזרו ${ch.length} משמרות`);render();
+};
+function buildRestorePreview(){
+  const pr=state.restoreProposal;if(!pr)return '';
+  const ch=restoreChanges(pr);
+  const byN={};ch.forEach(c=>{(byN[c.n]=byN[c.n]||[]).push(c);});
+  const lbl=k=>k?(shiftInfo(k).key?shiftInfo(k).label:k):'ריק';
+  const dl=d=>`${WD_SHORT[ilWD(state.year,state.month,d)]} ${d}`;
+  const when=pr.at?new Date(pr.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="wfhv-overlay" onclick="if(event.target===this)cancelRestore()"><div class="wfhv-box" style="border-top-color:#1565c0">
+    <h3 style="color:#1565c0">♻️ שחזור ${MONTHS[state.month]} ${state.year} מגיבוי</h3>
+    <div class="wfhv-sum">קובץ: <b>${pr.file}</b>${when?` · נשמר ב-${when}`:''}</div>
+    <div class="wfhr-seg" style="margin-bottom:10px">
+      <button class="${pr.mode==='early'?'on':''}" onclick="setRestoreMode('early')">רק משמרות בוקר שנמחקו</button>
+      <button class="${pr.mode==='full'?'on':''}" onclick="setRestoreMode('full')">כל החודש כמו בגיבוי</button>
+    </div>
+    ${pr.mode==='full'?'<div class="wfhv-amb">שים לב: כל שינוי שעשית בחודש אחרי הגיבוי יחזור למצב שבגיבוי.</div>':''}
+    ${ch.length?`<div class="wfhv-sum"><b>${ch.length}</b> משמרות יחזרו אצל <b>${Object.keys(byN).length}</b> עובדים:</div>
+    <div class="wfhv-list">${Object.keys(byN).map(n=>`<div class="wfhv-row"><b>${n}</b><span>${byN[n].map(c=>`${dl(c.d)}: ${lbl(c.now)} → ${lbl(c.was)}`).join(' · ')}</span></div>`).join('')}</div>`
+    :`<div class="wfhv-empty">אין מה לשחזר — החודש כבר זהה לגיבוי.</div>`}
+    <div class="wfhv-act">
+      <button class="wfhv-cancel" onclick="cancelRestore()">ביטול</button>
+      ${ch.length?`<button class="wfhv-ok-btn" style="background:#1565c0;border-color:#1565c0" onclick="approveRestore()">✓ שחזר</button>`:''}
     </div>
   </div></div>`;
 }
@@ -1860,7 +1935,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${isAdmin?buildWfhPreview()+buildWfhReport()+buildEarlyPreview()+buildSabPreview():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${isAdmin?buildWfhPreview()+buildWfhReport()+buildEarlyPreview()+buildSabPreview()+buildRestorePreview():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
@@ -1874,6 +1949,8 @@ function buildNoteBar(days){
     <button onclick="saveNote()">💾 שמור</button>
     <button onclick="fillDefault()" style="background:#FFF3CC;color:#D40511;border-color:#FFCC00;margin-right:8px">⚡ מלא ברירת מחדל</button>
     <button onclick="openCopyMonth()" style="background:#e8f4ea;color:#1e5c2e;border-color:#b0d8b8;margin-right:8px">📋 העתק לחודש הבא</button>
+    ${getUndo()?`<button onclick="undoLastPlan()" style="background:#fff3e0;color:#e65100;border-color:#ffcc80;margin-right:8px" title="מחזיר את החודש למצב שלפני השיבוץ האחרון">↩️ בטל: ${getUndo().label}</button>`:''}
+    <label style="display:inline-flex;align-items:center;padding:4px 10px;border:1px solid #bbdefb;border-radius:4px;background:#e3f2fd;color:#1565c0;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px" title="מחזיר רק את החודש המוצג מקובץ גיבוי JSON">♻️ שחזר חודש מגיבוי<input type="file" accept=".json" onchange="restoreMonthFromBackup(event)" style="display:none"></label>
     <button onclick="planSabDays()" style="background:#fce4ec;color:#880e4f;border-color:#f1b5cb;margin-right:8px" title="מומלץ להריץ לפני משמרות הבוקר">🔁 שבץ סבבים</button>
     <button onclick="planEarlyShifts()" style="background:#ede7f6;color:#4527a0;border-color:#c5b8e6;margin-right:8px">🌅 שבץ משמרות בוקר</button>
   </div>`;}
