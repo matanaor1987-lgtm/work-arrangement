@@ -698,7 +698,7 @@ function listenToData(){
     render();
   });
   onValue(ref(db,'wfhStats'),(snap)=>{state.wfhStats=snap.val()||{};});
-  onValue(ref(db,'settings/staffMin'),(snap)=>{const v=snap.val();state.staffMin=typeof v==='number'?v:7;render();});
+  onValue(ref(db,'settings/staffMinByWd'),(snap)=>{state.staffMinByWd=snap.val()||null;render();});
 }
 
 // Hours deducted per vacation day, by day-of-week: Tue=8h, Fri/Sat=0h (not workdays), else=9h
@@ -1739,17 +1739,19 @@ function buildRestorePreview(){
 const OFF_LABEL={OFF:'חופש',SAB:'סבב',MIL:"מילואים",SICK:'מחלה','':'לא משובץ'};
 function clsList(){return employees.filter(e=>e.role==='מסווג');}
 function clsWorking(d){return clsList().filter(e=>isWorkingShift(getShift(e.name,d)));}
-function staffMin(){return typeof state.staffMin==='number'?state.staffMin:7;}
-function isLowDay(d,wd){return wd<=4&&clsWorking(d).length<staffMin();}
+// סף ליום מאתגר לפי יום בשבוע: ראשון ושני 6 מסווגים זה בסדר, שאר הימים צריך 7
+const STAFF_MIN_DEFAULT={0:6,1:6,2:7,3:7,4:7};
+function staffMin(wd){const m=state.staffMinByWd||{};const v=m[wd]??m[String(wd)];return typeof v==='number'?v:STAFF_MIN_DEFAULT[wd]??7;}
+function isLowDay(d,wd){return wd<=4&&clsWorking(d).length<staffMin(wd);}
 function staffBadge(d,wd){
   if(state.mode!=='admin'||wd>4) return '';
-  const n=clsWorking(d).length,low=n<staffMin();
+  const n=clsWorking(d).length,low=n<staffMin(wd);
   return `<span class="stf ${low?'bad':''}" onclick="event.stopPropagation();openStaffDay(${d})" title="${n} מסווגים עובדים${low?' — יום מאתגר':''} · לחץ לפרטים">👥${n}</span>`;
 }
 function weekShifts(name,d){const sun=d-ilWD(state.year,state.month,d);let c=0;for(let x=sun;x<sun+7;x++){if(x>=1&&x<=daysInMonth(state.year,state.month)&&isWorkingShift(getShift(name,x)))c++;}return c;}
 window.openStaffDay=function(d){state.staffDay=d;render();};
 window.closeStaffDay=function(){state.staffDay=null;render();};
-window.setStaffMin=function(v){const n=parseInt(v);if(!(n>=1&&n<=30))return;state.staffMin=n;if(db)set(ref(db,'settings/staffMin'),n);render();};
+window.setStaffMin=function(wd,v){const n=parseInt(v);if(!(n>=1&&n<=30))return;state.staffMinByWd={...STAFF_MIN_DEFAULT,...(state.staffMinByWd||{}),[wd]:n};if(db)set(ref(db,'settings/staffMinByWd'),state.staffMinByWd);render();};
 window.cancelSabDay=function(name,d){
   snapshotForUndo('ביטול סבב');
   const sun=d-ilWD(state.year,state.month,d);
@@ -1768,12 +1770,12 @@ function buildStaffDay(){
   const d=state.staffDay;if(!d)return '';
   const wd=ilWD(state.year,state.month,d),n=daysInMonth(state.year,state.month);
   const work=clsWorking(d),off=clsList().filter(e=>!isWorkingShift(getShift(e.name,d)));
-  const min=staffMin(),low=work.length<min;
+  const min=staffMin(wd),low=work.length<min;
   const sun=d-wd;
   const weekDays=[0,1,2,3,4].map(i=>sun+i).filter(x=>x>=1&&x<=n&&x!==d);
   const sabRows=off.filter(e=>getShift(e.name,d)==='SAB').map(e=>{
     // יום חלופי: יום אחר באותו שבוע שהוא עובד בו ושיש בו הכי הרבה מסווגים (ונשאר מעל הסף)
-    const alt=weekDays.filter(x=>isWorkingShift(getShift(e.name,x))&&!isEarlyLabel(getShift(e.name,x))&&clsWorking(x).length-1>=min).sort((a,b)=>clsWorking(b).length-clsWorking(a).length)[0];
+    const alt=weekDays.filter(x=>isWorkingShift(getShift(e.name,x))&&!isEarlyLabel(getShift(e.name,x))&&clsWorking(x).length-1>=staffMin(ilWD(state.year,state.month,x))).sort((a,b)=>clsWorking(b).length-clsWorking(a).length)[0];
     return `<div class="wfhv-row"><b>${e.name}</b><span class="wk">סבב</span>
       ${alt?`<button class="stf-btn" onclick="moveSabDay('${e.name}',${d},${alt})">העבר ל${WD_SHORT[ilWD(state.year,state.month,alt)]} ${alt} (${clsWorking(alt).length}→${clsWorking(alt).length-1})</button>`:''}
       <button class="stf-btn warn" onclick="cancelSabDay('${e.name}',${d})">בטל סבב — יעבוד ${weekShifts(e.name,d)+1} משמרות</button></div>`;
@@ -1781,7 +1783,7 @@ function buildStaffDay(){
   const sixers=clsList().filter(e=>weekShifts(e.name,d)>MAX_WEEK_SHIFTS);
   return `<div class="wfhv-overlay" onclick="if(event.target===this)closeStaffDay()"><div class="wfhv-box" style="border-top-color:${low?'#c62828':'#1e5c2e'}">
     <h3 style="color:${low?'#c62828':'#1e5c2e'}">${low?'📉 יום מאתגר':'👥 מצבת מסווגים'} — ${DAY_NAMES_FULL[wd]} ${d}/${state.month+1}</h3>
-    <div class="wfhv-sum"><b>${work.length}</b> מסווגים עובדים · סף ליום מאתגר: פחות מ-<input type="number" min="1" max="30" value="${min}" onchange="setStaffMin(this.value)" style="width:48px;padding:2px 4px;font-family:inherit;font-size:13px;border:1px solid #d0d7e8;border-radius:4px"></div>
+    <div class="wfhv-sum"><b>${work.length}</b> מסווגים עובדים · סף ליום מאתגר ב${DAY_NAMES_FULL[wd]}: פחות מ-<input type="number" min="1" max="30" value="${min}" onchange="setStaffMin(${wd},this.value)" style="width:48px;padding:2px 4px;font-family:inherit;font-size:13px;border:1px solid #d0d7e8;border-radius:4px"></div>
     <div class="wfhv-list">
       <div class="wfhv-row"><b>עובדים</b><span>${work.map(e=>`${e.name}${isEarlyLabel(getShift(e.name,d))?' 🌅':''}`).join(' · ')||'—'}</span></div>
       <div class="wfhv-row"><b>לא עובדים</b><span>${off.map(e=>`${e.name} (${OFF_LABEL[getShift(e.name,d)]??shiftInfo(getShift(e.name,d)).label})`).join(' · ')||'—'}</span></div>
