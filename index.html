@@ -876,7 +876,7 @@ function wfhActive(y,m){return new Date(y,m,1)>=new Date(WFH_START.getFullYear()
 function isWfhDay(d,wd){return (wd===2||wd===4)&&new Date(state.year,state.month,d)>=WFH_START;}
 // משמרת שמתחילה ב-05 → תמיד עבודה מהבית
 function isEarlyShift(k){if(!isWorkingShift(k))return false;const si=SHIFTS.find(s=>s.key===k);return !!si&&/^0?5(\D|$)/.test(String(si.label||'').trim());}
-function isEarlyHome(emp,d){return isEarlyShift(getShift(emp,d));}
+function isEarlyHome(emp,d){return new Date(state.year,state.month,d)>=WFH_START&&isEarlyShift(getShift(emp,d));}
 function isHome(emp,d){
   if(!isWorkingShift(getShift(emp,d))) return false;
   if(isEarlyHome(emp,d)) return true;
@@ -893,7 +893,7 @@ function wfhOk(p){return p.office>=Math.floor(p.total/2);}
 function presenceBadge(d,wd){
   if(!wfhShow()) return '';
   const p=dayPresence(d);
-  if((!p.home&&!isWfhDay(d,wd))||!p.total) return '';
+  if(!isWfhDay(d,wd)||!p.total) return '';
   const ok=wfhOk(p);
   return `<span class="wfh-pres ${ok?'ok':'bad'}" title="במשרד ${p.office} | מהבית ${p.home}${ok?'':' — פחות מחצי במשרד!'}">🏢${p.office}/${p.total}</span>`;
 }
