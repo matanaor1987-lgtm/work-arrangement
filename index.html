@@ -1472,6 +1472,15 @@ window.planEarlyShifts=async function(){
     const sun=w[0].d-w[0].wd;
     const prevDays=[1,2,3,4].map(i=>sun+i).filter(x=>x<1).map(x=>pn+x);
     const slots={};wd.forEach(d=>{slots[d]=Math.max(0,EARLY_DAILY_CAP-employees.filter(e=>isE(get(e.name,d))).length);});
+    // עדיפות מלאה: ניר בשני ואייל בשלישי מקבלים את היום שלהם כל שבוע, לפני כל השאר
+    Object.entries(EARLY_PREF).forEach(([n,prefWd])=>{
+      if(!pool.some(e=>e.name===n)) return;
+      if(wd.some(d=>isE(get(n,d)))) return;
+      if(prevDays.some(x=>isEarlyLabel(prev[n+'|'+x]||''))) return;
+      const d=wd.find(x=>ilWD(state.year,state.month,x)===prefWd);
+      if(!d||slots[d]<=0||isProt(get(n,d))) return; // בחופש ביום שלו — נכנס לסבב הרגיל
+      sched[n+'|'+d]=earlyKey(d);slots[d]--;total[n]++;
+    });
     const todo=[];
     pool.forEach(e=>{
       if(wd.some(d=>isE(get(e.name,d)))) return; // כבר יש לו בוקר השבוע — לא נוגעים
