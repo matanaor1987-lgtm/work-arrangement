@@ -119,6 +119,18 @@ table.sched tr.role-header td{font-weight:800;font-size:11px;color:#fff;padding:
 table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .cell-inner{width:100%;height:30px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;transition:opacity 0.15s}
 .cell-inner:hover{opacity:0.75}
+.cell-inner{position:relative}
+.wfh-dot{position:absolute;top:-4px;left:-3px;font-size:9px;line-height:1;background:#fff;border-radius:50%;padding:1px;box-shadow:0 0 0 1px #c9d6ea;pointer-events:none}
+.wfh-pres{display:inline-block;margin-top:2px;font-size:9px;font-weight:800;padding:1px 4px;border-radius:3px;line-height:1.3}
+.wfh-pres.ok{background:#e6f4ea;color:#1e5c2e}
+.wfh-pres.bad{background:#ffebee;color:#c62828}
+.wfh-toggle{display:flex;align-items:center;gap:6px;margin:10px 0 2px;font-size:12px;color:#555;flex-wrap:wrap}
+.wfh-toggle button{padding:5px 12px;border:1px solid #d0d7e8;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:#555}
+.wfh-toggle button.on{background:#1f4e79;color:#fff;border-color:#1f4e79}
+.wfh-toggle .wfh-hint{font-size:10px;color:#999}
+.wfh-bal{background:#f4f8fc;border:1px solid #d6e2f0;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px}
+.wfh-bal .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:3px}
+.wfh-bal .warn{color:#c62828;font-weight:700}
 .cell-empty-btn{color:#ccc;font-size:18px;background:transparent;width:100%;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cell-empty-btn:hover{color:var(--dhl-red)}
 
@@ -243,7 +255,7 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .emp-mgr{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;display:flex;align-items:center;justify-content:center}
 .emp-mgr-box{background:#fff;border-radius:12px;padding:22px;width:min(600px,95vw);max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md);border-top:4px solid var(--dhl-red)}
 .emp-mgr-box h2{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--dhl-red)}
-.emp-mgr-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 34px;gap:5px;margin-bottom:5px;align-items:center}
+.emp-mgr-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 34px;gap:5px;margin-bottom:5px;align-items:center}
 .emp-mgr-row input,.emp-mgr-row select{padding:6px 8px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:4px;font-family:inherit;font-weight:500}
 .emp-mgr-del{background:#fff0f0;border:1.5px solid #ffb0b0;border-radius:4px;cursor:pointer;font-size:13px;color:#c00;padding:4px;min-height:32px}
 .emp-mgr-add{padding:7px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:800}
@@ -428,7 +440,7 @@ let firebaseConfig=null;
 let app,auth,db;
 let EMPLOYEES_DEFAULT=[{role:"מסווג",name:"אייל"},{role:"מסווג",name:"סתיו"},{role:"מסווג",name:"אבבה"},{role:"מסווג",name:"מזל"},{role:"מסווג",name:"ליאור"},{role:"מסווג",name:"ניר"},{role:"מסווג",name:"רועי"},{role:"מסווג",name:"ייטב"},{role:"מסווג",name:"חגי"},{role:"מסווג",name:"גיא"},{role:"בקרה",name:"איילה"},{role:"בקרה",name:"ראם"},{role:"אישורים",name:"מירית"},{role:"אישורים",name:"דלית"},{role:"פקידי רישוי",name:"עידן"},{role:"פקידי רישוי",name:"חיים"},{role:"פקידי רישוי",name:"שניר"},{role:"פקידי רישוי",name:"צאלה"},{role:"פקידי רישוי",name:"אור"},{role:"רפרנטיות",name:"אהובה"},{role:"רפרנטיות",name:"אילנה"}];
 let employees=JSON.parse(JSON.stringify(EMPLOYEES_DEFAULT));
-let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationNextJanHours:{},vacationSortKey:'live',vacationSortDir:'asc'};
+let state={mode:"view",year:2026,month:new Date().getMonth(),schedule:{},notes:{},cellNotes:{},wfh:{},popup:null,noteDay:1,user:null,adminUid:null,configured:false,showEmpMgr:false,teamMsg:'',showPersonal:false,personalEmp:'',showPwdForm:false,waNotif:false,weekView:false,weekOffset:0,empView:false,empViewMode:'week',filterEmp:'',showVacationMgr:false,vacationData:{},vacationLive:null,vacationSyncing:false,vacationYearSchedule:{},vacationScheduleYear:null,vacationNextJanHours:{},vacationSortKey:'live',vacationSortDir:'asc'};
 
 window.toggleWaNotif=function(){
   state.waNotif=!state.waNotif;
@@ -584,6 +596,7 @@ function listenToData(){
     }
     state.notes=data.notes||{};
     state.cellNotes=data.cellNotes||{};
+    state.wfh=data.wfh||{};
     render();
   });
 }
@@ -702,7 +715,7 @@ function recalcVacationLive(){
 function saveToCloud(){
   if(!db)return;
   const key=`seder_${state.year}_${state.month}`;
-  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{}});
+  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{}});
 }
 function saveEmployeesToCloud(){
   if(!db)return;
@@ -762,6 +775,7 @@ function buildWeekView(isAdmin){
               return `<th style="padding:6px 4px;text-align:center;border:1px solid #e0e0e0;font-weight:800;color:${tc};background:${bg};min-width:52px">
                 <div style="font-size:13px">${d}</div>
                 <div style="font-size:10px;font-weight:600">${DAYS_FULL[wd]}</div>
+                ${presenceBadge(d,wd)}
               </th>`;
             }).join('')}
           </tr>
@@ -786,8 +800,8 @@ function buildWeekView(isAdmin){
                     const bgCell=isSab?'background:#fde8e8':isFri?'background:#fffbea':'';
                     if(si.key){
                       return `<td style="padding:4px;text-align:center;border:1px solid #ebebeb;${bgCell}">
-                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700;${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}">
-                          ${si.label}
+                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700;${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}${isHome(emp.name,d)?' · 🏠 מהבית':''}">
+                          ${wfhDot(emp.name,d)}${si.label}
                           ${cn?`<span style="display:block;font-size:8px;opacity:0.8">📝</span>`:''}
                         </div>
                       </td>`;
@@ -808,6 +822,65 @@ function buildWeekView(isAdmin){
 function getShift(emp,d){return state.schedule[emp+"|"+d]||"";}
 function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
 function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];}
+
+// ===== WFH — יום עבודה מהבית (מ-1.1.2027, שלישי/חמישי) =====
+const WFH_START=new Date(2027,0,1);
+const WFH_DAYS={2:'שלישי',4:'חמישי'};
+function isWorkingShift(k){return !!k&&!['OFF','MIL','SICK','SAB'].includes(k);}
+function wfhDefaultHome(emp,d){
+  const dt=new Date(state.year,state.month,d);
+  if(dt<WFH_START) return false;
+  const e=employees.find(x=>x.name===emp);
+  return !!(e&&e.wfhDay!==undefined&&e.wfhDay!==''&&String(e.wfhDay)===String(dt.getDay()));
+}
+function isHome(emp,d){
+  if(!isWorkingShift(getShift(emp,d))) return false;
+  const ov=state.wfh&&state.wfh[emp+"|"+d];
+  if(ov) return ov==='H';
+  return wfhDefaultHome(emp,d);
+}
+function dayPresence(d){
+  let office=0,home=0;
+  employees.forEach(e=>{if(!isWorkingShift(getShift(e.name,d)))return;if(isHome(e.name,d))home++;else office++;});
+  return {office,home,total:office+home};
+}
+function presenceBadge(d,wd){
+  const p=dayPresence(d);
+  const wfhDay=new Date(state.year,state.month,d)>=WFH_START&&(wd===2||wd===4);
+  if(!p.home&&!wfhDay) return '';
+  if(!p.total) return '';
+  const ok=p.office*2>=p.total;
+  return `<span class="wfh-pres ${ok?'ok':'bad'}" title="במשרד ${p.office} | מהבית ${p.home}${ok?'':' — פחות מחצי במשרד!'}">🏢${p.office}/${p.total}</span>`;
+}
+function wfhDot(emp,d){return isHome(emp,d)?'<span class="wfh-dot" title="עבודה מהבית">🏠</span>':'';}
+function wfhBalanceHtml(){
+  const roles=[...new Set(employees.map(e=>e.role))];
+  const cnt=list=>({t:list.filter(e=>String(e.wfhDay)==='2').length,h:list.filter(e=>String(e.wfhDay)==='4').length,n:list.filter(e=>e.wfhDay===undefined||e.wfhDay==='').length});
+  const all=cnt(employees);
+  const roleRows=roles.map(r=>{const c=cnt(employees.filter(e=>e.role===r));const bad=Math.abs(c.t-c.h)>1;return `<span class="${bad?'warn':''}">${r}: ג׳ ${c.t} · ה׳ ${c.h}${bad?' ⚠️':''}</span>`;}).join('');
+  const bad=Math.abs(all.t-all.h)>1;
+  return `<b>🏠 חלוקת ימי בית</b> — שלישי: <b>${all.t}</b> | חמישי: <b>${all.h}</b> | ללא: <b>${all.n}</b>${bad?' <span class="warn">⚠️ לא מאוזן</span>':''}<div class="row">${roleRows}</div>`;
+}
+window._setWfh=function(i,v){
+  if(employees[i]) employees[i].wfhDay=v===''?'':parseInt(v);
+  const el=document.getElementById('wfh-balance');if(el)el.innerHTML=wfhBalanceHtml();
+};
+window.autoSplitWfh=function(){
+  if(!confirm('לחלק אוטומטית את כל העובדים לשלישי/חמישי, לסירוגין בתוך כל תפקיד? (ניתן לערוך ידנית אחר כך)')) return;
+  const roles=[...new Set(employees.map(e=>e.role))];
+  let flip=0;
+  roles.forEach(r=>{
+    employees.forEach((e,i)=>{
+      if(e.role!==r) return;
+      e.wfhDay=flip%2===0?2:4;flip++;
+      const sel=document.getElementById('emp-wfh-'+i);if(sel)sel.value=String(e.wfhDay);
+    });
+  });
+  const el=document.getElementById('wfh-balance');if(el)el.innerHTML=wfhBalanceHtml();
+  showToast('✓ חולק — לחץ "שמור שינויים"');
+};
+window._pickLoc=function(v){if(state.popup){state.popup.loc=v;render();}};
+// ===== END WFH =====
 
 
 
@@ -851,7 +924,7 @@ window.copyDailyDist=function(){
       const resp=inp?inp.value.trim():'';
       const rowBg=i%2===0?'#ffffff':'#f7f7f7';
       html+=`<tr style="background-color:${rowBg}">`;
-      html+=`<td style="padding:4px 8px;font-size:12px;font-weight:bold;border:1px solid #dddddd;white-space:nowrap">${emp.name}</td>`;
+      html+=`<td style="padding:4px 8px;font-size:12px;font-weight:bold;border:1px solid #dddddd;white-space:nowrap">${emp.name}${isHome(emp.name,d)?' <span style="font-weight:normal;color:#1f4e79;font-size:11px">&#127968; מהבית</span>':''}</td>`;
       html+=`<td style="padding:4px 8px;font-size:12px;border:1px solid #dddddd;color:${resp?'#1a1a1a':'#999999'}">${resp||''}</td>`;
       html+=`</tr>`;
     });
@@ -896,7 +969,7 @@ function buildDailyDist(){
       const sh=getShift(emp.name,d);
       const si=shiftInfo(sh);
       rows+=`<div class="daily-emp-row">
-        <span class="daily-emp-name">${emp.name}</span>
+        <span class="daily-emp-name">${emp.name}${isHome(emp.name,d)?' 🏠':''}</span>
         <span class="daily-emp-shift ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</span>
         <input class="daily-resp-inp" id="resp-${emp.name}" placeholder="אחריות / משימה...">
       </div>`;
@@ -1002,6 +1075,7 @@ function buildApp(){
   ${SHIFTS.filter(s=>s.key).map(s=>`<div class="leg"><div class="leg-dot ${s.cls}"></div>${s.label}</div>`).join("")}
   <div class="leg"><div class="leg-dot" style="background:#FFF3CC;border-radius:2px"></div>שישי</div>
   <div class="leg"><div class="leg-dot" style="background:#fde8e8;border-radius:2px"></div>שבת</div>
+  <div class="leg">🏠 מהבית</div>
   <span class="sync-tag">🔄 מסונכרן בזמן אמת</span>
   ${!isAdmin?'<span class="view-tag">👁 תצוגה בלבד</span>':""}
 </div>
@@ -1079,7 +1153,7 @@ function buildTable(days,isAdmin){
       const bdayNames=bdayMap[d]||[];
       const bdayNote=bdayNames.map(n=>`🎂 יום הולדת שמח ${n}!`).join(' | ');
       const combinedNote=[note,bdayNote].filter(Boolean).join(' | ');
-      return `<th style="${finalBg};${fc};${todayBorder}">${isToday?'📍 ':''}${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}`;
+      return `<th style="${finalBg};${fc};${todayBorder}">${isToday?'📍 ':''}${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}${(()=>{const pb=presenceBadge(d,wd);return pb?'<br>'+pb:'';})()}`;
     }).join("")}
     <th>סה"כ</th>
   </tr></thead><tbody>`;
@@ -1098,7 +1172,7 @@ function buildTable(days,isAdmin){
         const isToday2=new Date().getDate()===d&&new Date().getMonth()===state.month&&new Date().getFullYear()===state.year;const bgCell=isToday2?"background:#FFFACD;border-left:2px solid var(--dhl-red);border-right:2px solid var(--dhl-red)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":`background:${wkColor}`;
         if(k){
           const cn=getCellNote(emp.name,d);
-          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}">${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
+          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}${isHome(emp.name,d)?' · 🏠 מהבית':''}">${wfhDot(emp.name,d)}${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
         }
         const cnEmpty=getCellNote(emp.name,d);
         if(cnEmpty){
@@ -1184,6 +1258,10 @@ function buildPopup(){
       ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" style="${s.bg?`background:${s.bg};color:${s.txt};`:''}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
       <div class="shift-opt" style="border-style:dashed;color:#888;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="window.quickAddShift()">➕ הוסף</div>
     </div>
+    ${isWorkingShift(cur)?(()=>{const defH=wfhDefaultHome(emp,d);const ov=state.wfh&&state.wfh[emp+"|"+d];const loc=state.popup.loc||(ov||(defH?'H':'O'));return `<div class="wfh-toggle">📍 מיקום:
+      <button class="${loc==='O'?'on':''}" onclick="window._pickLoc('O')">🏢 משרד</button>
+      <button class="${loc==='H'?'on':''}" onclick="window._pickLoc('H')">🏠 בית</button>
+      <span class="wfh-hint">${defH?'ברירת מחדל: בית':'ברירת מחדל: משרד'}</span></div>`;})():''}
     <div style="margin:10px 0 4px;font-size:12px;color:#555">📝 הערה לעובד על יום זה:</div>
     <input type="text" id="cell-note-inp" value="${note}" placeholder="למשל: להגיע מוקדם, החלפה עם..." style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;margin-bottom:12px" oninput="window._liveNoteCell(this.value)">
     <div class="popup-actions">
@@ -1203,7 +1281,8 @@ window.addEmp=function(){
   const id=document.getElementById('new-emp-id').value.trim();
   const bd=document.getElementById('new-emp-bday').value.trim();
   if(!n||!r){alert('הכנס שם ותפקיד');return;}
-  employees.push({name:n,role:r,phone:p,empId:id,birthday:bd});
+  const wf=(document.getElementById('new-emp-wfh')||{}).value||'';
+  employees.push({name:n,role:r,phone:p,empId:id,birthday:bd,wfhDay:wf===''?'':parseInt(wf)});
   document.getElementById('new-emp-name').value='';
   document.getElementById('new-emp-phone').value='';
   document.getElementById('new-emp-id').value='';
@@ -1222,6 +1301,8 @@ window.saveEmps=function(){
     if(pi)employees[i].phone=pi.value.trim();
     if(ii)employees[i].empId=ii.value.trim();
     if(bi)employees[i].birthday=bi.value.trim();
+    const wi=document.getElementById('emp-wfh-'+i);
+    if(wi)employees[i].wfhDay=wi.value===''?'':parseInt(wi.value);
   });
   saveEmployeesToCloud();
   state.showEmpMgr=false;
@@ -1235,6 +1316,9 @@ function buildEmpMgr(){
     <div class="emp-mgr-box">
       <h2>👥 ניהול עובדים</h2>
       <div style="margin-bottom:8px;font-size:12px;color:#888">ערוך שמות ותפקידים, הוסף או הסר עובדים</div>
+      <div class="wfh-bal"><div id="wfh-balance">${wfhBalanceHtml()}</div>
+        <button onclick="autoSplitWfh()" style="margin-top:6px;padding:4px 10px;font-size:11px;font-weight:700;border:1px solid #1f4e79;color:#1f4e79;background:#fff;border-radius:6px;cursor:pointer;font-family:inherit">⚡ חלוקה אוטומטית מאוזנת</button>
+        <span style="font-size:10px;color:#888;margin-right:6px">בתוקף מ-1.1.2027</span></div>
       ${employees.map((emp,i)=>{
         return `<div class="emp-mgr-row">
           <input id="emp-name-${i}" value="${emp.name}" placeholder="שם">
@@ -1242,6 +1326,7 @@ function buildEmpMgr(){
           <input id="emp-phone-${i}" value="${emp.phone||''}" placeholder="טלפון (05x...)">
           <input id="emp-id-${i}" value="${emp.empId||''}" placeholder="מספר עובד" maxlength="5" style="text-align:center">
           <input id="emp-bday-${i}" value="${emp.birthday||''}" placeholder="יום הולדת (DD/MM)" maxlength="5" style="text-align:center" title="פורמט: DD/MM למשל 14/03">
+          <select id="emp-wfh-${i}" onchange="window._setWfh(${i},this.value)" style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="יום עבודה מהבית"><option value="" ${emp.wfhDay===''||emp.wfhDay===undefined?'selected':''}>🏢 ללא יום בית</option><option value="2" ${String(emp.wfhDay)==='2'?'selected':''}>🏠 שלישי</option><option value="4" ${String(emp.wfhDay)==='4'?'selected':''}>🏠 חמישי</option></select>
           <button class="emp-mgr-del" onclick="delEmp(${i})">✕</button>
         </div>`;
       }).join('')}
@@ -1253,6 +1338,7 @@ function buildEmpMgr(){
           <input id="new-emp-phone" placeholder="טלפון (05x...)">
           <input id="new-emp-id" placeholder="מספר עובד" maxlength="5" style="text-align:center">
           <input id="new-emp-bday" placeholder="יום הולדת DD/MM" maxlength="5" style="text-align:center" title="פורמט: DD/MM למשל 14/03">
+          <select id="new-emp-wfh"  style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="יום עבודה מהבית"><option value="" ${''===''||''===undefined?'selected':''}>🏢 ללא יום בית</option><option value="2" ${String('')==='2'?'selected':''}>🏠 שלישי</option><option value="4" ${String('')==='4'?'selected':''}>🏠 חמישי</option></select>
           <button class="emp-mgr-add" onclick="addEmp()" style="grid-column:span 1">+</button>
         </div>
       </div>
@@ -1738,7 +1824,7 @@ function buildEmpView(){
             <div style="font-size:13px;font-weight:800;color:${isToday?'var(--dhl-red)':'var(--dhl-dark)'}">${DAYS_FULL[wd]}</div>
             <div style="font-size:11px;color:#888">${d} ${MONTHS_HE[state.month]}${isToday?' ← היום':''}</div>
           </div>
-          <div style="flex:1;padding:0 12px">${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
+          <div style="flex:1;padding:0 12px">${isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
           <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;padding:0 12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:`<div style="color:#ccc;font-size:13px">—</div>`}</div>
         </div>`;
       }).join('')}
@@ -1760,7 +1846,7 @@ function buildEmpView(){
             <div style="font-size:13px;font-weight:800;color:${isToday?'var(--dhl-red)':'var(--dhl-dark)'}">${DAYS_FULL[wd]} ${d}</div>
             ${isToday?`<div style="font-size:10px;color:var(--dhl-red);font-weight:700">← היום</div>`:''}
           </div>
-          <div style="flex:1;padding:0 12px">${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
+          <div style="flex:1;padding:0 12px">${isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
           <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:28px;border-radius:3px;padding:0 10px;font-size:12px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:''}</div>
         </div>`;
       }).join('')}
@@ -2061,6 +2147,12 @@ window._confirmShift=function(){
     setShift(empName,d,sel);
     const noteV=document.getElementById("cell-note-inp")?document.getElementById("cell-note-inp").value:state.popup.noteVal||"";
     setCellNote(empName,d,noteV);
+    if(state.popup.loc){
+      if(!state.wfh)state.wfh={};
+      const k=empName+"|"+d;
+      if((state.popup.loc==='H')===wfhDefaultHome(empName,d)) delete state.wfh[k];
+      else state.wfh[k]=state.popup.loc;
+    }
     saveToCloud();showToast("✓ נשמר בענן");
     state.popup=null;render();
     // WhatsApp notification
