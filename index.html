@@ -224,6 +224,9 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .stf.bad{background:#ffebee;color:#c62828}
 .stf-btn{border:1px solid #c9d6ea;background:#fff;color:#1f4e79;border-radius:6px;padding:3px 9px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer}
 .stf-btn.warn{color:#e65100;border-color:#ffcc80}
+.apm{margin:10px 0 2px;padding:8px 10px;background:#f7f9fc;border:1px solid #e3e9f2;border-radius:8px;font-size:12px;color:#333}
+.apm-d{width:30px;height:28px;border:1px solid #d0d7e8;background:#fff;border-radius:6px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;color:#555}
+.apm-d.on{background:#1f4e79;color:#fff;border-color:#1f4e79}
 .wfh-chip{border:none;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
 .wfh-chip.bad{background:#ffebee;color:#c62828}
 .wfh-chip.amb{background:#fff3e0;color:#e65100}
@@ -2188,6 +2191,11 @@ function buildPopup(){
       <button class="${loc==='O'?'on':''}" onclick="window._pickLoc('O')">🏢 משרד</button>
       <button class="${loc==='H'?'on':''}" onclick="window._pickLoc('H')">🏠 בית</button>
       <span class="wfh-hint">${ov==='H'?'שובץ אוטומטית':ov?'🔒 נעול ידנית — החלוקה האוטומטית לא תשנה':'בחירה ידנית תינעל'}</span></div>`;})():''}
+    ${(()=>{const am=state.popup.applyMonth;const wds=state.popup.applyWds||[1,2,3,4];return `<div class="apm">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" ${am?'checked':''} onchange="window._toggleApplyMonth(this.checked)"> 🔁 החל על כל החודש</label>
+      ${am?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${[0,1,2,3,4,5,6].map(w=>`<button type="button" class="apm-d ${wds.includes(w)?'on':''}" onclick="window._toggleApplyWd(${w})">${DAY_NAMES[w]}</button>`).join('')}</div>
+      <div style="font-size:10px;color:#888;margin-top:4px">רק בימים שהעובד כבר עובד בהם. חופש, מילואים, מחלה וסבב לא נדרסים.</div>`:''}
+    </div>`;})()}
     <div style="margin:10px 0 4px;font-size:12px;color:#555">📝 הערה לעובד על יום זה:</div>
     <input type="text" id="cell-note-inp" value="${note}" placeholder="למשל: להגיע מוקדם, החלפה עם..." style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #d0d7e8;border-radius:8px;font-family:inherit;margin-bottom:12px" oninput="window._liveNoteCell(this.value)">
     <div class="popup-actions">
@@ -3043,6 +3051,8 @@ window.changeMonth=function(d){
   if(state.month>11){state.month=0;state.year++;}
   listenToData();
 };
+window._toggleApplyMonth=function(v){if(state.popup){state.popup.noteVal=(document.getElementById('cell-note-inp')||{}).value??state.popup.noteVal;state.popup.applyMonth=v;render();}};
+window._toggleApplyWd=function(w){if(!state.popup)return;state.popup.noteVal=(document.getElementById('cell-note-inp')||{}).value??state.popup.noteVal;const a=state.popup.applyWds||[1,2,3,4];state.popup.applyWds=a.includes(w)?a.filter(x=>x!==w):[...a,w];render();};
 window.openPopup=function(emp,d){state.popup={emp,d,sel:getShift(emp,d),noteVal:getCellNote(emp,d)};render();};
 window.closePopup=function(){state.popup=null;render();};
 window._pickShift=function(k){if(state.popup){state.popup.sel=k;render();}};
@@ -3068,6 +3078,17 @@ window._confirmShift=function(){
     const empName=state.popup.emp;
     const d=state.popup.d;
     const sel=state.popup.sel;
+    if(state.popup.applyMonth&&sel){
+      snapshotForUndo('החלה על כל החודש');
+      const wds=state.popup.applyWds||[1,2,3,4];let cnt=0;
+      getDays().forEach(({d:x,wd})=>{
+        if(!wds.includes(wd))return;
+        const cur=getShift(empName,x);
+        if(x!==d&&(!isWorkingShift(cur)||cur==='SAB'))return; // לא נוגעים בחופש/מילואים/מחלה/סבב/ימים ריקים
+        if(cur!==sel){setShift(empName,x,sel);cnt++;}
+      });
+      showToast(`✓ ${empName}: ${shiftInfo(sel).label} ב-${cnt} ימים`);
+    }
     setShift(empName,d,sel);
     const noteV=document.getElementById("cell-note-inp")?document.getElementById("cell-note-inp").value:state.popup.noteVal||"";
     setCellNote(empName,d,noteV);
