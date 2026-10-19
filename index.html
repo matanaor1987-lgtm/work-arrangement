@@ -120,7 +120,7 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .cell-inner{width:100%;height:30px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;transition:opacity 0.15s}
 .cell-inner:hover{opacity:0.75}
 .cell-inner{position:relative}
-.wfh-dot{position:absolute;top:-4px;left:-3px;font-size:9px;line-height:1;background:#fff;border-radius:50%;padding:1px;box-shadow:0 0 0 1px #c9d6ea;pointer-events:none}
+.wfh-dot{position:absolute;top:1px;left:2px;font-size:9px;line-height:1;background:#fff;border-radius:50%;padding:1px;box-shadow:0 0 0 1px #c9d6ea;pointer-events:none}
 .wfh-pres{display:inline-block;margin-top:2px;font-size:9px;font-weight:800;padding:1px 4px;border-radius:3px;line-height:1.3}
 .wfh-pres.ok{background:#e6f4ea;color:#1e5c2e}
 .wfh-pres.bad{background:#ffebee;color:#c62828}
@@ -131,6 +131,14 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .wfh-bal{background:#f4f8fc;border:1px solid #d6e2f0;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px}
 .wfh-bal .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:3px}
 .wfh-bal .warn{color:#c62828;font-weight:700}
+.wfh-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 14px;background:#f4f8fc;border-bottom:1px solid #d6e2f0;font-size:12px}
+.wfh-bar-title{font-weight:800;color:#1f4e79}
+.wfh-grp{background:#fff;border:1px solid #c9d6ea;border-radius:12px;padding:2px 9px;font-weight:700;color:#1f4e79}
+.wfh-ok{color:#1e5c2e;font-weight:700;margin-right:6px}
+.wfh-warn{font-weight:700;color:#555;margin-right:8px}
+.wfh-chip{border:none;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.wfh-chip.bad{background:#ffebee;color:#c62828}
+.wfh-chip.amb{background:#fff3e0;color:#e65100}
 .cell-empty-btn{color:#ccc;font-size:18px;background:transparent;width:100%;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cell-empty-btn:hover{color:var(--dhl-red)}
 
@@ -253,10 +261,10 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 
 /* ===== EMP MANAGER ===== */
 .emp-mgr{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;display:flex;align-items:center;justify-content:center}
-.emp-mgr-box{background:#fff;border-radius:12px;padding:22px;width:min(600px,95vw);max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md);border-top:4px solid var(--dhl-red)}
+.emp-mgr-box{background:#fff;border-radius:12px;padding:22px;width:min(860px,95vw);max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md);border-top:4px solid var(--dhl-red)}
 .emp-mgr-box h2{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--dhl-red)}
 .emp-mgr-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 34px;gap:5px;margin-bottom:5px;align-items:center}
-.emp-mgr-row input,.emp-mgr-row select{padding:6px 8px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:4px;font-family:inherit;font-weight:500}
+.emp-mgr-row input,.emp-mgr-row select{min-width:0;padding:6px 8px;font-size:12px;border:1.5px solid var(--dhl-border);border-radius:4px;font-family:inherit;font-weight:500}
 .emp-mgr-del{background:#fff0f0;border:1.5px solid #ffb0b0;border-radius:4px;cursor:pointer;font-size:13px;color:#c00;padding:4px;min-height:32px}
 .emp-mgr-add{padding:7px 14px;font-size:12px;background:var(--dhl-yellow);color:var(--dhl-red);border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:800}
 .emp-mgr-save{padding:8px 18px;font-size:13px;background:var(--dhl-red);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700}
@@ -364,7 +372,7 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
   .popup{padding:16px;width:94vw}
   .popup-grid{grid-template-columns:1fr 1fr;gap:6px}
   .emp-mgr-box{padding:16px}
-  .emp-mgr-row{grid-template-columns:1fr 1fr 28px}
+  .emp-mgr-row{grid-template-columns:1fr 1fr 1fr 28px}
   /* Hide less critical columns on small screens */
   .emp-mgr-row input:nth-child(3),
   .emp-mgr-row input:nth-child(4),
@@ -823,15 +831,22 @@ function getShift(emp,d){return state.schedule[emp+"|"+d]||"";}
 function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
 function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];}
 
-// ===== WFH — יום עבודה מהבית (מ-1.1.2027, שלישי/חמישי) =====
+// ===== WFH — יום עבודה מהבית (מ-1.1.2027, שלישי/חמישי, קבוצות A/B ברוטציה חודשית) =====
 const WFH_START=new Date(2027,0,1);
-const WFH_DAYS={2:'שלישי',4:'חמישי'};
 function isWorkingShift(k){return !!k&&!['OFF','MIL','SICK','SAB'].includes(k);}
+function wfhActive(y,m){return new Date(y,m,1)>=new Date(WFH_START.getFullYear(),WFH_START.getMonth(),1);}
+// חודש זוגי מתחילת המדיניות: A=שלישי, B=חמישי. חודש אי-זוגי: הפוך.
+function wfhGroupDay(g,y,m){
+  if(g!=='A'&&g!=='B') return null;
+  const k=(y-WFH_START.getFullYear())*12+(m-WFH_START.getMonth());
+  const aDay=(((k%2)+2)%2)===0?2:4;
+  return g==='A'?aDay:(aDay===2?4:2);
+}
 function wfhDefaultHome(emp,d){
   const dt=new Date(state.year,state.month,d);
   if(dt<WFH_START) return false;
   const e=employees.find(x=>x.name===emp);
-  return !!(e&&e.wfhDay!==undefined&&e.wfhDay!==''&&String(e.wfhDay)===String(dt.getDay()));
+  return !!e&&wfhGroupDay(e.wfhGroup,state.year,state.month)===dt.getDay();
 }
 function isHome(emp,d){
   if(!isWorkingShift(getShift(emp,d))) return false;
@@ -847,33 +862,79 @@ function dayPresence(d){
 function presenceBadge(d,wd){
   const p=dayPresence(d);
   const wfhDay=new Date(state.year,state.month,d)>=WFH_START&&(wd===2||wd===4);
-  if(!p.home&&!wfhDay) return '';
-  if(!p.total) return '';
-  const ok=p.office*2>=p.total;
+  if((!p.home&&!wfhDay)||!p.total) return '';
+  const ok=wfhOk(p);
   return `<span class="wfh-pres ${ok?'ok':'bad'}" title="במשרד ${p.office} | מהבית ${p.home}${ok?'':' — פחות מחצי במשרד!'}">🏢${p.office}/${p.total}</span>`;
 }
+// חצי במשרד, עם עיגול כלפי מטה (21 עובדים → 10 במשרד מספיק)
+function wfhOk(p){return p.office>=Math.floor(p.total/2);}
 function wfhDot(emp,d){return isHome(emp,d)?'<span class="wfh-dot" title="עבודה מהבית">🏠</span>':'';}
+const WD_SHORT=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+// בדיקות חודשיות: ימים עם פחות מחצי במשרד + עובדים בלי יום בית / עם יותר מיום אחד בשבוע
+function wfhMonthIssues(){
+  const days=getDays().filter(({d})=>new Date(state.year,state.month,d)>=WFH_START);
+  const lowDays=[];
+  days.forEach(({d,wd})=>{const p=dayPresence(d);if(p.home&&!wfhOk(p))lowDays.push({d,wd,...p});});
+  const noHome=[],twoHome=[];
+  getWeeks().forEach((week,wi)=>{
+    const wfhDays=week.filter(({d,wd})=>(wd===2||wd===4)&&new Date(state.year,state.month,d)>=WFH_START);
+    if(!wfhDays.length) return;
+    employees.forEach(e=>{
+      const worked=wfhDays.filter(({d})=>isWorkingShift(getShift(e.name,d)));
+      const homes=week.filter(({d})=>isHome(e.name,d)).length;
+      if(homes>1) twoHome.push({name:e.name,wi,d:week[0].d});
+      else if(!homes&&worked.length&&e.wfhGroup) noHome.push({name:e.name,wi,d:worked[0].d});
+    });
+  });
+  return {lowDays,noHome,twoHome};
+}
+function buildWfhBar(){
+  if(!wfhActive(state.year,state.month)) return '';
+  const aDay=wfhGroupDay('A',state.year,state.month);
+  const DN={2:'שלישי',4:'חמישי'};
+  const {lowDays,noHome,twoHome}=wfhMonthIssues();
+  const unassigned=employees.filter(e=>e.wfhGroup!=='A'&&e.wfhGroup!=='B').length;
+  const chip=(txt,d,cls)=>`<button class="wfh-chip ${cls}" onclick="goToDay(${d})">${txt}</button>`;
+  const ok=!lowDays.length&&!noHome.length&&!twoHome.length&&!unassigned;
+  return `<div class="wfh-bar">
+    <span class="wfh-bar-title">🏠 ימי בית החודש:</span>
+    <span class="wfh-grp">קבוצה A ← ${DN[aDay]}</span><span class="wfh-grp">קבוצה B ← ${DN[aDay===2?4:2]}</span>
+    ${ok?'<span class="wfh-ok">✓ הכל תקין — כל יום לפחות חצי במשרד</span>':''}
+    ${unassigned?`<span class="wfh-warn">⚠️ ${unassigned} עובדים בלי קבוצה (ניהול עובדים)</span>`:''}
+    ${lowDays.length?`<span class="wfh-warn">🔴 פחות מחצי במשרד:</span>${lowDays.map(x=>chip(`${WD_SHORT[x.wd]} ${x.d} (${x.office}/${x.total})`,x.d,'bad')).join('')}`:''}
+    ${noHome.length?`<span class="wfh-warn">🟠 בלי יום בית:</span>${noHome.map(x=>chip(`${x.name} · שבוע ${x.wi+1}`,x.d,'amb')).join('')}`:''}
+    ${twoHome.length?`<span class="wfh-warn">🟠 יותר מיום בית אחד:</span>${twoHome.map(x=>chip(`${x.name} · שבוע ${x.wi+1}`,x.d,'amb')).join('')}`:''}
+  </div>`;
+}
+window.goToDay=function(d){
+  const wi=getWeeks().findIndex(w=>w.some(x=>x.d===d));
+  state.weekView=true;state.weekOffset=Math.max(0,wi);render();
+};
 function wfhBalanceHtml(){
   const roles=[...new Set(employees.map(e=>e.role))];
-  const cnt=list=>({t:list.filter(e=>String(e.wfhDay)==='2').length,h:list.filter(e=>String(e.wfhDay)==='4').length,n:list.filter(e=>e.wfhDay===undefined||e.wfhDay==='').length});
+  const cnt=list=>({a:list.filter(e=>e.wfhGroup==='A').length,b:list.filter(e=>e.wfhGroup==='B').length,n:list.filter(e=>e.wfhGroup!=='A'&&e.wfhGroup!=='B').length});
   const all=cnt(employees);
-  const roleRows=roles.map(r=>{const c=cnt(employees.filter(e=>e.role===r));const bad=Math.abs(c.t-c.h)>1;return `<span class="${bad?'warn':''}">${r}: ג׳ ${c.t} · ה׳ ${c.h}${bad?' ⚠️':''}</span>`;}).join('');
-  const bad=Math.abs(all.t-all.h)>1;
-  return `<b>🏠 חלוקת ימי בית</b> — שלישי: <b>${all.t}</b> | חמישי: <b>${all.h}</b> | ללא: <b>${all.n}</b>${bad?' <span class="warn">⚠️ לא מאוזן</span>':''}<div class="row">${roleRows}</div>`;
+  const roleRows=roles.map(r=>{const c=cnt(employees.filter(e=>e.role===r));return `<span>${r}: A ${c.a} · B ${c.b}</span>`;}).join('');
+  const bad=Math.abs(all.a-all.b)>1;
+  const y=wfhActive(state.year,state.month)?state.year:2027, m=wfhActive(state.year,state.month)?state.month:0;
+  const DN={2:'שלישי',4:'חמישי'};
+  return `<b>🏠 קבוצות יום בית</b> — A: <b>${all.a}</b> | B: <b>${all.b}</b>${all.n?` | בלי קבוצה: <b>${all.n}</b>`:''}${bad?' <span class="warn">⚠️ לא מאוזן</span>':''}
+    <div class="row">${roleRows}</div>
+    <div class="row" style="color:#1f4e79">ב${MONTHS[m]} ${y}: A ← ${DN[wfhGroupDay('A',y,m)]}, B ← ${DN[wfhGroupDay('B',y,m)]} · מתחלפים כל חודש</div>`;
 }
 window._setWfh=function(i,v){
-  if(employees[i]) employees[i].wfhDay=v===''?'':parseInt(v);
+  if(employees[i]) employees[i].wfhGroup=v;
   const el=document.getElementById('wfh-balance');if(el)el.innerHTML=wfhBalanceHtml();
 };
 window.autoSplitWfh=function(){
-  if(!confirm('לחלק אוטומטית את כל העובדים לשלישי/חמישי, לסירוגין בתוך כל תפקיד? (ניתן לערוך ידנית אחר כך)')) return;
+  if(!confirm('לחלק אוטומטית את כל העובדים לקבוצות A/B, לסירוגין בתוך כל תפקיד? (ניתן לערוך ידנית אחר כך)')) return;
   const roles=[...new Set(employees.map(e=>e.role))];
   let flip=0;
   roles.forEach(r=>{
     employees.forEach((e,i)=>{
       if(e.role!==r) return;
-      e.wfhDay=flip%2===0?2:4;flip++;
-      const sel=document.getElementById('emp-wfh-'+i);if(sel)sel.value=String(e.wfhDay);
+      e.wfhGroup=flip%2===0?'A':'B';flip++;
+      const sel=document.getElementById('emp-wfh-'+i);if(sel)sel.value=e.wfhGroup;
     });
   });
   const el=document.getElementById('wfh-balance');if(el)el.innerHTML=wfhBalanceHtml();
@@ -1084,6 +1145,7 @@ ${state.filterEmp?`<div style="background:var(--dhl-yellow);padding:6px 14px;dis
   <button onclick="filterByEmp('')" style="padding:2px 10px;background:var(--dhl-red);color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">✕ הצג הכל</button>
 </div>`:""}
 ${isAdmin?buildNoteBar(days):""}
+${buildWfhBar()}
 ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable(days,isAdmin)}</div>`}
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
@@ -1282,7 +1344,7 @@ window.addEmp=function(){
   const bd=document.getElementById('new-emp-bday').value.trim();
   if(!n||!r){alert('הכנס שם ותפקיד');return;}
   const wf=(document.getElementById('new-emp-wfh')||{}).value||'';
-  employees.push({name:n,role:r,phone:p,empId:id,birthday:bd,wfhDay:wf===''?'':parseInt(wf)});
+  employees.push({name:n,role:r,phone:p,empId:id,birthday:bd,wfhGroup:wf});
   document.getElementById('new-emp-name').value='';
   document.getElementById('new-emp-phone').value='';
   document.getElementById('new-emp-id').value='';
@@ -1302,7 +1364,7 @@ window.saveEmps=function(){
     if(ii)employees[i].empId=ii.value.trim();
     if(bi)employees[i].birthday=bi.value.trim();
     const wi=document.getElementById('emp-wfh-'+i);
-    if(wi)employees[i].wfhDay=wi.value===''?'':parseInt(wi.value);
+    if(wi)employees[i].wfhGroup=wi.value;
   });
   saveEmployeesToCloud();
   state.showEmpMgr=false;
@@ -1326,7 +1388,7 @@ function buildEmpMgr(){
           <input id="emp-phone-${i}" value="${emp.phone||''}" placeholder="טלפון (05x...)">
           <input id="emp-id-${i}" value="${emp.empId||''}" placeholder="מספר עובד" maxlength="5" style="text-align:center">
           <input id="emp-bday-${i}" value="${emp.birthday||''}" placeholder="יום הולדת (DD/MM)" maxlength="5" style="text-align:center" title="פורמט: DD/MM למשל 14/03">
-          <select id="emp-wfh-${i}" onchange="window._setWfh(${i},this.value)" style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="יום עבודה מהבית"><option value="" ${emp.wfhDay===''||emp.wfhDay===undefined?'selected':''}>🏢 ללא יום בית</option><option value="2" ${String(emp.wfhDay)==='2'?'selected':''}>🏠 שלישי</option><option value="4" ${String(emp.wfhDay)==='4'?'selected':''}>🏠 חמישי</option></select>
+          <select id="emp-wfh-${i}" onchange="window._setWfh(${i},this.value)" style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="קבוצת יום בית"><option value="" ${emp.wfhGroup!=='A'&&emp.wfhGroup!=='B'?'selected':''}>🏢 בלי קבוצה</option><option value="A" ${emp.wfhGroup==='A'?'selected':''}>🏠 קבוצה A</option><option value="B" ${emp.wfhGroup==='B'?'selected':''}>🏠 קבוצה B</option></select>
           <button class="emp-mgr-del" onclick="delEmp(${i})">✕</button>
         </div>`;
       }).join('')}
@@ -1338,7 +1400,7 @@ function buildEmpMgr(){
           <input id="new-emp-phone" placeholder="טלפון (05x...)">
           <input id="new-emp-id" placeholder="מספר עובד" maxlength="5" style="text-align:center">
           <input id="new-emp-bday" placeholder="יום הולדת DD/MM" maxlength="5" style="text-align:center" title="פורמט: DD/MM למשל 14/03">
-          <select id="new-emp-wfh"  style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="יום עבודה מהבית"><option value="" ${''===''||''===undefined?'selected':''}>🏢 ללא יום בית</option><option value="2" ${String('')==='2'?'selected':''}>🏠 שלישי</option><option value="4" ${String('')==='4'?'selected':''}>🏠 חמישי</option></select>
+          <select id="new-emp-wfh" style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px" title="קבוצת יום בית"><option value="">🏢 בלי קבוצה</option><option value="A">🏠 קבוצה A</option><option value="B">🏠 קבוצה B</option></select>
           <button class="emp-mgr-add" onclick="addEmp()" style="grid-column:span 1">+</button>
         </div>
       </div>
