@@ -1580,6 +1580,7 @@ function buildEarlyPreview(){
     :`<div class="wfhv-empty">${pr.clear?'אין משמרות בוקר למחוק בחודש הזה.':'אין שינויים — משמרות הבוקר כבר משובצות לפי הכללים.'}</div>`}
     <div class="wfhv-act">
       <button class="wfhv-cancel" onclick="cancelEarly()">ביטול</button>
+      ${getUndo()?`<button class="wfhv-cancel" style="color:#e65100;border-color:#ffcc80" onclick="cancelEarly();cancelSab();undoLastPlan()" title="מחזיר את החודש בדיוק למצב שלפני הפעולה האחרונה">↩️ החזר למצב שלפני: ${getUndo().label}</button>`:''}
       ${pr.clear?'':`<button class="wfhv-cancel" style="margin-right:auto;color:#880e4f;border-color:#f1b5cb" onclick="planClearEarly()">🧹 מחק את כל משמרות הבוקר בחודש</button>`}
       ${names.length?`<button class="wfhv-ok-btn" style="background:#4527a0;border-color:#4527a0" onclick="approveEarly()">✓ אשר ושמור</button>`:''}
     </div>
@@ -1649,6 +1650,7 @@ function buildSabPreview(){
     ${pr.stuck.length?`<div class="wfhv-amb">🟠 צריך סבב אבל אין יום פנוי בחודש הזה: ${pr.stuck.map(x=>`${x.name} (שבוע ${x.wi+1})`).join(', ')}</div>`:''}
     <div class="wfhv-act">
       <button class="wfhv-cancel" onclick="cancelSab()">ביטול</button>
+      ${getUndo()?`<button class="wfhv-cancel" style="color:#e65100;border-color:#ffcc80" onclick="cancelEarly();cancelSab();undoLastPlan()" title="מחזיר את החודש בדיוק למצב שלפני הפעולה האחרונה">↩️ החזר למצב שלפני: ${getUndo().label}</button>`:''}
       ${pr.changes.length?`<button class="wfhv-ok-btn" style="background:#880e4f;border-color:#880e4f" onclick="approveSab()">✓ אשר ושמור</button>`:''}
     </div>
   </div></div>`;
@@ -1949,7 +1951,6 @@ function buildNoteBar(days){
     <button onclick="saveNote()">💾 שמור</button>
     <button onclick="fillDefault()" style="background:#FFF3CC;color:#D40511;border-color:#FFCC00;margin-right:8px">⚡ מלא ברירת מחדל</button>
     <button onclick="openCopyMonth()" style="background:#e8f4ea;color:#1e5c2e;border-color:#b0d8b8;margin-right:8px">📋 העתק לחודש הבא</button>
-    ${getUndo()?`<button onclick="undoLastPlan()" style="background:#fff3e0;color:#e65100;border-color:#ffcc80;margin-right:8px" title="מחזיר את החודש למצב שלפני השיבוץ האחרון">↩️ בטל: ${getUndo().label}</button>`:''}
     <label style="display:inline-flex;align-items:center;padding:4px 10px;border:1px solid #bbdefb;border-radius:4px;background:#e3f2fd;color:#1565c0;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px" title="מחזיר רק את החודש המוצג מקובץ גיבוי JSON">♻️ שחזר חודש מגיבוי<input type="file" accept=".json" onchange="restoreMonthFromBackup(event)" style="display:none"></label>
     <button onclick="planSabDays()" style="background:#fce4ec;color:#880e4f;border-color:#f1b5cb;margin-right:8px" title="מומלץ להריץ לפני משמרות הבוקר">🔁 שבץ סבבים</button>
     <button onclick="planEarlyShifts()" style="background:#ede7f6;color:#4527a0;border-color:#c5b8e6;margin-right:8px">🌅 שבץ משמרות בוקר</button>
