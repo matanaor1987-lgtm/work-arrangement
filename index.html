@@ -137,6 +137,30 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .wfh-ok{color:#1e5c2e;font-weight:700;margin-right:6px}
 .wfh-warn{font-weight:700;color:#555;margin-right:8px}
 .wfh-btn{border:1px solid #c9d6ea;background:#fff;color:#1f4e79;border-radius:6px;padding:4px 11px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.wfhp{padding:0 16px 16px}
+.wfhp-empty{background:#f4f8fc;border:1px dashed #c9d6ea;border-radius:8px;padding:14px;text-align:center;color:#1f4e79;font-weight:700;font-size:13px}
+.wfhp-head{font-size:14px;font-weight:800;color:#1f4e79;margin:4px 0 8px}
+.wfhp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
+.wfhp-kpi{background:#fff;border:1px solid #d6e2f0;border-radius:8px;padding:8px 10px;text-align:center}
+.wfhp-kpi .v{font-size:20px;font-weight:800;color:#1f4e79}
+.wfhp-kpi .l{font-size:11px;color:#777}
+.wfhp-kpi.ok .v{color:#1e5c2e}.wfhp-kpi.bad .v{color:#c62828}.wfhp-kpi.warn .v{color:#e65100}
+.wfhp-t{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+.wfhp-t th{background:#f4f8fc;padding:7px 6px;border:1px solid #e0e7f0;font-size:11px;color:#1f4e79;font-weight:800;white-space:nowrap}
+.wfhp-t td{padding:5px 6px;border:1px solid #edf1f6;text-align:center;white-space:nowrap}
+.wfhp-t td.na{background:#fafafa}
+.wfhp-t td.nm{text-align:right;font-weight:700}
+.wfhp-t .rule{font-size:10px;font-weight:600;color:#888;margin-right:6px}
+.wfhp-t td.num{color:#1f4e79;font-weight:700}
+.wfhp-t .c{display:inline-block;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin:0 1px}
+.wfhp-t .c.tue{background:#e3f2fd;color:#1565c0}.wfhp-t .c.thu{background:#e8f5e9;color:#2e7d32}
+.wfhp-t .c.early{background:#ede7f6;color:#4527a0}.wfhp-t .c.miss{background:#fff3e0;color:#e65100}
+.wfhp-t .c.none{color:#bbb}.wfhp-t .c.off{color:#888}
+.wfhp-t td.fair{min-width:150px}
+.wfhp-t .fw{display:flex;align-items:center;gap:6px}
+.wfhp-t .bar{flex:0 0 70px;height:6px;background:#eef2f7;border-radius:3px;overflow:hidden}
+.wfhp-t .bar div{height:100%;background:#1f4e79;opacity:.6}
+.wfhp-t .next{font-size:10px;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:0 6px;font-weight:700}
 .wfh-chip{border:none;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
 .wfh-chip.bad{background:#ffebee;color:#c62828}
 .wfh-chip.amb{background:#fff3e0;color:#e65100}
@@ -1033,6 +1057,69 @@ function wfhRuleSelect(id,val,extra){
 }
 function wfhParseRule(v){return v==='2'?2:v==='4'?4:v==='X'?'X':'';}
 window._pickLoc=function(v){if(state.popup){state.popup.loc=v;render();}};
+// ===== פאנל נתוני עבודה מהבית (במקום טבלת ימים לפי שבוע) =====
+function buildWfhPanel(emps,isAdmin){
+  if(!wfhActive(state.year,state.month)){
+    return `<div class="wfhp"><div class="wfhp-empty">🏠 נתוני עבודה מהבית יוצגו כאן החל מינואר 2027</div></div>`;
+  }
+  const weeks=getWeeks();
+  const wWeeks=wfhWeeks();
+  const wfhDaysAll=getDays().filter(({d,wd})=>isWfhDay(d,wd));
+  // KPIs
+  let homeTotal=0,officeSum=0,totalSum=0,low=0;
+  wfhDaysAll.forEach(({d})=>{const p=dayPresence(d);homeTotal+=p.home;officeSum+=p.office;totalSum+=p.total;if(p.home&&!wfhOk(p))low++;});
+  const officePct=totalSum?Math.round(officeSum/totalSum*100):0;
+  const flexEmps=employees.filter(e=>e.wfhRule!=='X'&&e.wfhRule!==2&&e.wfhRule!==4&&e.wfhRule!=='2'&&e.wfhRule!=='4');
+  const ytd={};employees.forEach(e=>{ytd[e.name]=wfhYearThu(e.name);});
+  const flexVals=flexEmps.map(e=>ytd[e.name]);
+  const gap=flexVals.length?Math.max(...flexVals)-Math.min(...flexVals):0;
+  const avg=flexVals.length?flexVals.reduce((x,y)=>x+y,0)/flexVals.length:0;
+  const maxYtd=Math.max(1,...Object.values(ytd));
+  const {noHome}=wfhMonthIssues();
+  const kpi=(val,lbl,cls)=>`<div class="wfhp-kpi ${cls||''}"><div class="v">${val}</div><div class="l">${lbl}</div></div>`;
+  const ruleLbl=r=>r==='X'?'🏢 תמיד משרד':String(r)==='2'?'רק ג׳':String(r)==='4'?'רק ה׳':'גמיש';
+  const stats=wfhMonthStats();
+  const rows=emps.map(e=>{
+    const ex=e.wfhRule==='X';
+    const cells=weeks.map((w,wi)=>{
+      const ww=wWeeks.find(x=>x.wi===wi);
+      if(!ww) return `<td class="na"></td>`;
+      const chips=[];
+      w.forEach(({d,wd})=>{
+        if(isEarlyHome(e.name,d)) chips.push(`<span class="c early" title="משמרת 05 — ${WD_SHORT[wd]} ${d}">🌙${WD_SHORT[wd]}</span>`);
+        else if(isWfhDay(d,wd)&&isHome(e.name,d)) chips.push(`<span class="c ${wd===4?'thu':'tue'}" title="${WD_SHORT[wd]} ${d}">${WD_SHORT[wd]} ${d}</span>`);
+      });
+      if(chips.length) return `<td>${chips.join('')}</td>`;
+      if(ex) return `<td><span class="c off">🏢</span></td>`;
+      const worked=ww.days.some(d=>isWorkingShift(getShift(e.name,d)));
+      const missing=noHome.some(x=>x.name===e.name&&x.wi===wi);
+      if(missing) return `<td><span class="c miss" title="לא קיבל יום בית בשבוע זה">אין</span></td>`;
+      return `<td><span class="c none" title="${worked?'שבוע שחוצה חודש':'לא עבד בג׳/ה׳'}">·</span></td>`;
+    }).join('');
+    const st=stats[e.name]||{t:0,h:0};
+    const y=ytd[e.name];
+    const isLowest=!ex&&flexEmps.includes(e)&&flexVals.length&&y===Math.min(...flexVals)&&gap>0;
+    return `<tr>
+      <td class="nm">${e.name}<span class="rule">${ruleLbl(e.wfhRule)}</span></td>
+      ${cells}
+      <td class="num">${ex?'—':st.t}</td><td class="num">${ex?'—':st.h}</td>
+      <td class="fair">${ex?'—':`<div class="fw"><div class="bar"><div style="width:${Math.round(y/maxYtd*100)}%"></div></div><b>${y}</b>${isLowest?'<span class="next" title="קיבל הכי מעט ימי חמישי — יקבל עדיפות">הבא בתור</span>':''}</div>`}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="wfhp">
+    <div class="wfhp-head">🏠 עבודה מהבית — ${MONTHS[state.month]} ${state.year}</div>
+    <div class="wfhp-kpis">
+      ${kpi(homeTotal,'ימי בית החודש')}
+      ${kpi(officePct+'%','נוכחות במשרד בג׳/ה׳',officePct>=50?'ok':'bad')}
+      ${kpi(low,'ימים מתחת לחצי',low?'bad':'ok')}
+      ${kpi(gap,'פער ימי חמישי השנה',gap<=1?'ok':'warn')}
+    </div>
+    <div style="overflow-x:auto"><table class="wfhp-t">
+      <thead><tr><th>עובד</th>${weeks.map((_,i)=>`<th>שבוע ${i+1}</th>`).join('')}<th>ג׳</th><th>ה׳</th><th title="ימי חמישי מהבית מתחילת השנה">⚖️ חמישי השנה <span style="font-weight:400">(ממוצע ${avg.toFixed(1)})</span></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
 // ===== END WFH =====
 
 
@@ -1376,26 +1463,7 @@ function buildSummary(days,isAdmin){
       <div class="sum-card"><div class="val">${tO}</div><div class="lbl">ימי חופש</div></div>
       <div class="sum-card"><div class="val">${tM}</div><div class="lbl">מילואים</div></div>
     </div>
-    <div style="padding:0 16px 16px">
-    <table class="emp-sum-table">
-      <thead><tr><th>עובד</th>${weeks.map((_,i)=>`<th>שבוע ${i+1}</th>`).join("")}<th>סה"כ</th><th>חופש</th>${wfhActive(state.year,state.month)?'<th title="ימי בית החודש: שלישי / חמישי">🏠 ג׳/ה׳</th><th title="ימי חמישי מהבית מתחילת השנה — לבדיקת הוגנות">⚖️ ה׳ השנה</th>':''}</tr></thead>
-      <tbody>${filteredEmps.map(emp=>{
-        const rc=ROLE_COLORS[emp.role]||"#333";
-        const wc=weeks.map(w=>w.filter(({d})=>["A","B","C","D","E","F","G","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(getShift(emp.name,d))).length);
-        const tot=wc.reduce((a,b)=>a+b,0);
-        const off=days.filter(({d})=>getShift(emp.name,d)==="OFF").length;
-        const mx=Math.max(...wc,1);
-        const hasOverwork=wc.some(v=>v>5);
-        return `<tr style="${hasOverwork?'background:#fff5f5':''}">
-          <td style="${hasOverwork?'color:#c62828;font-weight:700':''}">${emp.name}${hasOverwork?` <span style="font-size:10px;background:#ffebee;color:#c62828;padding:1px 5px;border-radius:8px;margin-right:4px">⚠️ מעל 5 ימים</span>`:''}</td>
-          
-          ${wc.map(v=>`<td style="${v>5?'background:#ffebee;color:#c62828;font-weight:700':''}"><div class="week-bar-wrap"><div class="week-bar" style="background:${v>5?'#c62828':rc};opacity:0.6;width:${Math.round(v/mx*40)}px"></div><span>${v}</span></div></td>`).join("")}
-          <td style="font-weight:700;color:#D40511">${tot}</td>
-          <td style="color:#5c2e8a">${off}</td>
-          ${wfhActive(state.year,state.month)?(()=>{const ms=wfhMonthStats()[emp.name]||{t:0,h:0};const ex=emp.wfhRule==='X';return `<td style="color:#1f4e79">${ex?'🏢':`${ms.t} / ${ms.h}`}</td><td style="color:#1f4e79;font-weight:700">${ex?'—':wfhYearThu(emp.name)}</td>`;})():''}
-        </tr>`;
-      }).join("")}</tbody>
-    </table></div>
+    ${buildWfhPanel(filteredEmps,isAdmin)}
   </div>`;}
 
 function getCellNote(emp,d){return state.cellNotes&&state.cellNotes[emp+"|"+d]||"";}
