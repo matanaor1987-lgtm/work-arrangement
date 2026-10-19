@@ -726,6 +726,12 @@ function saveToCloud(){
   if(!db)return;
   const key=`seder_${state.year}_${state.month}`;
   set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{}});
+  if(wfhActive(state.year,state.month)){
+    const st=wfhMonthStats();
+    if(!state.wfhStats)state.wfhStats={};
+    state.wfhStats[state.year+'_'+state.month]=st;
+    set(ref(db,'wfhStats/'+state.year+'_'+state.month),st);
+  }
 }
 function saveEmployeesToCloud(){
   if(!db)return;
@@ -841,8 +847,12 @@ const WD_SHORT=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
 function isWorkingShift(k){return !!k&&!['OFF','MIL','SICK','SAB'].includes(k);}
 function wfhActive(y,m){return new Date(y,m,1)>=new Date(WFH_START.getFullYear(),WFH_START.getMonth(),1);}
 function isWfhDay(d,wd){return (wd===2||wd===4)&&new Date(state.year,state.month,d)>=WFH_START;}
+// משמרת שמתחילה ב-05 → תמיד עבודה מהבית
+function isEarlyShift(k){if(!isWorkingShift(k))return false;const si=SHIFTS.find(s=>s.key===k);return !!si&&/^0?5(\D|$)/.test(String(si.label||'').trim());}
+function isEarlyHome(emp,d){return isEarlyShift(getShift(emp,d));}
 function isHome(emp,d){
   if(!isWorkingShift(getShift(emp,d))) return false;
+  if(isEarlyHome(emp,d)) return true;
   const v=state.wfh&&state.wfh[emp+"|"+d];
   return v==='H'||v==='MH';
 }
@@ -859,24 +869,45 @@ function presenceBadge(d,wd){
   const ok=wfhOk(p);
   return `<span class="wfh-pres ${ok?'ok':'bad'}" title="במשרד ${p.office} | מהבית ${p.home}${ok?'':' — פחות מחצי במשרד!'}">🏢${p.office}/${p.total}</span>`;
 }
-function wfhDot(emp,d){return isHome(emp,d)?'<span class="wfh-dot" title="עבודה מהבית">🏠</span>':'';}
+function wfhDot(emp,d){return isHome(emp,d)?`<span class="wfh-dot" title="${isEarlyHome(emp,d)?'משמרת 05 — מהבית':'עבודה מהבית'}">🏠</span>`:'';}
 function wfhWeeks(){
-  return getWeeks().map((w,wi)=>({wi,days:w.filter(({d,wd})=>isWfhDay(d,wd)).map(x=>x.d)})).filter(w=>w.days.length);
+  const n=daysInMonth(state.year,state.month);
+  return getWeeks().map((w,wi)=>{
+    const sun=w[0].d-w[0].wd; // יום ראשון של השבוע (יכול להיות בחודש הקודם)
+    return {wi,days:w.filter(({d,wd})=>isWfhDay(d,wd)).map(x=>x.d),
+      tueOut:sun+2<1||sun+2>n, thuOut:sun+4<1||sun+4>n, sun};
+  }).filter(w=>w.days.length);
 }
 function wfhMonthIssues(){
   const lowDays=[];
   getDays().forEach(({d,wd})=>{if(!isWfhDay(d,wd))return;const p=dayPresence(d);if(p.home&&!wfhOk(p))lowDays.push({d,wd,...p});});
   const noHome=[],twoHome=[];
-  wfhWeeks().forEach(({wi,days})=>{
+  wfhWeeks().forEach(({wi,days,tueOut,thuOut})=>{
+    const split=tueOut||thuOut; // שבוע שחוצה חודש — היום השני בחודש הסמוך
     employees.forEach(e=>{
-      if(e.wfhRule==='X') return;
+      if(e.wfhRule==='X'&&!days.some(d=>isEarlyHome(e.name,d))) return;
       const worked=days.filter(d=>isWorkingShift(getShift(e.name,d)));
-      const homes=getWeeks()[wi].filter(({d})=>isHome(e.name,d)).length;
-      if(homes>1) twoHome.push({name:e.name,wi,d:days[0]});
-      else if(!homes&&worked.length) noHome.push({name:e.name,wi,d:worked[0]});
+      const homes=days.filter(d=>isHome(e.name,d)).length;
+      const regular=days.filter(d=>isHome(e.name,d)&&!isEarlyHome(e.name,d)).length;
+      if(homes>1&&regular>0) twoHome.push({name:e.name,wi,d:days[0]});
+      else if(!homes&&worked.length&&!split) noHome.push({name:e.name,wi,d:worked[0]});
     });
   });
   return {lowDays,noHome,twoHome};
+}
+function wfhMonthStats(){
+  const stats={};
+  employees.forEach(e=>{
+    let t=0,h=0;
+    getDays().forEach(({d,wd})=>{if(isWfhDay(d,wd)&&isHome(e.name,d)&&!isEarlyHome(e.name,d)){if(wd===2)t++;else h++;}});
+    stats[e.name]={t,h};
+  });
+  return stats;
+}
+function wfhYearThu(name){
+  let n=0;const y=String(state.year);
+  Object.entries(state.wfhStats||{}).forEach(([mk,row])=>{if(mk.split('_')[0]===y&&mk!==state.year+'_'+state.month)n+=((row||{})[name]||{}).h||0;});
+  return n+((wfhMonthStats()[name]||{}).h||0);
 }
 // כמה ימי חמישי מהבית כל עובד קיבל בחודשים אחרים (להוגנות)
 function wfhThuHistory(){
@@ -887,7 +918,7 @@ function wfhThuHistory(){
   });
   return h;
 }
-window.autoAssignWfh=function(){
+window.autoAssignWfh=async function(){
   if(!wfhActive(state.year,state.month)){alert('ימי בית נכנסים לתוקף מ-1.1.2027');return;}
   if(!confirm('לחלק ימי בית לכל החודש לפי הסידור הנוכחי?\nשיבוצים ידניים (נעולים) יישארו כמו שהם.')) return;
   state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
@@ -895,7 +926,19 @@ window.autoAssignWfh=function(){
   Object.keys(wfh).forEach(k=>{if(wfh[k]==='H')delete wfh[k];});
   const thuHist=wfhThuHistory();
   const thuNow={};
-  wfhWeeks().forEach(({wi,days})=>{
+  // שבוע שמתחיל בחודש הקודם: מי שכבר היה בבית בשלישי של אותו שבוע — לא מקבל עוד יום
+  const pm=state.month===0?11:state.month-1, py=state.month===0?state.year-1:state.year;
+  let prev={};
+  try{ if(db&&wfhActive(py,pm)){const snap=await get(ref(db,`seder_${py}_${pm}`));prev=snap.val()||{};} }catch(e){}
+  const pn=daysInMonth(py,pm);
+  const prevHome=(name,dayInPrev)=>{
+    const k=(prev.schedule||{})[name+'|'+dayInPrev]||'';
+    if(!isWorkingShift(k)) return false;
+    if(isEarlyShift(k)) return true;
+    const v=(prev.wfh||{})[name+'|'+dayInPrev];
+    return v==='H'||v==='MH';
+  };
+  wfhWeeks().forEach(({wi,days,tueOut,sun})=>{
     // קיבולת: כמה מותר בבית בכל יום
     const cap={};
     days.forEach(d=>{const p=dayPresence(d);cap[d]=p.total-Math.floor(p.total/2)-p.home;});
@@ -904,6 +947,8 @@ window.autoAssignWfh=function(){
       if(e.wfhRule==='X') return;
       const weekDays=getWeeks()[wi].map(x=>x.d);
       if(weekDays.some(d=>wfh[e.name+'|'+d]==='MH')) return; // כבר יש יום בית ידני
+      if(days.some(d=>isEarlyHome(e.name,d))) return; // משמרת 05 ביום ג׳/ה׳ = יום הבית שלו
+      if(tueOut&&sun+2<1&&prevHome(e.name,pn+sun+2)) return; // כבר היה בבית בשלישי (חודש קודם)
       let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO');
       if(e.wfhRule===2||e.wfhRule===4||e.wfhRule==='2'||e.wfhRule==='4'){
         const rd=parseInt(e.wfhRule);
@@ -914,32 +959,27 @@ window.autoAssignWfh=function(){
     });
     const assign=(e,d)=>{wfh[e.name+'|'+d]='H';cap[d]--;if(ilWD(state.year,state.month,d)===4)thuNow[e.name]=(thuNow[e.name]||0)+1;};
     forced.forEach(({e,cands})=>{if(cap[cands[0]]>0)assign(e,cands[0]);});
-    // גמישים: מי שקיבל פחות ימי חמישי עד עכשיו — מקבל חמישי ראשון
+    // גמישים — הוגנות: קובעים כמה הולכים לחמישי לפי המקום הפנוי,
+    // ומי שקיבל הכי מעט ימי חמישי עד היום (כולל חודשים קודמים) מקבל חמישי ראשון
     const thuOf=n=>(thuHist[n]||0)+(thuNow[n]||0);
-    flex.sort((x,y)=>thuOf(x.e.name)-thuOf(y.e.name)||Math.random()-0.5);
-    flex.forEach(({e,cands})=>{
-      const thu=cands.find(d=>ilWD(state.year,state.month,d)===4);
-      const tue=cands.find(d=>ilWD(state.year,state.month,d)===2);
-      // לשמור איזון: חמישי אם נשאר בו מקום לפחות כמו בשלישי
-      let pick=null;
-      if(thu&&cap[thu]>0&&(!tue||cap[thu]>=cap[tue])) pick=thu;
-      else if(tue&&cap[tue]>0) pick=tue;
-      else if(thu&&cap[thu]>0) pick=thu;
-      if(pick) assign(e,pick);
-    });
+    flex.forEach(f=>{f.tie=Math.random();});
+    flex.sort((x,y)=>thuOf(x.e.name)-thuOf(y.e.name)||x.tie-y.tie);
+    const both=flex.filter(f=>f.cands.length===2);
+    if(both.length){
+      const [tue,thu]=both[0].cands.slice().sort((x,y)=>ilWD(state.year,state.month,x)-ilWD(state.year,state.month,y));
+      const ct=Math.max(0,cap[tue]),ch=Math.max(0,cap[thu]),n=both.length;
+      let k=Math.round((n+ch-ct)/2);
+      k=Math.min(k,ch,n);k=Math.max(k,0,n-ct);k=Math.min(k,ch);
+      both.forEach((f,i)=>{
+        if(i<k&&cap[thu]>0) assign(f.e,thu);
+        else if(cap[tue]>0) assign(f.e,tue);
+        else if(cap[thu]>0) assign(f.e,thu);
+      });
+    }
   });
   state.wfh=wfh;
   // סטטיסטיקה חודשית להוגנות בחודשים הבאים
-  const stats={};
-  employees.forEach(e=>{
-    let t=0,h=0;
-    getDays().forEach(({d,wd})=>{if(isHome(e.name,d)){if(wd===2)t++;else if(wd===4)h++;}});
-    stats[e.name]={t,h};
-  });
-  if(!state.wfhStats)state.wfhStats={};
-  state.wfhStats[state.year+'_'+state.month]=stats;
   saveToCloud();
-  if(db) set(ref(db,'wfhStats/'+state.year+'_'+state.month),stats);
   const iss=wfhMonthIssues();
   showToast(`✓ ימי בית חולקו${iss.lowDays.length||iss.noHome.length?' — יש מה לבדוק בשורה למעלה':''}`);
   render();
@@ -977,7 +1017,7 @@ window.goToDay=function(d){
   const wi=getWeeks().findIndex(w=>w.some(x=>x.d===d));
   state.weekView=true;state.weekOffset=Math.max(0,wi);render();
 };
-const WFH_RULES=[['','🔄 גמיש'],['2','🏠 רק שלישי'],['4','🏠 רק חמישי'],['X','🏢 פטור']];
+const WFH_RULES=[['','🔄 גמיש'],['2','🏠 רק שלישי'],['4','🏠 רק חמישי'],['X','🏢 תמיד משרד']];
 function wfhRuleSelect(id,val,extra){
   const v=val===undefined||val===null?'':String(val);
   return `<select id="${id}" ${extra||''} title="יום בית" style="padding:6px;border:1px solid #d0d7e8;border-radius:6px;font-family:inherit;font-size:12px">${WFH_RULES.map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`;
@@ -1329,7 +1369,7 @@ function buildSummary(days,isAdmin){
     </div>
     <div style="padding:0 16px 16px">
     <table class="emp-sum-table">
-      <thead><tr><th>עובד</th>${weeks.map((_,i)=>`<th>שבוע ${i+1}</th>`).join("")}<th>סה"כ</th><th>חופש</th></tr></thead>
+      <thead><tr><th>עובד</th>${weeks.map((_,i)=>`<th>שבוע ${i+1}</th>`).join("")}<th>סה"כ</th><th>חופש</th>${wfhActive(state.year,state.month)?'<th title="ימי בית החודש: שלישי / חמישי">🏠 ג׳/ה׳</th><th title="ימי חמישי מהבית מתחילת השנה — לבדיקת הוגנות">⚖️ ה׳ השנה</th>':''}</tr></thead>
       <tbody>${filteredEmps.map(emp=>{
         const rc=ROLE_COLORS[emp.role]||"#333";
         const wc=weeks.map(w=>w.filter(({d})=>["A","B","C","D","E","F","G","MOTZ","AUDIT","HV","LOW","FLIGHT","REPORT"].includes(getShift(emp.name,d))).length);
@@ -1343,6 +1383,7 @@ function buildSummary(days,isAdmin){
           ${wc.map(v=>`<td style="${v>5?'background:#ffebee;color:#c62828;font-weight:700':''}"><div class="week-bar-wrap"><div class="week-bar" style="background:${v>5?'#c62828':rc};opacity:0.6;width:${Math.round(v/mx*40)}px"></div><span>${v}</span></div></td>`).join("")}
           <td style="font-weight:700;color:#D40511">${tot}</td>
           <td style="color:#5c2e8a">${off}</td>
+          ${wfhActive(state.year,state.month)?(()=>{const ms=wfhMonthStats()[emp.name]||{t:0,h:0};const ex=emp.wfhRule==='X';return `<td style="color:#1f4e79">${ex?'🏢':`${ms.t} / ${ms.h}`}</td><td style="color:#1f4e79;font-weight:700">${ex?'—':wfhYearThu(emp.name)}</td>`;})():''}
         </tr>`;
       }).join("")}</tbody>
     </table></div>
@@ -1363,7 +1404,7 @@ function buildPopup(){
       ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" style="${s.bg?`background:${s.bg};color:${s.txt};`:''}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
       <div class="shift-opt" style="border-style:dashed;color:#888;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="window.quickAddShift()">➕ הוסף</div>
     </div>
-    ${isWorkingShift(cur)&&isWfhDay(d,wd)?(()=>{const ov=state.wfh&&state.wfh[emp+"|"+d]||'';const loc=state.popup.loc||(ov==='H'||ov==='MH'?'H':'O');return `<div class="wfh-toggle">📍 מיקום:
+    ${isEarlyShift(cur)?`<div class="wfh-toggle">📍 מיקום: <b style="color:#1f4e79">🏠 בית</b> <span class="wfh-hint">משמרת שמתחילה ב-05 — תמיד מהבית</span></div>`:isWorkingShift(cur)&&isWfhDay(d,wd)?(()=>{const ov=state.wfh&&state.wfh[emp+"|"+d]||'';const loc=state.popup.loc||(ov==='H'||ov==='MH'?'H':'O');return `<div class="wfh-toggle">📍 מיקום:
       <button class="${loc==='O'?'on':''}" onclick="window._pickLoc('O')">🏢 משרד</button>
       <button class="${loc==='H'?'on':''}" onclick="window._pickLoc('H')">🏠 בית</button>
       <span class="wfh-hint">${ov==='H'?'שובץ אוטומטית':ov?'🔒 נעול ידנית — החלוקה האוטומטית לא תשנה':'בחירה ידנית תינעל'}</span></div>`;})():''}
@@ -1421,7 +1462,7 @@ function buildEmpMgr(){
     <div class="emp-mgr-box">
       <h2>👥 ניהול עובדים</h2>
       <div style="margin-bottom:8px;font-size:12px;color:#888">ערוך שמות ותפקידים, הוסף או הסר עובדים</div>
-      <div class="wfh-bal"><b>🏠 יום בית</b> — ברירת מחדל "גמיש": החלוקה האוטומטית בוחרת שלישי או חמישי. אפשר לסמן אילוץ קבוע (רק שלישי / רק חמישי) או פטור. <span style="color:#888">בתוקף מ-1.1.2027</span></div>
+      <div class="wfh-bal"><b>🏠 יום בית</b> — ברירת מחדל "גמיש": החלוקה האוטומטית בוחרת שלישי או חמישי. אפשר לסמן אילוץ קבוע (רק שלישי / רק חמישי), או "תמיד משרד" לעובד שמעדיף לא לעבוד מהבית. משמרת שמתחילה ב-05 היא תמיד מהבית. <span style="color:#888">בתוקף מ-1.1.2027</span></div>
       ${employees.map((emp,i)=>{
         return `<div class="emp-mgr-row">
           <input id="emp-name-${i}" value="${emp.name}" placeholder="שם">
