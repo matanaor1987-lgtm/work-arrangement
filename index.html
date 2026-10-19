@@ -840,7 +840,7 @@ function buildWeekView(isAdmin){
                     const bgCell=isSab?'background:#fde8e8':isFri?'background:#fffbea':'';
                     if(si.key){
                       return `<td style="padding:4px;text-align:center;border:1px solid #ebebeb;${bgCell}">
-                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700;${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}${isHome(emp.name,d)?' · 🏠 מהבית':''}">
+                        <div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;font-size:11px;font-weight:700;${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:''} title="${cn?cn:si.label}${wfhShow()&&isHome(emp.name,d)?' · 🏠 מהבית':''}">
                           ${wfhDot(emp.name,d)}${si.label}
                           ${cn?`<span style="display:block;font-size:8px;opacity:0.8">📝</span>`:''}
                         </div>
@@ -867,6 +867,9 @@ function shiftInfo(k){return SHIFTS.find(s=>s.key===k)||SHIFTS[SHIFTS.length-1];
 // state.wfh["שם|יום"]: 'H' = שובץ אוטומטית לבית | 'MH' = בית ידני (נעול) | 'MO' = משרד ידני (נעול)
 // employees[i].wfhRule: '' = גמיש | 2 = רק שלישי | 4 = רק חמישי | 'X' = פטור (תמיד משרד)
 const WFH_START=new Date(2027,0,1);
+// false = עבודה מהבית מוצגת רק למנהל (עוד לא פורסם לעובדים). להפוך ל-true כשמפרסמים.
+const WFH_PUBLIC=false;
+function wfhShow(){return WFH_PUBLIC||state.mode==='admin';}
 const WD_SHORT=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
 function isWorkingShift(k){return !!k&&!['OFF','MIL','SICK','SAB'].includes(k);}
 function wfhActive(y,m){return new Date(y,m,1)>=new Date(WFH_START.getFullYear(),WFH_START.getMonth(),1);}
@@ -888,12 +891,13 @@ function dayPresence(d){
 // חצי במשרד, מעוגל למטה (21 עובדים → 10 במשרד מספיק)
 function wfhOk(p){return p.office>=Math.floor(p.total/2);}
 function presenceBadge(d,wd){
+  if(!wfhShow()) return '';
   const p=dayPresence(d);
   if((!p.home&&!isWfhDay(d,wd))||!p.total) return '';
   const ok=wfhOk(p);
   return `<span class="wfh-pres ${ok?'ok':'bad'}" title="במשרד ${p.office} | מהבית ${p.home}${ok?'':' — פחות מחצי במשרד!'}">🏢${p.office}/${p.total}</span>`;
 }
-function wfhDot(emp,d){return isHome(emp,d)?`<span class="wfh-dot" title="${isEarlyHome(emp,d)?'משמרת 05 — מהבית':'עבודה מהבית'}">🏠</span>`:'';}
+function wfhDot(emp,d){return wfhShow()&&isHome(emp,d)?`<span class="wfh-dot" title="${isEarlyHome(emp,d)?'משמרת 05 — מהבית':'עבודה מהבית'}">🏠</span>`:'';}
 function wfhWeeks(){
   const n=daysInMonth(state.year,state.month);
   return getWeeks().map((w,wi)=>{
@@ -1034,7 +1038,7 @@ function buildWfhBar(isAdmin){
   const chip=(txt,d,cls)=>`<button class="wfh-chip ${cls}" onclick="goToDay(${d})">${txt}</button>`;
   const btn=(txt,fn,style)=>`<button class="wfh-btn" style="${style||''}" onclick="${fn}()">${txt}</button>`;
   const ok=total&&!lowDays.length&&!noHome.length&&!twoHome.length;
-  if(!isAdmin&&!total) return '';
+  if(!isAdmin&&(!total||!WFH_PUBLIC)) return '';
   return `<div class="wfh-bar">
     ${isAdmin?btn('🏠 חלק ימי בית','autoAssignWfh','background:#1f4e79;color:#fff;border-color:#1f4e79'):''}
     ${isAdmin&&state.wfhUndo?btn('↩️ בטל','undoWfh'):''}
@@ -1059,6 +1063,7 @@ function wfhParseRule(v){return v==='2'?2:v==='4'?4:v==='X'?'X':'';}
 window._pickLoc=function(v){if(state.popup){state.popup.loc=v;render();}};
 // ===== פאנל נתוני עבודה מהבית (במקום טבלת ימים לפי שבוע) =====
 function buildWfhPanel(emps,isAdmin){
+  if(!wfhShow()) return '';
   if(!wfhActive(state.year,state.month)){
     return `<div class="wfhp"><div class="wfhp-empty">🏠 נתוני עבודה מהבית יוצגו כאן החל מינואר 2027</div></div>`;
   }
@@ -1164,7 +1169,7 @@ window.copyDailyDist=function(){
       const resp=inp?inp.value.trim():'';
       const rowBg=i%2===0?'#ffffff':'#f7f7f7';
       html+=`<tr style="background-color:${rowBg}">`;
-      html+=`<td style="padding:4px 8px;font-size:12px;font-weight:bold;border:1px solid #dddddd;white-space:nowrap">${emp.name}${isHome(emp.name,d)?' <span style="font-weight:normal;color:#1f4e79;font-size:11px">&#127968; מהבית</span>':''}</td>`;
+      html+=`<td style="padding:4px 8px;font-size:12px;font-weight:bold;border:1px solid #dddddd;white-space:nowrap">${emp.name}${WFH_PUBLIC&&isHome(emp.name,d)?' <span style="font-weight:normal;color:#1f4e79;font-size:11px">&#127968; מהבית</span>':''}</td>`;
       html+=`<td style="padding:4px 8px;font-size:12px;border:1px solid #dddddd;color:${resp?'#1a1a1a':'#999999'}">${resp||''}</td>`;
       html+=`</tr>`;
     });
@@ -1315,7 +1320,7 @@ function buildApp(){
   ${SHIFTS.filter(s=>s.key).map(s=>`<div class="leg"><div class="leg-dot ${s.cls}"></div>${s.label}</div>`).join("")}
   <div class="leg"><div class="leg-dot" style="background:#FFF3CC;border-radius:2px"></div>שישי</div>
   <div class="leg"><div class="leg-dot" style="background:#fde8e8;border-radius:2px"></div>שבת</div>
-  <div class="leg">🏠 מהבית</div>
+  ${wfhShow()?'<div class="leg">🏠 מהבית</div>':''}
   <span class="sync-tag">🔄 מסונכרן בזמן אמת</span>
   ${!isAdmin?'<span class="view-tag">👁 תצוגה בלבד</span>':""}
 </div>
@@ -1413,7 +1418,7 @@ function buildTable(days,isAdmin){
         const isToday2=new Date().getDate()===d&&new Date().getMonth()===state.month&&new Date().getFullYear()===state.year;const bgCell=isToday2?"background:#FFFACD;border-left:2px solid var(--dhl-red);border-right:2px solid var(--dhl-red)":isSat?"background:#FFBBBB":isFri?"background:#FFE0A0":`background:${wkColor}`;
         if(k){
           const cn=getCellNote(emp.name,d);
-          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}${isHome(emp.name,d)?' · 🏠 מהבית':''}">${wfhDot(emp.name,d)}${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
+          return `<td style="${bgCell}"><div class="cell-inner ${si.cls}" style="${si.bg?`background:${si.bg};color:${si.txt};`:''}" ${isAdmin?`onclick="openPopup('${emp.name.replace(/'/g,"\\'")}',${d})"`:""} title="${cn?cn:si.label}${wfhShow()&&isHome(emp.name,d)?' · 🏠 מהבית':''}">${wfhDot(emp.name,d)}${si.label}${cn?`<span style="display:block;font-size:8px;opacity:0.8;overflow:hidden;max-width:34px;white-space:nowrap;text-overflow:ellipsis">${cn}</span>`:""}</div></td>`;
         }
         const cnEmpty=getCellNote(emp.name,d);
         if(cnEmpty){
@@ -2045,7 +2050,7 @@ function buildEmpView(){
             <div style="font-size:13px;font-weight:800;color:${isToday?'var(--dhl-red)':'var(--dhl-dark)'}">${DAYS_FULL[wd]}</div>
             <div style="font-size:11px;color:#888">${d} ${MONTHS_HE[state.month]}${isToday?' ← היום':''}</div>
           </div>
-          <div style="flex:1;padding:0 12px">${isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
+          <div style="flex:1;padding:0 12px">${wfhShow()&&isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
           <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:32px;border-radius:3px;padding:0 12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:`<div style="color:#ccc;font-size:13px">—</div>`}</div>
         </div>`;
       }).join('')}
@@ -2067,7 +2072,7 @@ function buildEmpView(){
             <div style="font-size:13px;font-weight:800;color:${isToday?'var(--dhl-red)':'var(--dhl-dark)'}">${DAYS_FULL[wd]} ${d}</div>
             ${isToday?`<div style="font-size:10px;color:var(--dhl-red);font-weight:700">← היום</div>`:''}
           </div>
-          <div style="flex:1;padding:0 12px">${isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
+          <div style="flex:1;padding:0 12px">${wfhShow()&&isHome(state.personalEmp,d)?`<div style="font-size:11px;color:#1f4e79;font-weight:700">🏠 עבודה מהבית</div>`:''}${cn?`<div style="font-size:11px;color:#888">📝 ${cn}</div>`:''}</div>
           <div>${si.key?`<div class="cell-inner ${si.cls}" style="height:28px;border-radius:3px;padding:0 10px;font-size:12px;font-weight:800;display:inline-flex;align-items:center;${si.bg?`background:${si.bg};color:${si.txt};`:''}">${si.label}</div>`:''}</div>
         </div>`;
       }).join('')}
