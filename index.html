@@ -1044,6 +1044,7 @@ function wfhThuHistory(){
   return h;
 }
 window.autoAssignWfh=async function(){
+  if(!requirePwd())return;
   if(!wfhActive(state.year,state.month)){alert('ימי בית נכנסים לתוקף מ-1.1.2027');return;}
   const repair=Object.values(state.wfh||{}).some(v=>v==='H'); // כבר יש חלוקה → מעדכנים רק מה שצריך
   // מחשבים הצעה על עותק — שום דבר לא נשמר עד שהמנהל מאשר
@@ -1239,11 +1240,13 @@ function buildWfhPreview(){
   </div></div>`;
 }
 window.undoWfh=function(){
+  if(!requirePwd())return;
   if(!state.wfhUndo) return;
   state.wfh=state.wfhUndo;state.wfhUndo=null;
   saveToCloud();showToast('↩️ החלוקה בוטלה');render();
 };
 window.clearWfh=function(){
+  if(!requirePwd())return;
   if(!confirm('לנקות את כל ימי הבית של החודש (כולל ידניים)?')) return;
   state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
   state.wfh={};saveToCloud();showToast('🧹 נוקה');render();
@@ -1447,6 +1450,7 @@ function shiftKeyByLabel(label,create){
 }
 function isEarlyLabel(k){const si=SHIFTS.find(s=>s.key===k);return !!si&&/^0?5(\D|$)/.test(String(si.label||'').trim());}
 window.planEarlyShifts=async function(){
+  if(!requirePwd())return;
   const K14=shiftKeyByLabel('05-14',false)||'__05-14',K13=shiftKeyByLabel('05-13',false)||'__05-13',K817=shiftKeyByLabel('08-17',false)||'A';
   const sched=JSON.parse(JSON.stringify(state.schedule));
   const get=(n,d)=>sched[n+'|'+d]||'';
@@ -1559,6 +1563,7 @@ window.approveEarly=function(){
 window.cancelEarly=function(){state.earlyProposal=null;render();};
 // מחיקת כל משמרות הבוקר של המסווגים בחודש — חוזרים למשמרת המקורית (או 08-17)
 window.planClearEarly=function(){
+  if(!requirePwd())return;
   const K817=shiftKeyByLabel('08-17',false)||'A';
   const sched=JSON.parse(JSON.stringify(state.schedule));
   getDays().forEach(({d})=>employees.filter(e=>e.role==='מסווג').forEach(e=>{
@@ -1597,6 +1602,7 @@ function buildEarlyPreview(){
 const MAX_WEEK_SHIFTS=5;
 const SAB_FIXED_DAY={'רועי':0,'ניר':0,'סתיו':1,'אבבה':1}; // יום הסבב הקבוע: רועי וניר ראשון, סתיו ואבבה שני
 window.planSabDays=async function(){
+  if(!requirePwd())return;
   const sched=JSON.parse(JSON.stringify(state.schedule));
   const y=state.year,m=state.month,n=daysInMonth(y,m);
   // חודשים סמוכים — לשבוע שחוצה חודש
@@ -1671,6 +1677,13 @@ function buildSabPreview(){
     </div>
   </div></div>`;
 }
+// ===== סיסמה לכל כפתורי השיבוץ האוטומטי — שלא ילחצו בטעות =====
+function requirePwd(){
+  const p=prompt('🔒 הכנס סיסמת מנהל כדי להמשיך:');
+  if(p===null) return false;
+  if(p!==ADMIN_PASSWORD){alert('❌ סיסמה שגויה');return false;}
+  return true;
+}
 // ===== ביטול שיבוץ אחרון + שחזור חודש מגיבוי =====
 function undoKey(){return `seder_undo_${state.year}_${state.month}`;}
 function snapshotForUndo(label){
@@ -1678,6 +1691,7 @@ function snapshotForUndo(label){
 }
 function getUndo(){try{return JSON.parse(localStorage.getItem(undoKey())||'null');}catch(e){return null;}}
 window.undoLastPlan=function(){
+  if(!requirePwd())return;
   const u=getUndo();if(!u)return;
   if(!confirm(`לבטל את "${u.label}" ולהחזיר את ${MONTHS[state.month]} למצב שלפני (${new Date(u.at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})})?`))return;
   state.schedule=u.schedule;state.earlyOrig=u.earlyOrig;state.wfh=u.wfh;
@@ -1686,6 +1700,7 @@ window.undoLastPlan=function(){
 };
 // שחזור חודש אחד מקובץ גיבוי JSON — בלי לגעת בשאר הנתונים
 window.restoreMonthFromBackup=async function(ev){
+  if(!requirePwd()){ev.target.value='';return;}
   const f=ev.target.files[0];ev.target.value='';if(!f)return;
   let data;try{data=JSON.parse(await f.text());}catch(e){alert('הקובץ לא נקרא — ודא שזה קובץ גיבוי JSON של הסידור');return;}
   const key=`seder_${state.year}_${state.month}`;
@@ -1761,6 +1776,7 @@ window.openStaffDay=function(d){state.staffDay=d;render();};
 window.closeStaffDay=function(){state.staffDay=null;render();};
 window.setStaffMin=function(wd,v){const n=parseInt(v);if(!(n>=1&&n<=30))return;state.staffMinByWd={...STAFF_MIN_DEFAULT,...(state.staffMinByWd||{}),[wd]:n};if(db)set(ref(db,'settings/staffMinByWd'),state.staffMinByWd);render();};
 window.cancelSabDay=function(name,d){
+  if(!requirePwd())return;
   snapshotForUndo('ביטול סבב');
   const sun=d-ilWD(state.year,state.month,d);
   const orig=(state.earlyOrig||{})[name+'|'+d];
@@ -1769,6 +1785,7 @@ window.cancelSabDay=function(name,d){
   saveToCloud();showToast(`✓ ${name} עובד ב${WD_SHORT[ilWD(state.year,state.month,d)]} ${d} — ${weekShifts(name,d)} משמרות השבוע`);render();
 };
 window.moveSabDay=function(name,from,to){
+  if(!requirePwd())return;
   snapshotForUndo('העברת סבב');
   const k=shiftKeyByLabel('08-17',false)||'A';
   setShift(name,to,'SAB');setShift(name,from,k);
