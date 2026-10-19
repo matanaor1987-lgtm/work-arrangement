@@ -949,10 +949,14 @@ function wfhThuHistory(){
 }
 window.autoAssignWfh=async function(){
   if(!wfhActive(state.year,state.month)){alert('ימי בית נכנסים לתוקף מ-1.1.2027');return;}
-  if(!confirm('לחלק ימי בית לכל החודש לפי הסידור הנוכחי?\nשיבוצים ידניים (נעולים) יישארו כמו שהם.')) return;
+  const repair=Object.values(state.wfh||{}).some(v=>v==='H'); // כבר יש חלוקה → מעדכנים רק מה שצריך
+  if(!confirm(repair
+    ?'כבר יש חלוקה לחודש הזה.\nאעדכן רק את מה שהשתנה (חופשות, סבבים, ימים מתחת לחצי, עובדים בלי יום בית). כל השאר יישאר בדיוק כמו שהוא.\n\nלחלוקה מחדש מלאה: "נקה" ואז "חלק ימי בית".'
+    :'לחלק ימי בית לכל החודש לפי הסידור הנוכחי?\nשיבוצים ידניים (נעולים) יישארו כמו שהם.')) return;
   state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
   const wfh=state.wfh||{};
-  Object.keys(wfh).forEach(k=>{if(wfh[k]==='H')delete wfh[k];});
+  const before=JSON.stringify(wfh);
+  if(!repair) Object.keys(wfh).forEach(k=>{if(wfh[k]==='H')delete wfh[k];});
   const thuHist=wfhThuHistory();
   const thuNow={};
   // שבוע שמתחיל בחודש הקודם: מי שכבר היה בבית בשלישי של אותו שבוע — לא מקבל עוד יום
@@ -967,6 +971,71 @@ window.autoAssignWfh=async function(){
     const v=(prev.wfh||{})[name+'|'+dayInPrev];
     return v==='H'||v==='MH';
   };
+  const isThu=d=>ilWD(state.year,state.month,d)===4;
+  // מועמדות של עובד לשבוע: null = לא צריך/לא יכול לקבל יום בית; low = כבר עבד מהבית במשמרת 05 השבוע
+  const eligible=(e,wi,days,tueOut,sun)=>{
+    if(e.wfhRule==='X') return null;
+    const weekDays=getWeeks()[wi].map(x=>x.d);
+    if(weekDays.some(d=>wfh[e.name+'|'+d]==='MH')) return null;
+    if(days.some(d=>isEarlyHome(e.name,d))) return null;
+    if(tueOut&&sun+2<1&&prevHome(e.name,pn+sun+2)) return null;
+    let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO');
+    if(e.wfhRule===2||e.wfhRule===4||e.wfhRule==='2'||e.wfhRule==='4'){const rd=parseInt(e.wfhRule);cands=cands.filter(d=>ilWD(state.year,state.month,d)===rd);}
+    if(!cands.length) return null;
+    return {cands,low:weekDays.some(d=>isEarlyHome(e.name,d))};
+  };
+  if(repair){
+    getDays().forEach(({d,wd})=>{if(wd===4)employees.forEach(e=>{if(wfh[e.name+'|'+d]==='H')thuNow[e.name]=(thuNow[e.name]||0)+1;});});
+    const thuOf=n=>(thuHist[n]||0)+(thuNow[n]||0);
+    wfhWeeks().forEach(({wi,days,tueOut,sun})=>{
+      const key=(n,d)=>n+'|'+d;
+      const drop=(n,d)=>{delete wfh[key(n,d)];if(isThu(d))thuNow[n]=(thuNow[n]||1)-1;};
+      const put=(n,d)=>{wfh[key(n,d)]='H';if(isThu(d))thuNow[n]=(thuNow[n]||0)+1;};
+      // 1. שיבוצים אוטומטיים שכבר לא תקפים (חופש/סבב, אילוץ, נעילה, משמרת 05) — יורדים
+      employees.forEach(e=>{
+        const el=eligible(e,wi,days,tueOut,sun);
+        const mine=days.filter(d=>wfh[key(e.name,d)]==='H');
+        mine.forEach(d=>{if(!el||!el.cands.includes(d))drop(e.name,d);});
+        const left=days.filter(d=>wfh[key(e.name,d)]==='H');
+        if(left.length>1) left.slice(1).forEach(d=>drop(e.name,d)); // לא יותר מיום אחד
+      });
+      const cap={};
+      days.forEach(d=>{const p=dayPresence(d);cap[d]=p.total-Math.floor(p.total/2)-p.home;});
+      // 2. יום מתחת לחצי במשרד: קודם מעבירים ליום השני, ורק אם אין מקום — מחזירים למשרד
+      days.forEach(d=>{
+        if(cap[d]>=0) return;
+        const other=days.find(x=>x!==d);
+        const athome=employees.filter(e=>wfh[key(e.name,d)]==='H');
+        // הוגנות: מחמישי מזיזים קודם את מי שקיבל הכי הרבה ימי חמישי
+        athome.sort((a,b)=>isThu(d)?thuOf(b.name)-thuOf(a.name):thuOf(a.name)-thuOf(b.name));
+        for(const e of athome){
+          if(cap[d]>=0) break;
+          const el=eligible(e,wi,days,tueOut,sun);
+          if(other&&cap[other]>0&&el&&el.cands.includes(other)){drop(e.name,d);put(e.name,other);cap[d]++;cap[other]--;}
+        }
+        for(const e of athome){
+          if(cap[d]>=0) break;
+          if(wfh[key(e.name,d)]==='H'){drop(e.name,d);cap[d]++;}
+        }
+      });
+      // 3. מי שנשאר בלי יום בית — מקבל יום שיש בו מקום (מי שעבד ב-05 השבוע לא נכנס כאן)
+      const need=[];
+      employees.forEach(e=>{
+        const el=eligible(e,wi,days,tueOut,sun);
+        if(!el||el.low) return;
+        if(days.some(d=>isHome(e.name,d))) return;
+        need.push({e,cands:el.cands});
+      });
+      need.sort((a,b)=>thuOf(a.e.name)-thuOf(b.e.name));
+      need.forEach(({e,cands})=>{
+        const opts=cands.filter(d=>cap[d]>0);
+        if(!opts.length) return;
+        const thu=opts.find(isThu),tue=opts.find(d=>!isThu(d));
+        const pick=thu&&(!tue||cap[thu]>=cap[tue])?thu:(tue||thu);
+        put(e.name,pick);cap[pick]--;
+      });
+    });
+  } else
   wfhWeeks().forEach(({wi,days,tueOut,sun})=>{
     // קיבולת: כמה מותר בבית בכל יום
     const cap={};
@@ -1018,7 +1087,13 @@ window.autoAssignWfh=async function(){
   // סטטיסטיקה חודשית להוגנות בחודשים הבאים
   saveToCloud();
   const iss=wfhMonthIssues();
-  showToast(`✓ ימי בית חולקו${iss.lowDays.length||iss.noHome.length?' — יש מה לבדוק בשורה למעלה':''}`);
+  const warn=iss.lowDays.length||iss.noHome.length?' — יש מה לבדוק בשורה למעלה':'';
+  if(repair){
+    const a=JSON.parse(before),b=wfh,who=new Set();
+    new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{if(a[k]!==b[k])who.add(k.split('|')[0]);});
+    const n=who.size;
+    showToast(n?`✓ עודכנו ${n===1?'עובד אחד':n+' עובדים'} (${[...who].join(', ')}), כל השאר נשאר כמו שהיה${warn}`:`✓ אין מה לעדכן — החלוקה תקינה${warn}`);
+  } else showToast(`✓ ימי בית חולקו${warn}`);
   render();
 };
 window.undoWfh=function(){
