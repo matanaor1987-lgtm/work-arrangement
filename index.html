@@ -1064,9 +1064,8 @@ window.autoAssignWfh=async function(){
     if(e.wfhRule==='X') return null;
     const weekDays=getWeeks()[wi].map(x=>x.d);
     if(weekDays.some(d=>wfh[e.name+'|'+d]==='MH')) return null;
-    if(days.some(d=>isEarlyHome(e.name,d))) return null;
     if(tueOut&&sun+2<1&&prevHome(e.name,pn+sun+2)) return null;
-    let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO');
+    let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO'&&!isEarlyHome(e.name,d));
     if(e.wfhRule===2||e.wfhRule===4||e.wfhRule==='2'||e.wfhRule==='4'){const rd=parseInt(e.wfhRule);cands=cands.filter(d=>ilWD(state.year,state.month,d)===rd);}
     if(!cands.length) return null;
     return {cands,low:weekDays.some(d=>isEarlyHome(e.name,d))};
@@ -1132,10 +1131,10 @@ window.autoAssignWfh=async function(){
       if(e.wfhRule==='X') return;
       const weekDays=getWeeks()[wi].map(x=>x.d);
       if(weekDays.some(d=>wfh[e.name+'|'+d]==='MH')) return; // כבר יש יום בית ידני
-      if(days.some(d=>isEarlyHome(e.name,d))) return; // משמרת 05 ביום ג׳/ה׳ = יום הבית שלו
-      const earlyOther=weekDays.some(d=>isEarlyHome(e.name,d)); // משמרת 05 ביום אחר — כבר קיבל יום בית, עדיפות אחרונה
+      // משמרת 05 בכל יום בשבוע = כבר קיבל יום בית → יום ג׳/ה׳ נוסף רק בעדיפות אחרונה
+      const earlyOther=weekDays.some(d=>isEarlyHome(e.name,d));
       if(tueOut&&sun+2<1&&prevHome(e.name,pn+sun+2)) return; // כבר היה בבית בשלישי (חודש קודם)
-      let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO');
+      let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO'&&!isEarlyHome(e.name,d));
       if(e.wfhRule===2||e.wfhRule===4||e.wfhRule==='2'||e.wfhRule==='4'){
         const rd=parseInt(e.wfhRule);
         cands=cands.filter(d=>ilWD(state.year,state.month,d)===rd);
@@ -1419,6 +1418,115 @@ function buildWfhReport(){
     </div>
   </div>`;
 }
+// ===== שיבוץ משמרות בוקר אוטומטי =====
+// קבועים: שני-חמישי 05-14, שלישי 05-13. רועי ברביעי 08-17. ראשון — לא נוגעים.
+const EARLY_FIXED=['אבבה','סתיו','רועי'];
+const EARLY_FIXED_EXCEPT={'רועי|3':'08-17'};
+// סבב: שאר המסווגים (חוץ מאלה) — משמרת בוקר אחת בשבוע בין שני לחמישי
+const EARLY_ROTATION_EXCLUDE=['אבבה','סתיו','רועי','מזל'];
+const EARLY_PREF={'ניר':1,'אייל':2}; // עדיפות ליום: ניר שני, אייל שלישי
+const PROTECTED_SHIFTS=['OFF','MIL','SICK','SAB']; // חופש, מילואים, מחלה, סבב — לא נדרסים
+function shiftKeyByLabel(label,create){
+  let s=SHIFTS.find(x=>String(x.label).trim()===label);
+  if(s||!create) return s?s.key:null;
+  let key=label.replace(/[^0-9]/g,'');key='S'+key;let k=key,n=2;while(SHIFTS.some(x=>x.key===k)){k=key+n;n++;}
+  SHIFTS.splice(SHIFTS.length-1,0,{key:k,label,cls:'',bg:'#ede7f6',txt:'#4527a0'});
+  return k;
+}
+function isEarlyLabel(k){const si=SHIFTS.find(s=>s.key===k);return !!si&&/^0?5(\D|$)/.test(String(si.label||'').trim());}
+window.planEarlyShifts=async function(){
+  const K14=shiftKeyByLabel('05-14',false)||'__05-14',K13=shiftKeyByLabel('05-13',false)||'__05-13',K817=shiftKeyByLabel('08-17',false)||'A';
+  const sched=JSON.parse(JSON.stringify(state.schedule));
+  const get=(n,d)=>sched[n+'|'+d]||'';
+  const isProt=k=>PROTECTED_SHIFTS.includes(k);
+  const isE=k=>k==='__05-14'||k==='__05-13'||isEarlyLabel(k);
+  const earlyKey=d=>ilWD(state.year,state.month,d)===2?K13:K14;
+  const days=getDays().filter(({wd})=>wd>=1&&wd<=4);
+  // 1) קבועים
+  days.forEach(({d,wd})=>{
+    EARLY_FIXED.forEach(n=>{
+      if(!employees.some(e=>e.name===n)) return;
+      const cur=get(n,d); if(isProt(cur)) return;
+      const ex=EARLY_FIXED_EXCEPT[n+'|'+wd];
+      sched[n+'|'+d]=ex?(ex==='08-17'?K817:ex):earlyKey(d);
+    });
+  });
+  // 2) סבב שבועי
+  const pool=employees.filter(e=>e.role==='מסווג'&&!EARLY_ROTATION_EXCLUDE.includes(e.name));
+  // חודש קודם: שבוע שהתחיל שם — מי שכבר קיבל בוקר באותו שבוע לא מקבל שוב
+  const pm=state.month===0?11:state.month-1,py=state.month===0?state.year-1:state.year;
+  let prev={};try{if(db){const sn=await get_(ref(db,`seder_${py}_${pm}`));prev=(sn.val()||{}).schedule||{};}}catch(e){}
+  const pn=daysInMonth(py,pm);
+  const cnt={}; // כמה פעמים כל עובד קיבל כל יום בחודש (לגיוון)
+  getWeeks().forEach(w=>{
+    const wd=w.filter(({wd})=>wd>=1&&wd<=4).map(x=>x.d);
+    if(!wd.length) return;
+    const sun=w[0].d-w[0].wd;
+    const prevDays=[1,2,3,4].map(i=>sun+i).filter(x=>x<1).map(x=>pn+x);
+    const cover={};wd.forEach(d=>{cover[d]=employees.filter(e=>isE(get(e.name,d))).length;});
+    const todo=[];
+    pool.forEach(e=>{
+      if(wd.some(d=>isE(get(e.name,d)))) return; // כבר יש לו בוקר השבוע — לא נוגעים
+      if(prevDays.some(x=>isEarlyLabel(prev[e.name+'|'+x]||''))) return;
+      const av=wd.filter(d=>!isProt(get(e.name,d)));
+      if(av.length) todo.push({e,av});
+    });
+    // קודם בעלי העדפה, אחר כך מי שיש לו הכי מעט אפשרויות
+    todo.sort((a,b)=>((EARLY_PREF[b.e.name]?1:0)-(EARLY_PREF[a.e.name]?1:0))||(a.av.length-b.av.length)||Math.random()-.5);
+    todo.forEach(({e,av})=>{
+      const pref=EARLY_PREF[e.name];
+      let pick=pref?av.find(d=>ilWD(state.year,state.month,d)===pref):null;
+      if(!pick){
+        const c=cnt[e.name]||{};
+        pick=av.slice().sort((x,y)=>(cover[x]-cover[y])||((c[ilWD(state.year,state.month,x)]||0)-(c[ilWD(state.year,state.month,y)]||0))||Math.random()-.5)[0];
+      }
+      sched[e.name+'|'+pick]=earlyKey(pick);cover[pick]++;
+      const dw=ilWD(state.year,state.month,pick);cnt[e.name]=cnt[e.name]||{};cnt[e.name][dw]=(cnt[e.name][dw]||0)+1;
+    });
+  });
+  // שינויים להצגה
+  const label=k=>k==='__05-14'?'05-14':k==='__05-13'?'05-13':(shiftInfo(k).label||'ריק');
+  const changes=[];
+  Object.keys(sched).forEach(key=>{if((state.schedule[key]||'')!==sched[key]){const [n,d]=key.split('|');changes.push({n,d:+d,from:state.schedule[key]||'',to:sched[key]});}});
+  changes.sort((a,b)=>a.n.localeCompare(b.n,'he')||a.d-b.d);
+  state.earlyProposal={sched,changes,label};
+  render();
+};
+// ref get alias (get is shadowed inside the planner)
+const get_=(...a)=>get(...a);
+window.approveEarly=function(){
+  const pr=state.earlyProposal;if(!pr)return;
+  // יוצרים את סוגי המשמרות אם חסרים
+  let added=false;
+  const fix={};
+  ['05-14','05-13'].forEach(l=>{if(!shiftKeyByLabel(l,false)){fix['__'+l]=shiftKeyByLabel(l,true);added=true;}});
+  Object.keys(pr.sched).forEach(k=>{if(fix[pr.sched[k]])pr.sched[k]=fix[pr.sched[k]];});
+  if(added) saveShiftsToCloud();
+  state.schedule=pr.sched;state.earlyProposal=null;
+  saveToCloud();
+  showToast(`✓ משמרות בוקר שובצו (${new Set(pr.changes.map(c=>c.n)).size} עובדים)`);
+  render();
+};
+window.cancelEarly=function(){state.earlyProposal=null;render();};
+function buildEarlyPreview(){
+  const pr=state.earlyProposal;if(!pr) return '';
+  const dl=d=>`${WD_SHORT[ilWD(state.year,state.month,d)]} ${d}`;
+  const byN={};pr.changes.forEach(c=>{(byN[c.n]=byN[c.n]||[]).push(c);});
+  const names=Object.keys(byN);
+  const cover={};getDays().filter(({wd})=>wd>=1&&wd<=4).forEach(({d})=>{cover[d]=employees.filter(e=>{const k=pr.sched[e.name+'|'+d]||'';return k==='__05-14'||k==='__05-13'||isEarlyLabel(k);}).length;});
+  const covVals=Object.values(cover);
+  return `<div class="wfhv-overlay" onclick="if(event.target===this)cancelEarly()"><div class="wfhv-box" style="border-top-color:#4527a0">
+    <h3 style="color:#4527a0">🌅 משמרות בוקר — ${MONTHS[state.month]} ${state.year}</h3>
+    ${names.length?`<div class="wfhv-sum"><b>${pr.changes.length}</b> משמרות ישתנו אצל <b>${names.length}</b> עובדים. חופש, מילואים ומחלה לא נדרסים.</div>
+    <div class="wfhv-list">${names.map(n=>`<div class="wfhv-row"><b>${n}</b><span>${byN[n].map(c=>`${dl(c.d)}: ${pr.label(c.to)}`).join(' · ')}</span></div>`).join('')}</div>
+    <div class="wfhv-ok">משמרות בוקר ביום: מינימום ${Math.min(...covVals)}, מקסימום ${Math.max(...covVals)} עובדים</div>`
+    :`<div class="wfhv-empty">אין שינויים — משמרות הבוקר כבר משובצות לפי הכללים.</div>`}
+    <div class="wfhv-act">
+      <button class="wfhv-cancel" onclick="cancelEarly()">ביטול</button>
+      ${names.length?`<button class="wfhv-ok-btn" style="background:#4527a0;border-color:#4527a0" onclick="approveEarly()">✓ אשר ושמור</button>`:''}
+    </div>
+  </div></div>`;
+}
 // ===== END WFH =====
 
 
@@ -1629,7 +1737,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${isAdmin?buildWfhPreview()+buildWfhReport():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${isAdmin?buildWfhPreview()+buildWfhReport()+buildEarlyPreview():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
@@ -1643,6 +1751,7 @@ function buildNoteBar(days){
     <button onclick="saveNote()">💾 שמור</button>
     <button onclick="fillDefault()" style="background:#FFF3CC;color:#D40511;border-color:#FFCC00;margin-right:8px">⚡ מלא ברירת מחדל</button>
     <button onclick="openCopyMonth()" style="background:#e8f4ea;color:#1e5c2e;border-color:#b0d8b8;margin-right:8px">📋 העתק לחודש הבא</button>
+    <button onclick="planEarlyShifts()" style="background:#ede7f6;color:#4527a0;border-color:#c5b8e6;margin-right:8px">🌅 שבץ משמרות בוקר</button>
   </div>`;}
 
 function getWeekIndex(d){
