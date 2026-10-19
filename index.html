@@ -935,16 +935,16 @@ function setShift(emp,d,v){state.schedule[emp+"|"+d]=v;}
 // ===== צבעי משמרות — כל סוג במשפחת צבע אחרת, שיהיה קל להבדיל =====
 function shiftPalette(sh){
   const k=sh.key,l=String(sh.label||'').trim();
-  if(k==='OFF'||l==='חופש') return ['#e0e0e0','#424242'];        // חופש — אפור
+  if(k==='OFF'||l==='חופש') return ['#ffcdd2','#b71c1c'];        // חופש — ורדרד עם טקסט אדום
   if(k==='SAB'||l==='סבב') return ['#80deea','#004d57'];         // סבב — טורקיז
   if(k==='MIL'||l.startsWith('מיל')) return ['#d7ccc8','#4e342e']; // מילואים — חום
-  if(k==='SICK'||l==='מחלה') return ['#ef9a9a','#7f0000'];        // מחלה — אדום
+  if(k==='SICK'||l==='מחלה') return ['#c62828','#ffffff'];        // מחלה — אדום חזק
   if(l==='HV') return ['#c5cae9','#1a237e'];                      // HV — תכלת-סגול
   if(l==='LOW') return ['#dcedc8','#33691e'];
   if(l==='פותח טיסות') return ['#3f51b5','#ffffff'];               // פותח טיסות — כחול כהה
   if(l==='דוחות') return ['#e1bee7','#4a148c'];                    // דוחות — סגול
   if(l==='מוצש') return ['#546e7a','#ffffff'];                     // מוצ"ש — אפור כהה
-  if(l==='ביקורת') return ['#f48fb1','#6a0036'];                   // ביקורת — ורוד
+  if(l==='ביקורת') return ['#d81b60','#ffffff'];                   // ביקורת — ורוד חזק
   if(l==='05-14') return ['#ffb74d','#5d2600'];                    // בוקר — כתום
   if(l==='05-13') return ['#ff8a65','#4e1500'];                    // בוקר שלישי — כתום-אדמדם
   if(/^0?5(\D|$)/.test(l)) return ['#ffe0b2','#7a3b00'];          // 05 אחרות — כתום בהיר
