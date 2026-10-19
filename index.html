@@ -1616,10 +1616,18 @@ window.planSabDays=async function(){
     // רק שבוע שסוף השבוע שלו (שישי/שבת) בחודש הזה, או שכבר משובץ בחודש הבא
     cls.forEach(e=>{
       if((state.sabSkip||{})[e.name+'|'+sun]) return; // בוטל ידנית — עובד 6 משמרות השבוע
-      const worksWeekend=weekend.some(d=>isWorkingShift(shiftAt(e.name,d)));
+      let worksWeekend=weekend.some(d=>isWorkingShift(shiftAt(e.name,d)));
+      let worked=week.filter(d=>isWorkingShift(shiftAt(e.name,d))).length;
+      // קבועים (רועי, ניר, סתיו, אבבה) עובדים כל סוף שבוע — אם סוף השבוע בחודש הבא שעוד לא נבנה, מניחים שכן
+      const unknownWeekend=weekend.every(d=>d>n)&&weekend.every(d=>!shiftAt(e.name,d));
+      let assumed=false;
+      if(!worksWeekend&&unknownWeekend&&SAB_FIXED_DAY[e.name]!==undefined){
+        worksWeekend=true;assumed=true;
+        // אם כבר יש לו סבב/חופש השבוע — לא צריך עוד
+        if(week.some(d=>d>=1&&d<=n&&['SAB','OFF','MIL','SICK'].includes(sched[e.name+'|'+d]||''))) return;
+      }
       if(!worksWeekend) return;
-      const worked=week.filter(d=>isWorkingShift(shiftAt(e.name,d))).length;
-      let excess=worked-MAX_WEEK_SHIFTS;
+      let excess=assumed?1:worked-MAX_WEEK_SHIFTS;
       if(excess<=0) return; // כבר יש לו יום חופש/סבב השבוע
       // ימים אפשריים: ראשון-חמישי בחודש הזה, שהוא עובד בהם
       const cands=week.slice(0,5).filter(d=>d>=1&&d<=n&&isWorkingShift(sched[e.name+'|'+d]||''));
@@ -1629,7 +1637,7 @@ window.planSabDays=async function(){
         const fx=SAB_FIXED_DAY[e.name];
         cands.sort((a,b)=>(fx!==undefined?((ilWD(y,m,a)===fx?0:1)-(ilWD(y,m,b)===fx?0:1)):0)||(offCount(a)-offCount(b))||((isEarlyLabel(sched[e.name+'|'+a]||'')?1:0)-(isEarlyLabel(sched[e.name+'|'+b]||'')?1:0))||(srand(e.name+'-'+a)-srand(e.name+'-'+b)));
         const d=cands.shift();
-        changes.push({n:e.name,d,from:sched[e.name+'|'+d]||'',wi,wk:weekend.filter(x=>isWorkingShift(shiftAt(e.name,x)))});
+        changes.push({n:e.name,d,from:sched[e.name+'|'+d]||'',wi,wk:weekend.filter(x=>isWorkingShift(shiftAt(e.name,x))),assumed});
         sched[e.name+'|'+d]='SAB';excess--;
       }
     });
@@ -1652,7 +1660,7 @@ function buildSabPreview(){
   return `<div class="wfhv-overlay" onclick="if(event.target===this)cancelSab()"><div class="wfhv-box" style="border-top-color:#880e4f">
     <h3 style="color:#880e4f">🔁 ימי סבב — ${MONTHS[state.month]} ${state.year}</h3>
     ${pr.changes.length?`<div class="wfhv-sum"><b>${pr.changes.length}</b> ימי סבב למסווגים שעובדים בסוף השבוע, כדי שאף אחד לא יעבוד יותר מ-${MAX_WEEK_SHIFTS} משמרות בשבוע. מי שכבר יש לו חופש באותו שבוע לא מקבל.</div>
-    <div class="wfhv-list">${pr.changes.map(c=>`<div class="wfhv-row"><b>${c.n}</b><span class="wk">שבוע ${c.wi+1}</span><span>סבב ב${dl(c.d)}</span><span class="wk">(${shiftInfo(c.from).label||'ריק'} → סבב · עובד ${c.wk.map(dl).join(' + ')})</span></div>`).join('')}</div>
+    <div class="wfhv-list">${pr.changes.map(c=>`<div class="wfhv-row"><b>${c.n}</b><span class="wk">שבוע ${c.wi+1}</span><span>סבב ב${dl(c.d)}</span><span class="wk">(${shiftInfo(c.from).label||'ריק'} → סבב · ${c.assumed?'קבוע — סוף השבוע בחודש הבא':'עובד '+c.wk.map(dl).join(' + ')})</span></div>`).join('')}</div>
     <div class="wfhv-ok">ימי סבב ביום: מקסימום ${Math.max(...Object.values(perDay))} מסווגים באותו יום</div>`
     :`<div class="wfhv-empty">אין צורך בימי סבב — אף מסווג לא עובד יותר מ-${MAX_WEEK_SHIFTS} משמרות בשבוע.</div>`}
     ${pr.stuck.length?`<div class="wfhv-amb">🟠 צריך סבב אבל אין יום פנוי בחודש הזה: ${pr.stuck.map(x=>`${x.name} (שבוע ${x.wi+1})`).join(', ')}</div>`:''}
