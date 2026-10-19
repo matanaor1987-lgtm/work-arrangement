@@ -161,6 +161,24 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
 .wfhp-t .bar{flex:0 0 70px;height:6px;background:#eef2f7;border-radius:3px;overflow:hidden}
 .wfhp-t .bar div{height:100%;background:#1f4e79;opacity:.6}
 .wfhp-t .next{font-size:10px;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:0 6px;font-weight:700}
+.wfhv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.wfhv-box{background:#fff;border-radius:12px;border-top:4px solid #1f4e79;padding:20px 22px;width:min(640px,96vw);max-height:86vh;overflow-y:auto;direction:rtl}
+.wfhv-box h3{margin:0 0 12px;font-size:16px;font-weight:800;color:#1f4e79}
+.wfhv-sum{font-size:13px;margin-bottom:10px;color:#333}
+.wfhv-empty{font-size:13px;color:#1e5c2e;font-weight:700;padding:12px;background:#e6f4ea;border-radius:8px}
+.wfhv-list{border:1px solid #e3e9f2;border-radius:8px;margin-bottom:10px}
+.wfhv-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 10px;border-bottom:1px solid #eef2f7;font-size:13px}
+.wfhv-row:last-child{border-bottom:none}
+.wfhv-row b{min-width:60px}.wfhv-row .wk{color:#888;font-size:11px}
+.wfhv-tag{font-size:10px;font-weight:700;border-radius:8px;padding:1px 7px}
+.wfhv-tag.amb{background:#fff3e0;color:#e65100}.wfhv-tag.new{background:#e3f2fd;color:#1565c0}
+.wfhv-ok{font-size:12px;font-weight:700;color:#1e5c2e;margin:4px 0}
+.wfhv-bad{font-size:12px;font-weight:700;color:#c62828;margin:4px 0}
+.wfhv-amb{font-size:12px;font-weight:700;color:#e65100;margin:4px 0}
+.wfhv-act{display:flex;gap:8px;justify-content:flex-start;margin-top:14px}
+.wfhv-act button{padding:8px 16px;border-radius:6px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.wfhv-ok-btn{background:#1f4e79;color:#fff;border:1px solid #1f4e79}
+.wfhv-cancel{background:#fff;color:#555;border:1px solid #d0d7e8}
 .wfh-chip{border:none;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
 .wfh-chip.bad{background:#ffebee;color:#c62828}
 .wfh-chip.amb{background:#fff3e0;color:#e65100}
@@ -950,12 +968,11 @@ function wfhThuHistory(){
 window.autoAssignWfh=async function(){
   if(!wfhActive(state.year,state.month)){alert('ימי בית נכנסים לתוקף מ-1.1.2027');return;}
   const repair=Object.values(state.wfh||{}).some(v=>v==='H'); // כבר יש חלוקה → מעדכנים רק מה שצריך
-  if(!confirm(repair
-    ?'כבר יש חלוקה לחודש הזה.\nאעדכן רק את מה שהשתנה (חופשות, סבבים, ימים מתחת לחצי, עובדים בלי יום בית). כל השאר יישאר בדיוק כמו שהוא.\n\nלחלוקה מחדש מלאה: "נקה" ואז "חלק ימי בית".'
-    :'לחלק ימי בית לכל החודש לפי הסידור הנוכחי?\nשיבוצים ידניים (נעולים) יישארו כמו שהם.')) return;
-  state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
-  const wfh=state.wfh||{};
-  const before=JSON.stringify(wfh);
+  // מחשבים הצעה על עותק — שום דבר לא נשמר עד שהמנהל מאשר
+  const orig=JSON.parse(JSON.stringify(state.wfh||{}));
+  const issBefore=wfhMonthIssues();
+  state.wfh=JSON.parse(JSON.stringify(orig));
+  const wfh=state.wfh;
   if(!repair) Object.keys(wfh).forEach(k=>{if(wfh[k]==='H')delete wfh[k];});
   const thuHist=wfhThuHistory();
   const thuNow={};
@@ -1083,19 +1100,66 @@ window.autoAssignWfh=async function(){
       if(opts.length) assign(e,opts[0]);
     });
   });
-  state.wfh=wfh;
-  // סטטיסטיקה חודשית להוגנות בחודשים הבאים
-  saveToCloud();
-  const iss=wfhMonthIssues();
-  const warn=iss.lowDays.length||iss.noHome.length?' — יש מה לבדוק בשורה למעלה':'';
-  if(repair){
-    const a=JSON.parse(before),b=wfh,who=new Set();
-    new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{if(a[k]!==b[k])who.add(k.split('|')[0]);});
-    const n=who.size;
-    showToast(n?`✓ עודכנו ${n===1?'עובד אחד':n+' עובדים'} (${[...who].join(', ')}), כל השאר נשאר כמו שהיה${warn}`:`✓ אין מה לעדכן — החלוקה תקינה${warn}`);
-  } else showToast(`✓ ימי בית חולקו${warn}`);
+  // השוואה לפני/אחרי, לכל עובד ולכל שבוע
+  // "לפני": מה שהיה רשום (גם אם היום הפך לחופש). "אחרי": רק ימים שבהם הוא באמת עובד מהבית
+  const homeDays=(map,n,days,all)=>days.filter(d=>{const v=map[n+'|'+d];return (v==='H'||v==='MH')&&(all||isWorkingShift(getShift(n,d)));});
+  const changes=[];
+  wfhWeeks().forEach(({wi,days})=>{
+    employees.forEach(e=>{
+      const b=homeDays(orig,e.name,days,true),a=homeDays(wfh,e.name,days,false);
+      if(b.join()===a.join()) return;
+      changes.push({name:e.name,wi,from:b,to:a});
+    });
+  });
+  const issAfter=wfhMonthIssues();
+  state.wfh=orig; // מחזירים את המצב הקיים עד לאישור
+  state.wfhProposal={repair,wfh,changes,issBefore,issAfter};
   render();
 };
+window.approveWfh=function(){
+  const pr=state.wfhProposal;if(!pr)return;
+  state.wfhUndo=JSON.parse(JSON.stringify(state.wfh||{}));
+  state.wfh=pr.wfh;state.wfhProposal=null;
+  saveToCloud();
+  const n=new Set(pr.changes.map(c=>c.name)).size;
+  showToast(pr.repair?`✓ אושר — עודכנו ${n===1?'עובד אחד':n+' עובדים'}`:'✓ ימי בית חולקו ונשמרו');
+  render();
+};
+window.cancelWfh=function(){state.wfhProposal=null;render();};
+function buildWfhPreview(){
+  const pr=state.wfhProposal;if(!pr) return '';
+  const dl=d=>`${WD_SHORT[ilWD(state.year,state.month,d)]} ${d}`;
+  const lowB=pr.issBefore.lowDays,lowA=pr.issAfter.lowDays;
+  const fixed=lowB.filter(x=>!lowA.some(y=>y.d===x.d));
+  const people=[...new Set(pr.changes.map(c=>c.name))];
+  let body;
+  if(!pr.changes.length){
+    body=`<div class="wfhv-empty">אין שינויים להציע — החלוקה הנוכחית כבר מסתדרת עם הסידור.</div>`;
+  } else if(!pr.repair){
+    body=`<div class="wfhv-sum">ישובצו ימי בית ל-<b>${people.length}</b> עובדים בכל שבועות החודש.</div>
+      <div class="wfhv-list">${people.map(n=>{const cs=pr.changes.filter(c=>c.name===n);return `<div class="wfhv-row"><b>${n}</b><span>${cs.map(c=>c.to.map(dl).join(' + ')).filter(Boolean).join(' · ')}</span></div>`;}).join('')}</div>`;
+  } else {
+    body=`<div class="wfhv-sum"><b>${people.length}</b> ${people.length===1?'עובד יזוז':'עובדים יזוזו'}. כל השאר נשאר בדיוק כמו שהוא.</div>
+      <div class="wfhv-list">${pr.changes.map(c=>{
+        const f=c.from.length?c.from.map(d=>dl(d)+(isWorkingShift(getShift(c.name,d))?'':` (${shiftInfo(getShift(c.name,d)).label||'לא עובד'})`)).join(' + '):'משרד';
+        const t=c.to.length?c.to.map(dl).join(' + '):'משרד';
+        const tag=!c.to.length?'<span class="wfhv-tag amb">בלי יום בית השבוע</span>':!c.from.length?'<span class="wfhv-tag new">נוסף</span>':'';
+        return `<div class="wfhv-row"><b>${c.name}</b><span class="wk">שבוע ${c.wi+1}</span><span>🏠 ${f} ← ${t}</span>${tag}</div>`;}).join('')}</div>`;
+  }
+  const after=[];
+  if(fixed.length) after.push(`<div class="wfhv-ok">✓ ימים שיחזרו לחצי במשרד: ${fixed.map(x=>dl(x.d)).join(', ')}</div>`);
+  if(lowA.length) after.push(`<div class="wfhv-bad">🔴 עדיין מתחת לחצי (אין למי להעביר): ${lowA.map(x=>`${dl(x.d)} (${x.office}/${x.total})`).join(', ')}</div>`);
+  if(pr.issAfter.noHome.length) after.push(`<div class="wfhv-amb">🟠 בלי יום בית אחרי השינוי: ${pr.issAfter.noHome.map(x=>`${x.name} (שבוע ${x.wi+1})`).join(', ')}</div>`);
+  return `<div class="wfhv-overlay" onclick="if(event.target===this)cancelWfh()"><div class="wfhv-box">
+    <h3>${pr.repair?'🏠 עדכון ימי בית — מה ישתנה':'🏠 חלוקת ימי בית — '+MONTHS[state.month]+' '+state.year}</h3>
+    ${body}
+    ${after.join('')}
+    <div class="wfhv-act">
+      <button class="wfhv-cancel" onclick="cancelWfh()">ביטול</button>
+      ${pr.changes.length?`<button class="wfhv-ok-btn" onclick="approveWfh()">✓ אשר ושמור</button>`:''}
+    </div>
+  </div></div>`;
+}
 window.undoWfh=function(){
   if(!state.wfhUndo) return;
   state.wfh=state.wfhUndo;state.wfhUndo=null;
@@ -1409,7 +1473,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${isAdmin?buildWfhPreview():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
