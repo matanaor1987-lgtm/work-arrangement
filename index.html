@@ -885,11 +885,12 @@ function wfhMonthIssues(){
   wfhWeeks().forEach(({wi,days,tueOut,thuOut})=>{
     const split=tueOut||thuOut; // שבוע שחוצה חודש — היום השני בחודש הסמוך
     employees.forEach(e=>{
-      if(e.wfhRule==='X'&&!days.some(d=>isEarlyHome(e.name,d))) return;
+      if(e.wfhRule==='X'&&!getWeeks()[wi].some(({d})=>isEarlyHome(e.name,d))) return;
       const worked=days.filter(d=>isWorkingShift(getShift(e.name,d)));
-      const homes=days.filter(d=>isHome(e.name,d)).length;
+      const earlyWeek=getWeeks()[wi].some(({d})=>isEarlyHome(e.name,d)); // משמרת 05 בכל יום בשבוע = יום בית
       const regular=days.filter(d=>isHome(e.name,d)&&!isEarlyHome(e.name,d)).length;
-      if(homes>1&&regular>0) twoHome.push({name:e.name,wi,d:days[0]});
+      const homes=regular+(earlyWeek?1:0);
+      if(regular>1) twoHome.push({name:e.name,wi,d:days[0]});
       else if(!homes&&worked.length&&!split) noHome.push({name:e.name,wi,d:worked[0]});
     });
   });
@@ -942,12 +943,13 @@ window.autoAssignWfh=async function(){
     // קיבולת: כמה מותר בבית בכל יום
     const cap={};
     days.forEach(d=>{const p=dayPresence(d);cap[d]=p.total-Math.floor(p.total/2)-p.home;});
-    const forced=[],flex=[];
+    const forced=[],flex=[],low=[];
     employees.forEach(e=>{
       if(e.wfhRule==='X') return;
       const weekDays=getWeeks()[wi].map(x=>x.d);
       if(weekDays.some(d=>wfh[e.name+'|'+d]==='MH')) return; // כבר יש יום בית ידני
       if(days.some(d=>isEarlyHome(e.name,d))) return; // משמרת 05 ביום ג׳/ה׳ = יום הבית שלו
+      const earlyOther=weekDays.some(d=>isEarlyHome(e.name,d)); // משמרת 05 ביום אחר — כבר קיבל יום בית, עדיפות אחרונה
       if(tueOut&&sun+2<1&&prevHome(e.name,pn+sun+2)) return; // כבר היה בבית בשלישי (חודש קודם)
       let cands=days.filter(d=>isWorkingShift(getShift(e.name,d))&&wfh[e.name+'|'+d]!=='MO');
       if(e.wfhRule===2||e.wfhRule===4||e.wfhRule==='2'||e.wfhRule==='4'){
@@ -955,6 +957,7 @@ window.autoAssignWfh=async function(){
         cands=cands.filter(d=>ilWD(state.year,state.month,d)===rd);
       }
       if(!cands.length) return;
+      if(earlyOther){low.push({e,cands});return;}
       (cands.length===1?forced:flex).push({e,cands});
     });
     const assign=(e,d)=>{wfh[e.name+'|'+d]='H';cap[d]--;if(ilWD(state.year,state.month,d)===4)thuNow[e.name]=(thuNow[e.name]||0)+1;};
@@ -976,6 +979,12 @@ window.autoAssignWfh=async function(){
         else if(cap[thu]>0) assign(f.e,thu);
       });
     }
+    // עדיפות אחרונה: מי שכבר עבד מהבית במשמרת 05 השבוע — רק אם נשאר מקום
+    low.sort((x,y)=>thuOf(x.e.name)-thuOf(y.e.name)||Math.random()-0.5);
+    low.forEach(({e,cands})=>{
+      const opts=cands.filter(d=>cap[d]>0).sort((x,y)=>cap[y]-cap[x]);
+      if(opts.length) assign(e,opts[0]);
+    });
   });
   state.wfh=wfh;
   // סטטיסטיקה חודשית להוגנות בחודשים הבאים
@@ -1404,7 +1413,7 @@ function buildPopup(){
       ${SHIFTS.map(s=>`<div class="shift-opt ${s.cls} ${cur===s.key?"selected":""}" style="${s.bg?`background:${s.bg};color:${s.txt};`:''}" onclick="window._pickShift('${s.key}')">${s.label||"ריק / ללא"}</div>`).join("")}
       <div class="shift-opt" style="border-style:dashed;color:#888;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="window.quickAddShift()">➕ הוסף</div>
     </div>
-    ${isEarlyShift(cur)?`<div class="wfh-toggle">📍 מיקום: <b style="color:#1f4e79">🏠 בית</b> <span class="wfh-hint">משמרת שמתחילה ב-05 — תמיד מהבית</span></div>`:isWorkingShift(cur)&&isWfhDay(d,wd)?(()=>{const ov=state.wfh&&state.wfh[emp+"|"+d]||'';const loc=state.popup.loc||(ov==='H'||ov==='MH'?'H':'O');return `<div class="wfh-toggle">📍 מיקום:
+    ${isEarlyShift(cur)?`<div class="wfh-toggle">📍 מיקום: <b style="color:#1f4e79">🏠 בית</b> <span class="wfh-hint">משמרת שמתחילה ב-05 — תמיד מהבית ונספרת כיום הבית של השבוע</span></div>`:isWorkingShift(cur)&&isWfhDay(d,wd)?(()=>{const ov=state.wfh&&state.wfh[emp+"|"+d]||'';const loc=state.popup.loc||(ov==='H'||ov==='MH'?'H':'O');return `<div class="wfh-toggle">📍 מיקום:
       <button class="${loc==='O'?'on':''}" onclick="window._pickLoc('O')">🏢 משרד</button>
       <button class="${loc==='H'?'on':''}" onclick="window._pickLoc('H')">🏠 בית</button>
       <span class="wfh-hint">${ov==='H'?'שובץ אוטומטית':ov?'🔒 נעול ידנית — החלוקה האוטומטית לא תשנה':'בחירה ידנית תינעל'}</span></div>`;})():''}
@@ -1462,7 +1471,7 @@ function buildEmpMgr(){
     <div class="emp-mgr-box">
       <h2>👥 ניהול עובדים</h2>
       <div style="margin-bottom:8px;font-size:12px;color:#888">ערוך שמות ותפקידים, הוסף או הסר עובדים</div>
-      <div class="wfh-bal"><b>🏠 יום בית</b> — ברירת מחדל "גמיש": החלוקה האוטומטית בוחרת שלישי או חמישי. אפשר לסמן אילוץ קבוע (רק שלישי / רק חמישי), או "תמיד משרד" לעובד שמעדיף לא לעבוד מהבית. משמרת שמתחילה ב-05 היא תמיד מהבית. <span style="color:#888">בתוקף מ-1.1.2027</span></div>
+      <div class="wfh-bal"><b>🏠 יום בית</b> — ברירת מחדל "גמיש": החלוקה האוטומטית בוחרת שלישי או חמישי. אפשר לסמן אילוץ קבוע (רק שלישי / רק חמישי), או "תמיד משרד" לעובד שמעדיף לא לעבוד מהבית. משמרת שמתחילה ב-05 היא תמיד מהבית ונספרת כיום הבית של אותו שבוע. <span style="color:#888">בתוקף מ-1.1.2027</span></div>
       ${employees.map((emp,i)=>{
         return `<div class="emp-mgr-row">
           <input id="emp-name-${i}" value="${emp.name}" placeholder="שם">
