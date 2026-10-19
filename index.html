@@ -689,6 +689,7 @@ function listenToData(){
     state.notes=data.notes||{};
     state.cellNotes=data.cellNotes||{};
     state.wfh=data.wfh||{};
+    state.earlyOrig=data.earlyOrig||{};
     render();
   });
   onValue(ref(db,'wfhStats'),(snap)=>{state.wfhStats=snap.val()||{};});
@@ -808,7 +809,7 @@ function recalcVacationLive(){
 function saveToCloud(){
   if(!db)return;
   const key=`seder_${state.year}_${state.month}`;
-  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{}});
+  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{},earlyOrig:state.earlyOrig||{}});
   if(wfhActive(state.year,state.month)){
     const st=wfhMonthStats();
     if(!state.wfhStats)state.wfhStats={};
@@ -1459,6 +1460,13 @@ window.planEarlyShifts=async function(){
   const pm=state.month===0?11:state.month-1,py=state.month===0?state.year-1:state.year;
   let prev={};try{if(db){const sn=await get_(ref(db,`seder_${py}_${pm}`));prev=(sn.val()||{}).schedule||{};}}catch(e){}
   const pn=daysInMonth(py,pm);
+  // מחלקים מחדש: משמרות בוקר קודמות של הסבב בחודש הזה חוזרות למשמרת המקורית (או 08-17)
+  days.forEach(({d})=>pool.forEach(e=>{
+    const k=e.name+'|'+d;
+    if(isE(get(e.name,d))) sched[k]=(state.earlyOrig||{})[k]||K817;
+  }));
+  // רנדום קבוע (אותו קלט → אותה תוצאה), כדי שלחיצה חוזרת לא תזיז סתם
+  const srand=str=>{let h=2166136261;for(const ch of str){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;};
   const total={}; // כמה משמרות בוקר כל עובד בסבב קיבל — להוגנות
   pool.forEach(e=>{
     let n=0;for(let d=1;d<=pn;d++){if(isEarlyLabel(prev[e.name+'|'+d]||''))n++;}
@@ -1478,7 +1486,7 @@ window.planEarlyShifts=async function(){
       if(wd.some(d=>isE(get(e.name,d)))) return; // כבר יש לו בוקר השבוע — לא נוגעים
       if(prevDays.some(x=>isEarlyLabel(prev[e.name+'|'+x]||''))) return;
       const av=wd.filter(d=>!isProt(get(e.name,d)));
-      if(av.length) todo.push({e,av,tie:Math.random()});
+      if(av.length) todo.push({e,av,tie:srand(`${state.year}-${state.month}-${sun}-${e.name}`)});
     });
     // שלב 1 — מי מקבל השבוע: הוגנות בלבד (מי שקיבל הכי מעט). העדפות לא נותנות יותר משמרות.
     todo.sort((a,b)=>(total[a.e.name]-total[b.e.name])||a.tie-b.tie);
@@ -1502,7 +1510,7 @@ window.planEarlyShifts=async function(){
       const open=t.av.filter(d=>slots[d]>0);
       if(!open.length) return;
       const c=cnt[t.e.name]||{};
-      const pick=open.slice().sort((x,y)=>(slots[y]-slots[x])||((c[ilWD(state.year,state.month,x)]||0)-(c[ilWD(state.year,state.month,y)]||0))||Math.random()-.5)[0];
+      const pick=open.slice().sort((x,y)=>(slots[y]-slots[x])||((c[ilWD(state.year,state.month,x)]||0)-(c[ilWD(state.year,state.month,y)]||0))||(srand(`${t.e.name}-${x}`)-srand(`${t.e.name}-${y}`)))[0];
       sched[t.e.name+'|'+pick]=earlyKey(pick);slots[pick]--;total[t.e.name]++;
       const dw=ilWD(state.year,state.month,pick);cnt[t.e.name]=cnt[t.e.name]||{};cnt[t.e.name][dw]=(cnt[t.e.name][dw]||0)+1;
     });
@@ -1525,6 +1533,13 @@ window.approveEarly=function(){
   ['05-14','05-13'].forEach(l=>{if(!shiftKeyByLabel(l,false)){fix['__'+l]=shiftKeyByLabel(l,true);added=true;}});
   Object.keys(pr.sched).forEach(k=>{if(fix[pr.sched[k]])pr.sched[k]=fix[pr.sched[k]];});
   if(added) saveShiftsToCloud();
+  if(!state.earlyOrig) state.earlyOrig={};
+  Object.keys(pr.sched).forEach(k=>{
+    const was=state.schedule[k]||'',now=pr.sched[k];
+    if(was===now) return;
+    if(isEarlyLabel(now)&&!isEarlyLabel(was)&&!(k in state.earlyOrig)) state.earlyOrig[k]=was||'';
+    if(!isEarlyLabel(now)) delete state.earlyOrig[k];
+  });
   state.schedule=pr.sched;state.earlyProposal=null;
   saveToCloud();
   showToast(`✓ משמרות בוקר שובצו (${new Set(pr.changes.map(c=>c.n)).size} עובדים)`);
