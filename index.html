@@ -220,6 +220,10 @@ table.sched tr:hover td:not(.emp-col):not(.role-badge){background:#fffde7}
   body.printing-wfh .wfhr-in{max-width:none;padding:0}
   body.printing-wfh *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.stf{display:inline-block;margin-top:2px;font-size:9px;font-weight:800;padding:1px 4px;border-radius:3px;background:#eef2f7;color:#455a64;cursor:pointer;line-height:1.3}
+.stf.bad{background:#ffebee;color:#c62828}
+.stf-btn{border:1px solid #c9d6ea;background:#fff;color:#1f4e79;border-radius:6px;padding:3px 9px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.stf-btn.warn{color:#e65100;border-color:#ffcc80}
 .wfh-chip{border:none;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
 .wfh-chip.bad{background:#ffebee;color:#c62828}
 .wfh-chip.amb{background:#fff3e0;color:#e65100}
@@ -690,9 +694,11 @@ function listenToData(){
     state.cellNotes=data.cellNotes||{};
     state.wfh=data.wfh||{};
     state.earlyOrig=data.earlyOrig||{};
+    state.sabSkip=data.sabSkip||{};
     render();
   });
   onValue(ref(db,'wfhStats'),(snap)=>{state.wfhStats=snap.val()||{};});
+  onValue(ref(db,'settings/staffMin'),(snap)=>{const v=snap.val();state.staffMin=typeof v==='number'?v:7;render();});
 }
 
 // Hours deducted per vacation day, by day-of-week: Tue=8h, Fri/Sat=0h (not workdays), else=9h
@@ -809,7 +815,7 @@ function recalcVacationLive(){
 function saveToCloud(){
   if(!db)return;
   const key=`seder_${state.year}_${state.month}`;
-  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{},earlyOrig:state.earlyOrig||{}});
+  set(ref(db,key),{schedule:state.schedule,notes:state.notes,cellNotes:state.cellNotes||{},wfh:state.wfh||{},earlyOrig:state.earlyOrig||{},sabSkip:state.sabSkip||{}});
   if(wfhActive(state.year,state.month)){
     const st=wfhMonthStats();
     if(!state.wfhStats)state.wfhStats={};
@@ -876,6 +882,7 @@ function buildWeekView(isAdmin){
                 <div style="font-size:13px">${d}</div>
                 <div style="font-size:10px;font-weight:600">${DAYS_FULL[wd]}</div>
                 ${presenceBadge(d,wd)}
+                ${staffBadge(d,wd)}
               </th>`;
             }).join('')}
           </tr>
@@ -1608,6 +1615,7 @@ window.planSabDays=async function(){
     const weekend=[sun+5,sun+6];
     // רק שבוע שסוף השבוע שלו (שישי/שבת) בחודש הזה, או שכבר משובץ בחודש הבא
     cls.forEach(e=>{
+      if((state.sabSkip||{})[e.name+'|'+sun]) return; // בוטל ידנית — עובד 6 משמרות השבוע
       const worksWeekend=weekend.some(d=>isWorkingShift(shiftAt(e.name,d)));
       if(!worksWeekend) return;
       const worked=week.filter(d=>isWorkingShift(shiftAt(e.name,d))).length;
@@ -1725,6 +1733,62 @@ function buildRestorePreview(){
       <button class="wfhv-cancel" onclick="cancelRestore()">ביטול</button>
       ${ch.length?`<button class="wfhv-ok-btn" style="background:#1565c0;border-color:#1565c0" onclick="approveRestore()">✓ שחזר</button>`:''}
     </div>
+  </div></div>`;
+}
+// ===== ימים מאתגרים: כמה מסווגים עובדים בכל יום =====
+const OFF_LABEL={OFF:'חופש',SAB:'סבב',MIL:"מילואים",SICK:'מחלה','':'לא משובץ'};
+function clsList(){return employees.filter(e=>e.role==='מסווג');}
+function clsWorking(d){return clsList().filter(e=>isWorkingShift(getShift(e.name,d)));}
+function staffMin(){return typeof state.staffMin==='number'?state.staffMin:7;}
+function isLowDay(d,wd){return wd<=4&&clsWorking(d).length<staffMin();}
+function staffBadge(d,wd){
+  if(state.mode!=='admin'||wd>4) return '';
+  const n=clsWorking(d).length,low=n<staffMin();
+  return `<span class="stf ${low?'bad':''}" onclick="event.stopPropagation();openStaffDay(${d})" title="${n} מסווגים עובדים${low?' — יום מאתגר':''} · לחץ לפרטים">👥${n}</span>`;
+}
+function weekShifts(name,d){const sun=d-ilWD(state.year,state.month,d);let c=0;for(let x=sun;x<sun+7;x++){if(x>=1&&x<=daysInMonth(state.year,state.month)&&isWorkingShift(getShift(name,x)))c++;}return c;}
+window.openStaffDay=function(d){state.staffDay=d;render();};
+window.closeStaffDay=function(){state.staffDay=null;render();};
+window.setStaffMin=function(v){const n=parseInt(v);if(!(n>=1&&n<=30))return;state.staffMin=n;if(db)set(ref(db,'settings/staffMin'),n);render();};
+window.cancelSabDay=function(name,d){
+  snapshotForUndo('ביטול סבב');
+  const sun=d-ilWD(state.year,state.month,d);
+  const orig=(state.earlyOrig||{})[name+'|'+d];
+  setShift(name,d,shiftKeyByLabel('08-17',false)||'A');
+  if(!state.sabSkip)state.sabSkip={};state.sabSkip[name+'|'+sun]=true; // שהשיבוץ האוטומטי לא יחזיר אותו
+  saveToCloud();showToast(`✓ ${name} עובד ב${WD_SHORT[ilWD(state.year,state.month,d)]} ${d} — ${weekShifts(name,d)} משמרות השבוע`);render();
+};
+window.moveSabDay=function(name,from,to){
+  snapshotForUndo('העברת סבב');
+  const k=shiftKeyByLabel('08-17',false)||'A';
+  setShift(name,to,'SAB');setShift(name,from,k);
+  saveToCloud();showToast(`✓ הסבב של ${name} עבר ל${WD_SHORT[ilWD(state.year,state.month,to)]} ${to}`);render();
+};
+function buildStaffDay(){
+  const d=state.staffDay;if(!d)return '';
+  const wd=ilWD(state.year,state.month,d),n=daysInMonth(state.year,state.month);
+  const work=clsWorking(d),off=clsList().filter(e=>!isWorkingShift(getShift(e.name,d)));
+  const min=staffMin(),low=work.length<min;
+  const sun=d-wd;
+  const weekDays=[0,1,2,3,4].map(i=>sun+i).filter(x=>x>=1&&x<=n&&x!==d);
+  const sabRows=off.filter(e=>getShift(e.name,d)==='SAB').map(e=>{
+    // יום חלופי: יום אחר באותו שבוע שהוא עובד בו ושיש בו הכי הרבה מסווגים (ונשאר מעל הסף)
+    const alt=weekDays.filter(x=>isWorkingShift(getShift(e.name,x))&&!isEarlyLabel(getShift(e.name,x))&&clsWorking(x).length-1>=min).sort((a,b)=>clsWorking(b).length-clsWorking(a).length)[0];
+    return `<div class="wfhv-row"><b>${e.name}</b><span class="wk">סבב</span>
+      ${alt?`<button class="stf-btn" onclick="moveSabDay('${e.name}',${d},${alt})">העבר ל${WD_SHORT[ilWD(state.year,state.month,alt)]} ${alt} (${clsWorking(alt).length}→${clsWorking(alt).length-1})</button>`:''}
+      <button class="stf-btn warn" onclick="cancelSabDay('${e.name}',${d})">בטל סבב — יעבוד ${weekShifts(e.name,d)+1} משמרות</button></div>`;
+  }).join('');
+  const sixers=clsList().filter(e=>weekShifts(e.name,d)>MAX_WEEK_SHIFTS);
+  return `<div class="wfhv-overlay" onclick="if(event.target===this)closeStaffDay()"><div class="wfhv-box" style="border-top-color:${low?'#c62828':'#1e5c2e'}">
+    <h3 style="color:${low?'#c62828':'#1e5c2e'}">${low?'📉 יום מאתגר':'👥 מצבת מסווגים'} — ${DAY_NAMES_FULL[wd]} ${d}/${state.month+1}</h3>
+    <div class="wfhv-sum"><b>${work.length}</b> מסווגים עובדים · סף ליום מאתגר: פחות מ-<input type="number" min="1" max="30" value="${min}" onchange="setStaffMin(this.value)" style="width:48px;padding:2px 4px;font-family:inherit;font-size:13px;border:1px solid #d0d7e8;border-radius:4px"></div>
+    <div class="wfhv-list">
+      <div class="wfhv-row"><b>עובדים</b><span>${work.map(e=>`${e.name}${isEarlyLabel(getShift(e.name,d))?' 🌅':''}`).join(' · ')||'—'}</span></div>
+      <div class="wfhv-row"><b>לא עובדים</b><span>${off.map(e=>`${e.name} (${OFF_LABEL[getShift(e.name,d)]??shiftInfo(getShift(e.name,d)).label})`).join(' · ')||'—'}</span></div>
+    </div>
+    ${sabRows?`<div class="wfhv-sum" style="margin-top:6px">אפשר להחזיר לעבודה את מי שבסבב היום:</div><div class="wfhv-list">${sabRows}</div>`:`<div class="wfhv-sum">אין היום עובדים בסבב שאפשר להחזיר.</div>`}
+    ${sixers.length?`<div class="wfhv-amb">⚠️ עובדים 6 משמרות השבוע: ${sixers.map(e=>e.name).join(', ')}</div>`:''}
+    <div class="wfhv-act"><button class="wfhv-cancel" onclick="closeStaffDay()">סגור</button></div>
   </div></div>`;
 }
 // ===== END WFH =====
@@ -1937,7 +2001,7 @@ ${state.weekView?buildWeekView(isAdmin):`<div class="schedule-wrap">${buildTable
 ${buildSummary(days,isAdmin)}
 ${state.popup?buildPopup():""}
 ${state.popup?'<div class="overlay" onclick="closePopup()"></div>':""}
-${isAdmin?buildWfhPreview()+buildWfhReport()+buildEarlyPreview()+buildSabPreview()+buildRestorePreview():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
+${isAdmin?buildWfhPreview()+buildWfhReport()+buildEarlyPreview()+buildSabPreview()+buildRestorePreview()+buildStaffDay():""}${state.showEmpMgr&&isAdmin?buildEmpMgr():""}${state.showVacationMgr&&isAdmin?buildVacationMgr():""}${buildDailyDist()}${buildReqOverlay()}${buildPersonalModal()}${buildCopyModal()}
 `;}
 
 function buildNoteBar(days){
@@ -1951,6 +2015,7 @@ function buildNoteBar(days){
     <button onclick="saveNote()">💾 שמור</button>
     <button onclick="fillDefault()" style="background:#FFF3CC;color:#D40511;border-color:#FFCC00;margin-right:8px">⚡ מלא ברירת מחדל</button>
     <button onclick="openCopyMonth()" style="background:#e8f4ea;color:#1e5c2e;border-color:#b0d8b8;margin-right:8px">📋 העתק לחודש הבא</button>
+    ${(()=>{const low=getDays().filter(({d,wd})=>isLowDay(d,wd));return low.length?`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;font-size:12px;font-weight:700;color:#c62828">📉 ימים מאתגרים:${low.map(({d,wd})=>`<button class="stf bad" style="border:none;cursor:pointer;font-family:inherit" onclick="openStaffDay(${d})">${WD_SHORT[wd]} ${d}</button>`).join('')}</span>`:'';})()}
     <label style="display:inline-flex;align-items:center;padding:4px 10px;border:1px solid #bbdefb;border-radius:4px;background:#e3f2fd;color:#1565c0;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px" title="מחזיר רק את החודש המוצג מקובץ גיבוי JSON">♻️ שחזר חודש מגיבוי<input type="file" accept=".json" onchange="restoreMonthFromBackup(event)" style="display:none"></label>
     <button onclick="planSabDays()" style="background:#fce4ec;color:#880e4f;border-color:#f1b5cb;margin-right:8px" title="מומלץ להריץ לפני משמרות הבוקר">🔁 שבץ סבבים</button>
     <button onclick="planEarlyShifts()" style="background:#ede7f6;color:#4527a0;border-color:#c5b8e6;margin-right:8px">🌅 שבץ משמרות בוקר</button>
@@ -2005,7 +2070,7 @@ function buildTable(days,isAdmin){
       const bdayNames=bdayMap[d]||[];
       const bdayNote=bdayNames.map(n=>`🎂 יום הולדת שמח ${n}!`).join(' | ');
       const combinedNote=[note,bdayNote].filter(Boolean).join(' | ');
-      return `<th style="${finalBg};${fc};${todayBorder}">${isToday?'📍 ':''}${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}${(()=>{const pb=presenceBadge(d,wd);return pb?'<br>'+pb:'';})()}`;
+      return `<th style="${finalBg};${fc};${todayBorder}">${isToday?'📍 ':''}${DAY_NAMES[wd]}<br><span style="font-weight:400;font-size:10px">${d}</span>${combinedNote?`<br><span style="font-size:9px;background:${bdayNote?'#fde8ff':'#fff3cd'};color:${bdayNote?'#7b1fa2':'#7a5c00'};padding:1px 4px;border-radius:3px;display:inline-block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.2" title="${combinedNote}">${combinedNote}</span>`:""}${(()=>{const pb=presenceBadge(d,wd);return pb?'<br>'+pb:'';})()}${(()=>{const sb=staffBadge(d,wd);return sb?'<br>'+sb:'';})()}`;
     }).join("")}
     <th>סה"כ</th>
   </tr></thead><tbody>`;
