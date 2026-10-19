@@ -1424,8 +1424,8 @@ const EARLY_FIXED=['אבבה','סתיו','רועי'];
 const EARLY_FIXED_EXCEPT={'רועי|3':'08-17'};
 // סבב: שאר המסווגים (חוץ מאלה) — משמרת בוקר אחת בשבוע בין שני לחמישי
 const EARLY_ROTATION_EXCLUDE=['אבבה','סתיו','רועי','מזל'];
-const EARLY_PREF={'ניר':1,'אייל':2}; // עדיפות ליום: ניר שני, אייל שלישי
-const EARLY_DAILY_CAP=4; // אישור ל-4 עובדים בשעות הבוקר בכל יום
+const EARLY_PREF={'ניר':1,'אייל':2}; // יום מועדף (לא יותר משמרות): ניר שני, אייל שלישי
+const EARLY_DAILY_CAP=4; // אישור ל-4 מסווגים בשעות הבוקר בכל יום
 const PROTECTED_SHIFTS=['OFF','MIL','SICK','SAB']; // חופש, מילואים, מחלה, סבב — לא נדרסים
 function shiftKeyByLabel(label,create){
   let s=SHIFTS.find(x=>String(x.label).trim()===label);
@@ -1471,16 +1471,8 @@ window.planEarlyShifts=async function(){
     if(!wd.length) return;
     const sun=w[0].d-w[0].wd;
     const prevDays=[1,2,3,4].map(i=>sun+i).filter(x=>x<1).map(x=>pn+x);
-    const slots={};wd.forEach(d=>{slots[d]=Math.max(0,EARLY_DAILY_CAP-employees.filter(e=>isE(get(e.name,d))).length);});
-    // עדיפות מלאה: ניר בשני ואייל בשלישי מקבלים את היום שלהם כל שבוע, לפני כל השאר
-    Object.entries(EARLY_PREF).forEach(([n,prefWd])=>{
-      if(!pool.some(e=>e.name===n)) return;
-      if(wd.some(d=>isE(get(n,d)))) return;
-      if(prevDays.some(x=>isEarlyLabel(prev[n+'|'+x]||''))) return;
-      const d=wd.find(x=>ilWD(state.year,state.month,x)===prefWd);
-      if(!d||slots[d]<=0||isProt(get(n,d))) return; // בחופש ביום שלו — נכנס לסבב הרגיל
-      sched[n+'|'+d]=earlyKey(d);slots[d]--;total[n]++;
-    });
+    // המכסה סופרת רק מסווגים
+    const slots={};wd.forEach(d=>{slots[d]=Math.max(0,EARLY_DAILY_CAP-employees.filter(e=>e.role==='מסווג'&&isE(get(e.name,d))).length);});
     const todo=[];
     pool.forEach(e=>{
       if(wd.some(d=>isE(get(e.name,d)))) return; // כבר יש לו בוקר השבוע — לא נוגעים
@@ -1488,19 +1480,31 @@ window.planEarlyShifts=async function(){
       const av=wd.filter(d=>!isProt(get(e.name,d)));
       if(av.length) todo.push({e,av,tie:Math.random()});
     });
-    // הוגנות קודם; בשוויון — בעלי העדפה, אחר כך מי שיש לו פחות אפשרויות
-    todo.sort((a,b)=>(total[a.e.name]-total[b.e.name])||((EARLY_PREF[b.e.name]?1:0)-(EARLY_PREF[a.e.name]?1:0))||(a.av.length-b.av.length)||a.tie-b.tie);
-    todo.forEach(({e,av})=>{
-      const open=av.filter(d=>slots[d]>0);
-      if(!open.length) return; // אין מקום השבוע — יקבל עדיפות בשבוע הבא
-      const pref=EARLY_PREF[e.name];
-      let pick=pref?open.find(d=>ilWD(state.year,state.month,d)===pref):null;
-      if(!pick){
-        const c=cnt[e.name]||{};
-        pick=open.slice().sort((x,y)=>(slots[y]-slots[x])||((c[ilWD(state.year,state.month,x)]||0)-(c[ilWD(state.year,state.month,y)]||0))||Math.random()-.5)[0];
-      }
-      sched[e.name+'|'+pick]=earlyKey(pick);slots[pick]--;total[e.name]++;
-      const dw=ilWD(state.year,state.month,pick);cnt[e.name]=cnt[e.name]||{};cnt[e.name][dw]=(cnt[e.name][dw]||0)+1;
+    // שלב 1 — מי מקבל השבוע: הוגנות בלבד (מי שקיבל הכי מעט). העדפות לא נותנות יותר משמרות.
+    todo.sort((a,b)=>(total[a.e.name]-total[b.e.name])||a.tie-b.tie);
+    const free=Object.values(slots).reduce((x,y)=>x+y,0);
+    let chosen=[];
+    const fits=list=>{ // בדיקה שאפשר להושיב את כולם בימים שלהם (התאמה פשוטה)
+      const sl={...slots};const order=list.slice().sort((a,b)=>a.av.length-b.av.length);
+      return order.every(t=>{const d=t.av.filter(x=>sl[x]>0).sort((x,y)=>sl[y]-sl[x])[0];if(!d)return false;sl[d]--;return true;});
+    };
+    for(const t of todo){ if(chosen.length>=free) break; if(fits([...chosen,t])) chosen.push(t); }
+    // שלב 2 — באיזה יום: קודם מי שיש לו יום מועדף (ניר שני, אייל שלישי), אם הוא פנוי
+    const placed=new Set();
+    chosen.filter(t=>EARLY_PREF[t.e.name]).forEach(t=>{
+      const d=t.av.find(x=>ilWD(state.year,state.month,x)===EARLY_PREF[t.e.name]&&slots[x]>0);
+      if(!d) return;
+      const rest=chosen.filter(o=>o!==t&&!placed.has(o));
+      slots[d]--; if(!fits(rest)){slots[d]++;return;} // לא לוקחים יום אם זה משאיר מישהו בלי מקום
+      sched[t.e.name+'|'+d]=earlyKey(d);total[t.e.name]++;placed.add(t);
+    });
+    chosen.filter(t=>!placed.has(t)).sort((a,b)=>a.av.length-b.av.length).forEach(t=>{
+      const open=t.av.filter(d=>slots[d]>0);
+      if(!open.length) return;
+      const c=cnt[t.e.name]||{};
+      const pick=open.slice().sort((x,y)=>(slots[y]-slots[x])||((c[ilWD(state.year,state.month,x)]||0)-(c[ilWD(state.year,state.month,y)]||0))||Math.random()-.5)[0];
+      sched[t.e.name+'|'+pick]=earlyKey(pick);slots[pick]--;total[t.e.name]++;
+      const dw=ilWD(state.year,state.month,pick);cnt[t.e.name]=cnt[t.e.name]||{};cnt[t.e.name][dw]=(cnt[t.e.name][dw]||0)+1;
     });
   });
   // שינויים להצגה
