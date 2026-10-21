@@ -144,7 +144,44 @@ const DIPLO_HE=['שגרירות','שגריר','קונסוליה','קונסול',
 // DIPLOMATIC BAG ובכל הכתיבים: DIPLOMATICBAG, DIPL. BAG, DIPLO-BAG, DIP BAG, DIPLOMATIC BAGS / POUCH / MAIL
 const DIPLO_BAG_RE=/\bDIP(L|LO|LOMATIC|LOMATIQUE|LOMATICO|LOMATICA)?[\s.\-_\/]*(BAGS?|POUCH(ES)?|MAIL)\b/;
 function isDiplomatic(...vals) { for(const v of vals){ const s=String(v||''); const u=s.toUpperCase(); if(DIPLO_RE.test(u)||DIPLO_BAG_RE.test(u)||DIPLO_UN_RE.test(u)) return true; for(const k of DIPLO_HE) if(s.includes(k)) return true; } return false; }
-function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; return false; }
+// ===== תחבורה: רכב / אופנוע / קטנוע / אופניים / טרקטורון / כלי שיט / רכבת =====
+// בדיקה לפי גבולות מילה (לא רצף מדויק) — תופס גם "SCOOTER SPARE PARTS", "PARTS FOR CAR", "Shock / Strut" בסוף שורה
+const VEHICLE_WORDS = [
+  // כללי
+  'CARS?','AUTO','AUTOS','AUTOMOTIVE','AUTOMOBILE','VEHICLES?','TRUCKS?','TRAILERS?','PICKUP','SUV','4X4','OFF ?ROAD','OFFROAD','MOTORSPORTS?','RACING',
+  'AUTO ?PARTS','CAR ?PARTS','SPARE ?PARTS','AFTERMARKET','OEM',
+  // דו-גלגלי
+  'MOTORCYCLES?','MOTORBIKES?','MOTO','MC','SCOOTERS?','MOPEDS?','BICYCLES?','BIKE (PARTS?|PEDALS?|CHAIN|SADDLE|LIGHTS?|LOCK|PUMP|RACK|PHONE HOLDER|HOLDER|MOUNT|FRAME|TIRES?|TUBES?|WHEELS?|BRAKES?)','E ?BIKES?','CYCLING','ATV','UTV','QUAD','DIRT ?BIKE','PIT ?BIKE',
+  'HELMETS?','HANDLEBARS?','BAR ?END','SLIDERS?','FAIRINGS?','SWINGARM','SPROCKETS?','KICKSTAND','MUDGUARDS?','FOOTPEGS?','EXHAUST',
+  // כלי שיט / רכבת
+  'WATERCRAFT','JET ?SKI','OUTBOARD','BOAT','YACHT','RAILWAY','LOCOMOTIVE',
+  // מותגים
+  'TOYOTA','LEXUS','HONDA','ACURA','NISSAN','INFINITI','SUBARU','MAZDA','MITSUBISHI','ISUZU','SUZUKI MOTOR','HYUNDAI','KIA','GENESIS MOTOR','DAEWOO','SSANGYONG',
+  'BMW','MINI COOPER','MERCEDES','BENZ','AUDI','VW','VOLKSWAGEN','PORSCHE','OPEL','VAUXHALL','SKODA','SEAT IBIZA','RENAULT','PEUGEOT','CITROEN','DACIA','FIAT','ALFA ROMEO','LANCIA','VOLVO','SAAB',
+  'FORD','CHEVROLET','CHEVY','GMC','DODGE','CHRYSLER','JEEP','RAM 1500','CADILLAC','BUICK','LINCOLN NAVIGATOR','TESLA','LAND ROVER','RANGE ROVER','JAGUAR XF','JAGUAR XE','JAGUAR F','MASERATI','FERRARI','LAMBORGHINI','BENTLEY','ROLLS ROYCE',
+  'MAXUS','LDV','BYD','CHERY','GEELY','MG MOTOR',
+  'YAMAHA','KAWASAKI','DUCATI','KTM','HARLEY','HUSQVARNA MOTO','APRILIA','VESPA','PIAGGIO','TRIUMPH MOTO','YZF','YFZ','CBR','GSXR','GSX R',
+  // ספקי חלקים / מותגי חלקים
+  'ROCKAUTO','SPARETO','TRODO','AUTOKAUBAD24','AUTOKAUBAD','AUTODOC','24MX','XLMOTO','MOTOMATCH','SCOOTERSHOP','TURN 14','REDPARTS','ANTALLAKTIKA','EVOTECH','RACING DIFFS','FOURWERX','TROY LEE','EUROPE MOTO','4INTO1','OLDTIMER','FLYING SPARES','BURJ AUTO','CHURA BASE','TUF SKINZ','MOBILE DVR',
+  'BREMBO','STABILUS','AISIN','DENSO','NGK','BILSTEIN','MONROE','SACHS','LEMFORDER','MOOG','NRF','PUIG','JWL',
+  // חלקים
+  'SHOCKS?','STRUTS?','SHOCK ABSORBERS?','SUSPENSION','COILOVERS?','SWAY BAR','STABILIZER LINK','TIE ROD','CONTROL ARM','BALL JOINT','WHEEL BEARING','WHEEL HUB','CV JOINT','CV AXLE','AXLES?','DRIVE ?SHAFT','DIFFERENTIAL','TRANSFER CASE',
+  'BRAKES?','BRAKE PADS?','BRAKE DISCS?','ROTORS?','CALIPERS?','PARKING BRAKE','ABS PUMP','ABS MODULE',
+  'ENGINE','MOTOR MOUNT','ENGINE MOUNT','CRANKSHAFT','CAMSHAFT','CRANKCASE','CYLINDER HEAD','PISTONS?','GASKETS?','GASKETMANIFOLD','MANIFOLD','TIMING BELT','TIMING CHAIN','IDLER','TENSIONER',
+  'TURBO','TURBOCHARGER','TURBOCHARGED','INTERCOOLER','CHARGE AIR COOLER','BOV','THROTTLE','INJECTORS?','FUEL PUMP','FUEL FILTER','FUEL RAIL','FUEL TANK','CARBURETOR','CARBURETTOR',
+  'OIL FILTER','AIR FILTER','CABIN AIR','OIL PAN','OIL SEPARATOR','OIL PRESSURE','DIPSTICK','PCV','RADIATOR','COOLANT','THERMOSTAT','WATER PUMP','FLUID COOLER','EXPANSION VALVE',
+  'SPARK PLUGS?','IGNITION COIL','ALTERNATOR','STARTER MOTOR','O2 SENSOR','OXYGEN SENSOR','TPS','TEMPERATURE SENDER','ECU','TRANSMISSION','GEARBOX','CLUTCH (KIT|PLATE|DISC|RELEASE|LEVER|CABLE|MASTER)','FLYWHEEL','DQ200','DSG',
+  'POWER STEERING','STEERING','POWER WINDOW','LIFT SUPPORT','GAS SPRING','TRUNK (LID|ACCES\\w*|LATCH|STRUT)','TAILGATE','BUMPER','(FRONT|REAR) FENDER','FENDER FLARES?','HOOD (PANEL|LATCH|STRUT)','BONNET','GRILLE','SIDE SKIRTS?','SIDE SKIRTR','FRONT LIP','SPOILER','REAR DIFFUSER','ROOF RACK','ROOF SIDE MOLDING',
+  'HEADLIGHTS?','HEADLAMPS?','HEAD LIGHT','TAILLIGHTS?','TAIL LIGHT','FOG LIGHT','WING MIRROR','SIDE MIRROR','MIRRORS? ?PO','WINDSHIELD','WINDSCREEN','WIPERS?','WASHER HOSE','HOSES?',
+  'TIRES?','TYRES?','SPARE TIRE','RIMS?','WHEELS? FOR','INCH WHEELS?','ALLOY WHEELS?','FORGED WHEELS?','LUG NUTS?','HUBCAPS?',
+  'DASHBOARD','DASH CAM','CAR AUDIO','SEAT COVERS?','SEAT CO','SUN ?SHADES?','PPF','BUSHINGS?','LUBE BUSHING'
+];
+const VEHICLE_RE = new RegExp('(^| )(' + VEHICLE_WORDS.join('|') + ')( |$)');
+const VEHICLE_HE = ['רכב','אופנוע','קטנוע','אופניים','טרקטורון','חלקי חילוף','צמיג','בולם','בלמים','מנוע'];
+function normWords(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9֐-׿]+/g,' ').trim(); }
+function isVehicle(...vals){ for(const v of vals){ const n=normWords(v); if(!n) continue; if(VEHICLE_RE.test(n)) return true; for(const k of VEHICLE_HE) if(String(v).includes(k)) return true; } return false; }
+
+function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; const n=' '+normWords(d)+' '; for(const k of REMOVE_DESC) if(k.endsWith(' ') && n.includes(' '+k)) return true; return false; }
 function shouldYellow(d,s) { const u=String(d||'').toUpperCase(),v=String(s||'').toUpperCase(); for(const k of YELLOW_DESC) if(u.includes(k)||v.includes(k)) return true; return false; }
 
 const fileInput=document.getElementById('fileInput'), uploadZone=document.getElementById('uploadZone');
@@ -264,6 +301,7 @@ async function runFilter() {
       if(isCompany(impName)){removed++;return;}
       if(shouldRemove(teur)){removed++;return;}
       if(shouldRemove(shipper)){removed++;return;}
+      if(isVehicle(teur,shipper)){removed++;return;}
 
       const yellow=shouldYellow(teur,shipper);
       if(yellow)yellowC++;else normalC++;
