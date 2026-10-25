@@ -180,6 +180,29 @@ const VEHICLE_RE = new RegExp('(^| )(' + VEHICLE_WORDS.join('|') + ')( |$)');
 const VEHICLE_HE = ['רכב','אופנוע','קטנוע','אופניים','טרקטורון','חלקי חילוף','צמיג','בולם','בלמים','מנוע'];
 function normWords(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9֐-׿]+/g,' ').trim(); }
 function isVehicle(...vals){ for(const v of vals){ const n=normWords(v); if(!n) continue; if(VEHICLE_RE.test(n)) return true; for(const k of VEHICLE_HE) if(String(v).includes(k)) return true; } return false; }
+// מזון — הסרה (מילים שלמות, כדי ש-TEA לא יתפוס TEAM וכו'). תוספי תזונה/ויטמינים נשארים בצהוב.
+const FOOD_WORDS=[
+  'FOODS?','FOOD ?STUFFS?','GROCER(Y|IES)','SNACKS?','CANDY','CANDIES','SWEETS','CHOCOLATES?','COCOA','COFFEE','TEAS?','TEA BAGS?','MATCHA',
+  'BISCUITS?','COOKIES?','CRACKERS?','CHIPS','CRISPS','SAUCES?','KETCHUP','MAYONNAISE','SPICES?','SEASONINGS?','CONDIMENTS?','CURRY','MASALA','PEPPER SOUP',
+  'NUTS','PEANUTS?','ALMONDS?','CASHEWS?','PISTACHIOS?','WALNUTS?','HAZELNUTS?','MEDJOOL','RAISINS?','DRIED FRUITS?',
+  'DRIED (FISH|MEAT|BEANS?|LEAVES|LEAF|PEPPERS?|HERBS?|MANGO|FIGS?|SHRIMPS?|PRAWNS?|CRAYFISH|POUNDED|YAM|OKRA|TOMATO\\w*|MUSHROOMS?|SEAFOOD)',
+  'DRY (FISH|MEAT|BEANS?|FRIED BEANS?|LEAVES|PEPPERS?|FOOD|FRUITS?)','FRIED BEANS?',
+  'STOCK ?FISH','SMOKED FISH','SALTED FISH','CAT ?FISH','MACKEREL','SARDINES?','TUNA','SALMON','CRAYFISH','SHRIMPS?','PRAWNS?','SEAFOOD','SEA FOOD',
+  'BEANS','LENTILS?','CHICKPEAS?','RICE','FLOUR','SEMOLINA','CORNMEAL','OATS','OATMEAL','GRANOLA','CEREALS?','PASTA','SPAGHETTI','MACARONI','NOODLES?','RAMEN',
+  'POUNDED YAM','YAM','YAMS','GARRI','GARI','EGUSI','OGBONO','FUFU','CASSAVA','TAPIOCA','PLANTAINS?','ATTIEKE','IRU','OGIRI','UZIZA','BITTER ?LEAF','EWEDU','UGU','KPOMO','SUYA',
+  'PALM OIL','OLIVE OIL','OLIVES?','COOKING OIL','VEGETABLE OIL','COCONUT OIL','SESAME OIL','OIL BLEND','GHEE','BUTTER','CHEESE','MILK','MILK POWDER','YOGURT','YOGHURT',
+  'HONEY','SYRUPS?','SYRUVIA','MAPLE','SUGAR','SUGAR FREE?','SUGARFREE','JAM','JAMS','MARMALADE','CHOCOLATE SPREAD','NUTELLA','TAHINI','HUMMUS',
+  'MEAT','BEEF','PORK','CHICKEN','LAMB','JERKY','SAUSAGES?','SALAMI','BACON',
+  'FRESH FRUITS?','FRUIT SNACKS?','VEGETABLES?','MUSHROOMS?','SEEDS','PUMPKIN SEEDS?','CHIA','QUINOA',
+  'JUICES?','SODA','SOFT DRINKS?','ENERGY DRINKS?','BEVERAGES?','DRINKS',
+  'BREAD','CAKES?','PASTRY','PASTRIES','BAKED GOODS','DESSERTS?','GUMMIES','GUMMY','LOLLIPOPS?','MARSHMALLOWS?','POPCORN','PROTEIN BARS?','ENERGY BARS?',
+  'EDIBLE','FOOD ITEMS?','FOOD STUFF','FOODSTUFF'
+];
+// כלים/אביזרים/טקסטיל עם מילת מזון בשם (COFFEE MUG, RICE COOKER, TEA SET...) — לא מזון
+const NONFOOD_RE=/(^| )(MUGS?|CUPS?|SETS?|GRATERS?|COOKERS?|MAKERS?|MACHINES?|GRINDERS?|KETTLES?|POTS?|PANS?|BOWLS?|PLATES?|SPOONS?|JARS?|CONTAINERS?|STRAINERS?|INFUSERS?|TUMBLERS?|BOTTLES?|DISPENSERS?|BOARDS?|CALENDARS?|TOWELS?|CANDLES?|PILLOWS?|SHIRTS?|TEE|TOYS?|PLUSH|STICKERS?|MAGNETS?|KEYCHAINS?|KEY CHAIN|COVERS?|CASES?|LOOM|CHARMS?|NECKLACES?|EARRINGS?|PRINTS?|POSTERS?|BOOKS?|SHEETS?|SOAPS?|LOTIONS?|SHAMPOO|SCRUBS?|LIP BALM|PERFUMES?|COMB|RADIO|ANTENNAS?|COSTUME|FIGURINES?|ORNAMENTS?|MOLDS?|MOULDS?|CUTTERS?|UTENSILS?|APRONS?)( |$)/;
+const FOOD_RE=new RegExp('(^| )('+FOOD_WORDS.join('|')+')( |$)');
+const FOOD_HE=['מזון','אוכל','ממתק','שוקולד','קפה','תה ','תבלין','דגים','בשר','אורז','קמח','סוכר','דבש','שמן זית','חטיף','פירות','ירקות','שימורים'];
+function isFood(...vals){ for(const v of vals){ const n=normWords(v); if(!n) continue; if(FOOD_RE.test(n) && !NONFOOD_RE.test(n)) return true; const h=' '+String(v)+' '; for(const k of FOOD_HE) if(h.includes(k)) return true; } return false; }
 
 function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; const n=' '+normWords(d)+' '; for(const k of REMOVE_DESC) if(k.endsWith(' ') && n.includes(' '+k)) return true; return false; }
 function shouldYellow(d,s) { const u=String(d||'').toUpperCase(),v=String(s||'').toUpperCase(); for(const k of YELLOW_DESC) if(u.includes(k)||v.includes(k)) return true; return false; }
@@ -302,6 +325,7 @@ async function runFilter() {
       if(shouldRemove(teur)){removed++;return;}
       if(shouldRemove(shipper)){removed++;return;}
       if(isVehicle(teur,shipper)){removed++;return;}
+      if(isFood(teur)){removed++;return;}
 
       const yellow=shouldYellow(teur,shipper);
       if(yellow)yellowC++;else normalC++;
