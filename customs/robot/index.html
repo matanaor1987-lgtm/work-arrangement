@@ -203,6 +203,10 @@ const NONFOOD_RE=/(^| )(MUGS?|CUPS?|SETS?|GRATERS?|COOKERS?|MAKERS?|MACHINES?|GR
 const FOOD_RE=new RegExp('(^| )('+FOOD_WORDS.join('|')+')( |$)');
 const FOOD_HE=['מזון','אוכל','ממתק','שוקולד','קפה','תה ','תבלין','דגים','בשר','אורז','קמח','סוכר','דבש','שמן זית','חטיף','פירות','ירקות','שימורים'];
 function isFood(...vals){ for(const v of vals){ const n=normWords(v); if(!n) continue; if(FOOD_RE.test(n) && !NONFOOD_RE.test(n)) return true; const h=' '+String(v)+' '; for(const k of FOOD_HE) if(h.includes(k)) return true; } return false; }
+// סכינים — כל סוג (מטבח, כיס, ציד וכו'). משחיז/מעמד/נרתיק לבד לא נחשב סכין.
+const KNIFE_RE=/(^| )(KNIFE|KNIVES|KNIFES|CLEAVERS?|MACHETES?|DAGGERS?|SANTOKU|GYUTO|NAKIRI|DEBA|YANAGIBA|USUBA|KIRITSUKE|PETTY KNIFE|BUTCHER KNIFE|SWITCHBLADES?|BALISONG|KARAMBIT|KUKRI|BOWIE|COUTEAU|COUTEAUX|MESSER|CUCHILLO|CUCHILLOS|COLTELLO|COLTELLI|FACA|FACAS)( |$)/;
+const KNIFE_ONLY_ACC=/(^| )(SHARPENER|SHARPENERS|SHARPENING|WHETSTONE|HONING|KNIFE (BLOCK|STAND|HOLDER|RACK|ROLL|BAG|SHEATH|STRIP)|MAGNETIC STRIP)( |$)/;
+function isKnife(...vals){ for(const v of vals){ const raw=String(v||''); if(raw.includes('סכין')||raw.includes('סכינים')) return true; const n=normWords(v); if(!n) continue; if(KNIFE_RE.test(n) && !(KNIFE_ONLY_ACC.test(n) && !/(^| )(KNIFE SET|KNIVES SETS?|SET OF KNIVES)( |$)/.test(n))) return true; } return false; }
 
 function shouldRemove(d) { const u=String(d||'').toUpperCase(); for(const k of REMOVE_DESC) if(u.includes(k)) return true; const n=' '+normWords(d)+' '; for(const k of REMOVE_DESC) if(k.endsWith(' ') && n.includes(' '+k)) return true; return false; }
 function shouldYellow(d,s) { const u=String(d||'').toUpperCase(),v=String(s||'').toUpperCase(); for(const k of YELLOW_DESC) if(u.includes(k)||v.includes(k)) return true; return false; }
@@ -326,6 +330,7 @@ async function runFilter() {
       if(shouldRemove(shipper)){removed++;return;}
       if(isVehicle(teur,shipper)){removed++;return;}
       if(isFood(teur)){removed++;return;}
+      if(isKnife(teur,shipper)){removed++;return;}
 
       const yellow=shouldYellow(teur,shipper);
       if(yellow)yellowC++;else normalC++;
