@@ -671,7 +671,9 @@ function listenToData(){
   });
   listenToRequests();
   onValue(ref(db,'vacationBalance'),(snap)=>{
-    state.vacationData=snap.val()||{};
+    const rawVac=snap.val()||{};
+    state.vacationData={};
+    Object.keys(rawVac).forEach(k=>{ if(!isVacationExcluded(rawVac[k])) state.vacationData[k]=rawVac[k]; });
     // Figure out which year's schedule this report refers to, and make sure we're listening to it
     const records=Object.values(state.vacationData||{});
     const sample=records.find(r=>r.month&&r.month.includes('/'));
@@ -3281,6 +3283,15 @@ window.delVacationRecord=async function(empId,name){
   showToast('🗑️ הרשומה נמחקה');
 };
 
+// Employees not shown in the vacation table (also skipped on import)
+const VACATION_EXCLUDED_NAMES=['מתן נאור','משה גולן','שירלי דויטש'];
+function isVacationExcluded(r){
+  if(!r)return false;
+  const full=((r.firstName||'')+' '+(r.lastName||'')).replace(/\s+/g,' ').trim();
+  return VACATION_EXCLUDED_NAMES.includes(full);
+}
+window.isVacationExcluded=isVacationExcluded;
+
 function parseVacationPaste(text){
   const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
   const records=[];
@@ -3329,7 +3340,7 @@ function parseVacationPaste(text){
 window.saveVacationImport=async function(){
   const ta=document.getElementById('vac-paste');
   const text=ta?ta.value:'';
-  const records=parseVacationPaste(text);
+  const records=parseVacationPaste(text).filter(r=>!isVacationExcluded(r));
   if(records.length===0){alert('לא זוהו שורות תקינות. ודא שהעמודות מופרדות בטאבים (הדבקה ישירה מאקסל/פוקוס) ושמספר העובד הוא העמודה הראשונה.');return;}
   if(!db){alert('אין חיבור ל-Firebase');return;}
   const updates={};
